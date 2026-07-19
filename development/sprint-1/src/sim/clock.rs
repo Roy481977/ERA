@@ -1,32 +1,10 @@
 //! The WorldClock (Phase 2): one shared, authoritative clock.
 //!
-//! 1 tick = 1 hour; 24 ticks = 1 day. Time-blocks are derived from the hour so
-//! routines can reason about *when* an activity is appropriate.
+//! 1 tick = 1 hour; 24 ticks = 1 day. Routines reason about the *hour* directly
+//! (via each activity's preferred arrival + flexibility window), so the clock
+//! stays a plain counter with no notion of named blocks.
 
 pub const TICKS_PER_DAY: u64 = 24;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Block {
-    Night,
-    Morning,
-    Midday,
-    Afternoon,
-    Evening,
-    Late,
-}
-
-impl Block {
-    pub fn from_hour(hour: u64) -> Block {
-        match hour {
-            0..=5 => Block::Night,
-            6..=9 => Block::Morning,
-            10..=13 => Block::Midday,
-            14..=17 => Block::Afternoon,
-            18..=21 => Block::Evening,
-            _ => Block::Late, // 22, 23
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WorldClock {
@@ -45,8 +23,5 @@ impl WorldClock {
     }
     pub fn hour(&self) -> u64 {
         self.tick % TICKS_PER_DAY
-    }
-    pub fn block(&self) -> Block {
-        Block::from_hour(self.hour())
     }
 }

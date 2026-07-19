@@ -10,29 +10,31 @@ foundation, not a throwaway prototype.
 **This works from the ratified architecture; it does not redesign it.** DS-001 is
 a *reduced* instance of the WI-01 vertical slice
 ([`architecture/system-contracts/vertical-slice.md`](../architecture/system-contracts/vertical-slice.md)):
-5 locations instead of ~12, 10 residents instead of 25–40, and **simple
-deterministic schedules instead of the full intention/arbitration layer** — a
-legitimate first-step simplification. Terminology follows
+5 locations instead of ~12, 10 residents instead of 25–40, and **deterministic
+proto-intention routines instead of the full intention/arbitration layer** — a
+legitimate first-step simplification that already carries the seams (soft time,
+overridable place, condition gate) the fuller layer will grow into. Terminology follows
 [`world-state-schema.md`](../architecture/system-contracts/world-state-schema.md)
 (Place/affordances, Resident, WorldClock) and honours the invariants (one world
 state, one clock, no teleporting, deterministic replay).
 
 ---
 
-## Implementation decision (flagged for Roy's veto)
+## Implementation decision (ratified path)
 
 The architecture deliberately keeps the Town Engine **logical core headless and
 engine-decoupled** ("its logical tests run headlessly" — Town Engine strategy).
-Sprint 1 therefore implements that logical core in **Python 3 (standard library
-only)**: fast to a running, observable, deterministic simulation, with no game
-engine required.
+Sprint 1 implements that logical core in **Rust** (see
+[`CD-007`](../creative-decisions/CD-007-core-language-rust.md)): a deterministic,
+engine-decoupled sovereign core, chosen to optimise the long-term production
+architecture rather than short-term development speed. *(An earlier draft of this
+spec proposed Python for speed-to-running; that was superseded by CD-007 while the
+codebase was still tiny and the migration cheap.)*
 
 - This is the **logical-core language only.** It does **not** choose the game
   engine (Unreal / Unity), which remains an open question in IP-003 and is
   untouched.
-- The model is plain data (dataclasses) so it is portable/rewritable later.
-- If you'd prefer a different language for the core, say so and I'll switch — it's
-  small and reversible.
+- The model is plain structs, portable and rewritable later.
 
 ---
 
@@ -70,12 +72,29 @@ edges over travel-time ticks — **no teleporting**.
 
 Fields per resident (from the schema): `id`, `name`, `age`, `occupation`, `home`,
 `current_location`, `routine`, `relationships`. **Routines, not fixed
-schedules** (per Roy): a routine is a set of *activities*, each with the
-affordance it needs, the time-blocks in which it is appropriate, a priority and a
-duration. Each tick a resident selects the highest-priority eligible activity it
-has not yet done today — a deterministic **proto-intention** (CD-006), so future
-decision-making (needs, mood, relationships, interruptions) can modify *selection*
-without changing the structure.
+schedules** (per Roy): a routine is a set of *activities*, and each activity is a
+**proto-intention** (CD-006) rather than a clock→place entry. An activity carries:
+
+- a **needed affordance** (what the resident wants to do), plus an optional
+  **preferred destination** that pins an exact place when an affordance is shared
+  by several locations;
+- a **preferred arrival time** — the hour the resident *aims* to be doing it;
+- a **flexibility window** — how many hours around that preference the activity may
+  still be chosen (so time bends instead of snapping to a timestamp);
+- a **condition** gate that must hold for the activity to be considered at all
+  (today always `Always`; the seam where future needs/mood/relationship gates
+  attach);
+- a **priority** (tie-break) and a **duration**.
+
+Each idle tick a resident selects the most appropriate eligible, not-yet-done
+activity: eligible = condition holds **and** the hour lies inside the flexibility
+window; among those it prefers the one it wants to do *soonest* (earliest
+preferred arrival), breaking ties by higher priority then routine order — fully
+deterministic. Because *when* and *where* are already soft (a preference and an
+overridable destination) and selection already passes through a condition gate,
+future decision-making (needs, mood, relationships, interruptions) can change
+*selection* without changing the structure — **deterministic today, ready for
+decision-making tomorrow, no redesign required.**
 
 | id | Name | Age | Occupation | Home |
 |---|---|---|---|---|
@@ -90,11 +109,12 @@ without changing the structure.
 | `res_milo` | Milo | 22 | Street musician | `loc_main_square` |
 | `res_tomas` | Tomas | 9 | Schoolchild | `loc_riverside` |
 
-**Time-blocks** (from one shared WorldClock; 1 tick = 1 hour, 24 ticks/day):
-`NIGHT · MORNING · MIDDAY · AFTERNOON · EVENING · LATE`. A resident's routine
-maps activities onto these blocks by priority, not to fixed clock times; the
-resident *navigates* to each activity's location over travel time. Routines are
-defined in code (Phase 2, `sim/cast.rs`).
+**Time** comes from one shared WorldClock (1 tick = 1 hour, 24 ticks/day). The
+clock is a plain hour counter; activities reason about the hour directly through
+their preferred arrival + flexibility window rather than through named blocks. A
+resident *navigates* to each selected activity's location over travel time.
+Routines are defined in code (Phase 2, `sim/routine.rs` for the model,
+`sim/cast.rs` for the ten residents' routines).
 
 **Relationships** (edges, lightweight this sprint): Hana–Sofia (mentor), Hana–Tomas
 (gives him a roll), Luca–Victor (keeps his corner), Elias–Agnes (old friends),
@@ -122,9 +142,10 @@ object framework" — Phase 3.)*
 
 - **Phase 1 — World representation.** Locations, affordances, the navigation graph;
   a loader/validator that executes and prints the district and proves connectivity.
-- **Phase 2 — Residents.** Resident entities, deterministic schedules, and the
-  simulation clock (WorldClock ticks + time-blocks); residents move along the nav
-  graph over travel time.
+- **Phase 2 — Residents.** Resident entities, deterministic routines
+  (proto-intentions: preferred arrival, flexibility window, optional destination,
+  condition gate), and the simulation clock (WorldClock ticks); residents move
+  along the nav graph over travel time.
 - **Phase 3 — Living object framework.** A persistent world-object model and the
   Old Oak; residents' visits append to its interaction history; seasonal state.
 - **Phase 4 — First executable simulation.** Run the clock for one day (and a
@@ -134,13 +155,13 @@ object framework" — Phase 3.)*
 
 ## 5. Acceptance for Sprint 1 (reduced from WI-01)
 
-- Residents reach their **scheduled** locations (semantic correctness). *(AT-1)*
+- Residents reach the locations their **routines** intend (semantic correctness). *(AT-1)*
 - Movement respects the nav graph and travel time — **nobody teleports**. *(AT-5)*
 - The run is **deterministic**: same inputs → identical timeline. *(AT-10)*
 - One shared **WorldClock**; one authoritative world state. *(AT-6)*
 - The Oak accrues **interaction history** and changes by season **independently**.
-- Every resident's location at any tick has an **inspectable reason** (its
-  schedule block). *(AT-11, reduced)*
+- Every resident's location at any tick has an **inspectable reason** (the
+  activity it selected, logged as it sets out and arrives). *(AT-11, reduced)*
 
 ## 6. Working discipline
 

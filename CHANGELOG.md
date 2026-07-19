@@ -8,6 +8,33 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Routine model enriched to proto-intentions — PROPOSED
+
+Roy directed the routine model be upgraded to carry, per activity: a **preferred
+destination**, a **preferred arrival time**, a **flexibility window**, and an
+**optional condition** — deterministic today, but with room for future
+decision-making without a redesign. Done, and the Phase-2 simulation re-verified.
+
+- **`routine.rs`:** `Activity` now carries `dest: Option<LocationId>` (overrides
+  affordance resolution when a place is ambiguous), `preferred_arrival` (hour),
+  `flexibility` (± hours around it), `priority`, `duration`, and `condition`. New
+  `Condition` enum (`Always` today) with `holds()` — the seam where future
+  needs/mood/relationship gates attach. `Routine::target_location` honours `dest`.
+- **Selection is now hour-based, not block-based.** `WorldClock` lost its `Block`
+  enum (now a plain hour counter). `Resident::select(hour)` picks the eligible,
+  not-yet-done activity whose *preferred arrival is soonest* (ties → higher
+  priority → routine order): eligible = condition holds **and** hour ∈
+  `[pref−flex, pref+flex]`. Fully deterministic.
+- **`cast.rs`:** the 10 residents' routines re-expressed in the new model;
+  ambiguous square activities pinned with explicit `dest`. The earlier "SQUARE"
+  affordance hack was removed.
+- **Result (re-verified):** all **11 tests still pass**; the observed day is
+  believable and everyone still ends at home; the *when/where* of an activity is
+  now soft and gated, so a later decision layer can steer *selection* without
+  restructuring. DS-001 §2 and the Sprint-1 README (incl. a **Demonstration**
+  section) updated to match.
+- Stopped at the end of Phase 2 for Roy's review, per instruction.
+
 ## 2026-07-19 — Core = Rust (CD-007); Sprint 1 Phase 2 — PROPOSED
 
 Roy directed optimizing for the final architecture over dev speed. Outcome:

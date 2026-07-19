@@ -4,7 +4,8 @@
 
 use crate::sim::clock::{WorldClock, TICKS_PER_DAY};
 use crate::sim::resident::{Resident, Status};
-use crate::world::location::{location_for_affordance, LocationId};
+use crate::sim::routine::Routine;
+use crate::world::location::LocationId;
 use crate::world::navigation::NavGraph;
 use crate::world::{build_world, World};
 
@@ -33,14 +34,6 @@ fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
         .unwrap_or_else(|| nav.travel_time(a, b).unwrap_or(1))
 }
 
-fn target_of(affordance: &str, home: LocationId) -> Option<LocationId> {
-    if affordance == "HOME" {
-        Some(home)
-    } else {
-        location_for_affordance(affordance)
-    }
-}
-
 impl Simulation {
     pub fn new(residents: Vec<Resident>) -> Self {
         Simulation {
@@ -67,7 +60,7 @@ impl Simulation {
             }
             self.last_day = day;
         }
-        let block = self.clock.block();
+        let hour = self.clock.hour();
 
         // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
         let Simulation { world, residents, log, clock, .. } = self;
@@ -112,10 +105,13 @@ impl Simulation {
 
             // 2) if idle, select the next activity and start it (this tick).
             if let Status::Idle = r.status {
-                if let Some(a) = r.select(block) {
-                    let (aid, apurpose, adur, aff) = (a.id, a.purpose, a.duration, a.affordance);
-                    let home = r.home;
-                    if let Some(dest) = target_of(aff, home) {
+                // Resolve to owned values so the immutable borrow of `r` ends
+                // before we mutate its status/place below.
+                let choice = r
+                    .select(hour)
+                    .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
+                if let Some((aid, apurpose, adur, dest_opt)) = choice {
+                    if let Some(dest) = dest_opt {
                         if dest == r.place {
                             r.status = Status::Performing { activity: aid, left: adur };
                             log.push(Event {

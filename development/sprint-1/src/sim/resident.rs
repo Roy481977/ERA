@@ -1,6 +1,7 @@
 //! Resident entities (Phase 2) and their live movement/activity state.
 
-use crate::sim::clock::Block;
+use std::cmp::Reverse;
+
 use crate::sim::routine::{Activity, Routine};
 use crate::world::location::LocationId;
 
@@ -62,13 +63,22 @@ impl Resident {
         }
     }
 
-    /// Choose the highest-priority eligible, not-yet-done activity for this block.
-    /// Deterministic: ties broken by the activity's order in the routine.
-    pub fn select(&self, block: Block) -> Option<&Activity> {
+    /// Choose the most appropriate eligible, not-yet-done activity for this hour.
+    ///
+    /// Eligible means: its condition holds, it hasn't been done today, and the
+    /// hour lies inside its flexibility window. Among the eligible, the resident
+    /// prefers the one it wants to be doing *soonest* (earliest preferred
+    /// arrival), breaking ties by higher priority, then by routine order — so
+    /// selection is fully deterministic.
+    pub fn select(&self, hour: u64) -> Option<&Activity> {
         self.routine
             .activities
             .iter()
-            .filter(|a| a.window.contains(&block) && !self.done_today.contains(&a.id))
-            .max_by_key(|a| a.priority)
+            .enumerate()
+            .filter(|(_, a)| {
+                a.condition.holds() && !self.done_today.contains(&a.id) && a.in_window(hour)
+            })
+            .min_by_key(|(i, a)| (a.preferred_arrival, Reverse(a.priority), *i))
+            .map(|(_, a)| a)
     }
 }
