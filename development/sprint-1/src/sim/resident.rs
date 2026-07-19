@@ -42,6 +42,9 @@ pub enum Status {
     Performing {
         activity: &'static str,
         left: u32,
+        /// The day this activity was begun (so a task that runs past midnight is
+        /// credited to the day it started, not the new one).
+        start_day: u64,
     },
 }
 

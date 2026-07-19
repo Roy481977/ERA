@@ -4,8 +4,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::sim::clock::{WorldClock, TICKS_PER_DAY};
+use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, TICKS_PER_DAY};
 use crate::sim::intention;
+use crate::sim::matchday::{self, MatchResult};
 use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
 use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::routine::Routine;
@@ -35,6 +36,8 @@ pub struct Simulation {
     last_day: u64,
     /// Pairs that have already interacted today (once-per-day cap).
     social_seen_today: BTreeSet<(&'static str, &'static str)>,
+    /// Matchdays whose Oak consequence (scarf / flowers) has been recorded.
+    oak_matchday_days: BTreeSet<u64>,
 }
 
 /// If the activity a resident just began is a visit to the Old Oak, record it as
@@ -88,6 +91,7 @@ impl Simulation {
             interactions: Vec::new(),
             last_day: 0,
             social_seen_today: BTreeSet::new(),
+            oak_matchday_days: BTreeSet::new(),
         }
     }
 
@@ -111,6 +115,25 @@ impl Simulation {
         }
         let hour = self.clock.hour();
         let weekday = self.clock.weekday();
+        let match_result = MatchResult::for_week(day / DAYS_PER_WEEK);
+
+        // Matchday buildup: district-wide announcements as the day unfolds.
+        if matchday::is_matchday(weekday) {
+            let note = match hour {
+                8 => Some("Matchday. The Bakery opens early and scarves come out along the High Street.".to_string()),
+                14 => Some("Supporters are making their way to the Stadium.".to_string()),
+                h if h == matchday::KICKOFF => Some("Kick-off at the Stadium.".to_string()),
+                h if h == matchday::FULL_TIME => {
+                    Some(format!("Full time — Rain Town {} today.", match_result.verb()))
+                }
+                _ => None,
+            };
+            if let Some(message) = note {
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: "Matchday", message,
+                });
+            }
+        }
 
         // Snapshot of where everyone is at the start of the tick (for the
         // intention layer to read without borrowing residents mutably).
@@ -134,16 +157,16 @@ impl Simulation {
             // 1) advance the current status by one step.
             let status = std::mem::replace(&mut r.status, Status::Idle);
             match status {
-                Status::Performing { activity, left } => {
+                Status::Performing { activity, left, start_day } => {
                     if left > 1 {
-                        r.status = Status::Performing { activity, left: left - 1 };
-                    } else if !day_rolled {
-                        // finished -> Idle (selects below)
+                        r.status = Status::Performing { activity, left: left - 1, start_day };
+                    } else if start_day == clock.day() {
+                        // finished today -> Idle (selects below)
                         r.done_today.push(activity);
                     }
-                    // If the day just rolled over, this activity was carried in
-                    // from yesterday; let it finish without marking today's list,
-                    // so the resident may still do it again today (e.g. go home).
+                    // If this activity was begun on a previous day (it ran past
+                    // midnight), it belongs to that day; let it finish without
+                    // marking today's list, so the resident may still do it again.
                 }
                 Status::Traveling { activity, purpose, dest, dur, path, mut idx, leg_left } => {
                     if leg_left > 1 {
@@ -154,7 +177,7 @@ impl Simulation {
                         idx += 1;
                         r.place = path[idx];
                         if r.place == dest {
-                            r.status = Status::Performing { activity, left: dur };
+                            r.status = Status::Performing { activity, left: dur, start_day: clock.day() };
                             log.push(Event {
                                 tick: clock.tick, day: clock.day(), hour: clock.hour(),
                                 resident: r.name,
@@ -176,42 +199,51 @@ impl Simulation {
             if let Status::Idle = r.status {
                 // Resolve to owned values so the immutable borrow of `r` ends
                 // before we mutate its status/place below.
-                let choice = r
-                    .select(hour, weekday, world)
-                    .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
+                // Matchday takes precedence during the match windows; otherwise
+                // the routine (with a possible social detour) runs as normal.
+                let matchday_plan = matchday::consider(r, weekday, hour, match_result)
+                    .map(|m| (m.id, m.purpose, m.duration, m.dest));
 
-                // Intention layer: a resident about to head home may instead
-                // detour to join a nearby friend (Phase 5). The routine remains
-                // the default; deviation only overrides a plan to go home.
-                let plan = match choice {
-                    Some((aid, apurpose, adur, Some(dest))) => {
-                        let heading_home = dest == r.home;
-                        let deviation = if heading_home {
-                            intention::consider_social_detour(
-                                r, hour, clock.tick, &presence, relationships, world, nav,
-                            )
-                        } else {
-                            None
-                        };
-                        match deviation {
-                            Some(dev) => {
-                                log.push(Event {
-                                    tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                                    resident: r.name, message: dev.reason,
-                                });
-                                r.deviations_today += 1;
-                                Some((dev.activity_id, dev.purpose, dev.duration, dev.dest))
+                let plan = if let Some(mp) = matchday_plan {
+                    Some(mp)
+                } else {
+                    let choice = r
+                        .select(hour, weekday, world)
+                        .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
+
+                    // Intention layer: a resident about to head home may instead
+                    // detour to join a nearby friend (Phase 5). The routine
+                    // remains the default; deviation only overrides going home.
+                    match choice {
+                        Some((aid, apurpose, adur, Some(dest))) => {
+                            let heading_home = dest == r.home;
+                            let deviation = if heading_home {
+                                intention::consider_social_detour(
+                                    r, hour, clock.tick, &presence, relationships, world, nav,
+                                )
+                            } else {
+                                None
+                            };
+                            match deviation {
+                                Some(dev) => {
+                                    log.push(Event {
+                                        tick: clock.tick, day: clock.day(), hour: clock.hour(),
+                                        resident: r.name, message: dev.reason,
+                                    });
+                                    r.deviations_today += 1;
+                                    Some((dev.activity_id, dev.purpose, dev.duration, dev.dest))
+                                }
+                                None => Some((aid, apurpose, adur, dest)),
                             }
-                            None => Some((aid, apurpose, adur, dest)),
                         }
+                        _ => None,
                     }
-                    _ => None,
                 };
 
                 if let Some((aid, apurpose, adur, dest)) = plan {
                     {
                         if dest == r.place {
-                            r.status = Status::Performing { activity: aid, left: adur };
+                            r.status = Status::Performing { activity: aid, left: adur, start_day: clock.day() };
                             log.push(Event {
                                 tick: clock.tick, day: clock.day(), hour: clock.hour(),
                                 resident: r.name,
@@ -244,6 +276,26 @@ impl Simulation {
 
         // --- social interactions among co-located residents ---
         self.social_pass();
+
+        // Matchday's mark on the Old Oak — once, in the evening.
+        if matchday::is_matchday(weekday) && hour == 18 && !self.oak_matchday_days.contains(&day) {
+            let mark = match match_result {
+                MatchResult::Win => Some(("res_tomas", OakEventKind::ScarfTied,
+                    "ties a club scarf to a branch of the Old Oak after the win")),
+                MatchResult::Loss => Some(("res_agnes", OakEventKind::FlowersLeft,
+                    "leaves flowers at the roots of the Old Oak after the defeat")),
+                MatchResult::Draw => None,
+            };
+            if let Some((who, kind, phrase)) = mark {
+                self.oak.record(OakEvent { day, hour, kind, who: Some(who), with: None });
+                let name = self.name_of(who);
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: name,
+                    message: format!("{name} {phrase}."),
+                });
+            }
+            self.oak_matchday_days.insert(day);
+        }
 
         self.clock.advance();
     }

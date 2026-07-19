@@ -18,6 +18,27 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 7: first matchday life — PROPOSED
+
+New `sim/matchday.rs`: every Saturday the club plays (kick-off 15:00), and the
+result is seeded per week (win / draw / loss) — football kept minimal so the focus
+is the town's reaction. Supporters (a deliberately partial list — Victor, Elias,
+Agnes, Tomas, Milo, Karim) form an intention to attend: they head to the stadium,
+watch, and afterwards the result shapes the evening — a win is celebrated in the
+square, a draw is mulled there, a defeat sends them home quietly. Non-supporters
+keep the town running (Luca keeps the café open, Eva tends her flowers). The
+district gets buildup announcements through the day, and the result **marks the
+Old Oak** — a scarf tied to a branch after a win, flowers left after a loss.
+Matchday convergence also produces its own interactions (supporters meet at the
+ground).
+
+Also fixed a subtler version of the midnight-carryover bug: activities are now
+stamped with the day they began (`Status::Performing { start_day }`) and only
+credited to that day, so a task begun at 23:00 that finishes after midnight no
+longer suppresses the same activity on the new day. Five new tests (matchday
+differs from a normal day; residents stay individual, not one crowd; deterministic;
+the result marks the Oak; everyone still gets home). **34 tests pass.**
+
 ## 2026-07-19 — Phase 6: the Old Oak becomes living history — PROPOSED
 
 New `sim/oak.rs`: the Old Oak is now a persistent world object, not just a

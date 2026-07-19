@@ -127,4 +127,20 @@ fn main() {
         println!("    · {line}");
     }
     println!("\nPhase 6 complete: the Old Oak remembers who came, and when.");
+
+    // Phase 7: matchday. Continue to Saturday and show how the town reacts.
+    sim.run(1); // day 5 = Saturday
+    println!("\n=== Matchday (Saturday) — how the district reacts ===");
+    for e in sim.log.iter().filter(|e| e.day == 5) {
+        let is_match = e.resident == "Matchday"
+            || e.message.contains("match")
+            || e.message.contains("Stadium")
+            || e.message.contains("square after")
+            || e.message.contains("scarf")
+            || e.message.contains("flowers");
+        if is_match {
+            println!("  {:02}:00 {:<8} {}", e.hour, e.resident, e.message);
+        }
+    }
+    println!("\nPhase 7 complete: matchday moves the whole town — and marks the Oak.");
 }

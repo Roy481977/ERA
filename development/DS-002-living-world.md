@@ -168,3 +168,44 @@ after a loss) arrive with matchday in Phase 7; no save/load yet (state is
 serialisation-ready, not yet serialised).
 
 **Commands:** `cargo run` (see "The Old Oak — …") · `cargo test`
+
+---
+
+## Phase 7 — First matchday life ✅
+
+**What became more alive:** the whole town now has a heartbeat once a week. On
+Saturday the club plays, and you can feel it — supporters drift to the ground and
+cluster for kick-off, the café stays open for those who don't go, the result is
+announced, and afterwards a win fills the square while a defeat empties it. The Oak
+receives a scarf after a victory, flowers after a loss. It is unmistakably a
+different day, yet everyone still behaves as themselves.
+
+**Implemented:** `sim/matchday.rs` — matchday detection (Saturday), a seeded
+per-week result (win/draw/loss), a supporter list, and `consider` which injects
+the attend → post-match → home sequence ahead of the routine. The simulation adds
+buildup announcements, and records the Oak consequence (scarf/flowers) once in the
+evening.
+
+**Files changed:** `sim/matchday.rs` (new), `sim/simulation.rs` (result,
+announcements, matchday override in selection, Oak mark, `start_day` on
+`Performing`), `sim/resident.rs` (`Status::Performing { start_day }`), `sim/mod.rs`,
+`main.rs` (matchday section), `tests/matchday.rs` (new).
+
+**Architectural choices:** matchday reuses the intention-override pattern rather
+than a new scheduler; the result is a pure seeded function of the week; the Oak
+mark is a world event applied through the Oak's owner. Football itself is a single
+seeded value — the town's reaction is the content.
+
+**Correctness fix:** activities now carry the day they began and are only credited
+to that day, so a task that runs past midnight can't suppress itself on the new day
+(a subtler case of the earlier carryover bug, exposed by late matchday evenings).
+
+**Tests added (5):** matchday differs from a normal day; residents stay individual;
+deterministic; the result marks the Oak; everyone still gets home. 34 tests total.
+
+**Known limitations:** one fixture a week, one club, a seeded scoreline (no real
+match play); supporters are a fixed list, not chosen by evolving interest; "bakery
+opens early / café busier" is conveyed by announcement and foot-traffic, not yet by
+changed hours or stock.
+
+**Commands:** `cargo run` (see "Matchday (Saturday)") · `cargo test`
