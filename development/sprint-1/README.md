@@ -44,24 +44,31 @@ missing. No other dependencies; the core is standard-library only.)
 
 The run is deterministic: the same build always prints the exact same day.
 
-### What to observe — Tomas (age 9), the first resident to follow
+### What to observe — the district wakes in a spread
+
+Nobody rises in unison. Hana the baker `fires the ovens before dawn` at **04:00**;
+the working residents open up around **05:00–06:00**; young Tomas is up at
+**07:00**; Milo the musician `sleeps off the late crowd` until **09:00**. Each
+wake time comes from the resident's own sleep length, not a shared alarm.
+
+### Follow one life — Tomas (age 9)
 
 - **00:00** he `sleeps — at loc_riverside` (his home).
-- **06:00** he `sets out for loc_bakery (gets a warm roll)` — note the *route*
+- **07:00** he `sets out for loc_bakery (runs for a warm roll)` — note the *route*
   `loc_riverside -> loc_cafe -> loc_bakery`: he walks it, edge by edge, never
   teleporting.
-- **09:00** he arrives: `gets a warm roll — at loc_bakery`.
-- **10:00–11:00** he heads to and `plays in the square`.
-- **14:00–16:00** he walks back to the riverside and `visits the Old Oak`.
-- **18:00** he is `home for the evening — at loc_riverside`.
+- **10:00** he arrives: `runs for a warm roll — at loc_bakery`.
+- **11:00–12:00** he heads to and `plays in the square`.
+- **15:00–17:00** he walks back to the riverside and `visits the Old Oak`.
+- **19:00** he is `home for the evening — at loc_riverside`.
 - The **Spotlight** line confirms: `tomas_sleep, tomas_roll, tomas_play,
   tomas_oak, tomas_home` — a whole believable day, chosen tick by tick, not
   scripted to the clock.
 
 Watch the world *converge* on its own, too: around **14:00** both Elias and Victor
-drift into the café, and the Old Oak draws Elias, Agnes, and Tomas across the
-afternoon — nobody coordinated that; it falls out of independent routines sharing
-one world.
+drift into the café, and the Old Oak draws Agnes (14:00), Elias and Tomas (17:00)
+across the afternoon — nobody coordinated that; it falls out of independent
+routines sharing one world.
 
 ### Why this is believable, not scheduled
 
@@ -77,7 +84,9 @@ will steer, with no redesign.
   affordance, but the living world-object (seasonal state, interaction history)
   is Phase 3 — not built here.
 - **Home = one of the five locations.** No separate residential nodes yet
-  (Sprint-1 reduction).
+  (Sprint-1 reduction). Square-dwellers are *narrated* as living in rooms beside
+  the square, but the end-of-day roll-call still prints their home node as
+  `loc_main_square` — a true fix needs residential nodes, deferred by design.
 - **Conditions are always `Always`.** The decision-making gate exists structurally
   but does nothing yet — deliberately.
 - **No needs, mood, or relationship influence on selection.** Relationships are

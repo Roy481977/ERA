@@ -8,6 +8,26 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Phase 3a: staggered waking + home narration — PROPOSED
+
+Roy approved Phase 2 and authorised autonomous progression through Phases 3–8
+(small reviewable commits; stop only for architecture-level decisions). Phase 3
+opens with a deterministic pass on the cast data only — no architecture change:
+
+- **Staggered waking.** Wake time is now set by each resident's sleep *duration*
+  (sleep is chosen at tick 0 and runs for its duration), so the district rises in
+  a natural spread instead of all at 06:00: Hana the baker at 04:00, working
+  residents 05:00–06:00, Tomas 07:00, Milo the musician 09:00. Morning activities'
+  preferred arrivals were nudged to match each wake time.
+- **Home narration softened.** The six Main-Square residents are now narrated as
+  living in rooms *beside* the square ("sleeps above the kiosk", "his cottage by
+  the square"), removing the "sleeping in the public square" read. This is text
+  only — the home node is still `loc_main_square`; a structural fix needs
+  residential nodes, deliberately deferred (Sprint-1 reduction).
+- **Re-verified:** all **11 tests still pass**; every resident still completes a
+  believable routine and ends the day at home; determinism holds. Sprint-1 README
+  demonstration updated to the new timeline. No engine/architecture files touched.
+
 ## 2026-07-19 — Routine model enriched to proto-intentions — PROPOSED
 
 Roy directed the routine model be upgraded to carry, per activity: a **preferred
