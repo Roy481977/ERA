@@ -1,0 +1,13 @@
+[package]
+name = "era_first_breath"
+version = "0.1.0"
+edition = "2021"
+description = "ERA — First Breath (Sprint 1): headless deterministic simulation core."
+
+# Library (the core) + a binary observer share this crate.
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "first_breath"
+path = "src/main.rs"
