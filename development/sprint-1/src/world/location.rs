@@ -23,7 +23,7 @@ pub fn locations() -> Vec<Location> {
         Location {
             id: "loc_main_square",
             name: "Main Square",
-            affordances: &["MARKET", "KIOSK", "SIT_BENCH", "BUSK", "GATHER"],
+            affordances: &["MARKET", "KIOSK", "SIT_BENCH", "BUSK", "GATHER", "SQUARE"],
         },
         Location {
             id: "loc_bakery",

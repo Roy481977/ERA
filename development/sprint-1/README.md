@@ -32,6 +32,8 @@ sprint-1/
 ## Phase status
 
 - [x] **Phase 1 — World representation** (locations, affordances, nav graph, validate).
-- [ ] Phase 2 — Residents, **routines** (not fixed schedules), simulation clock.
+- [x] **Phase 2 — Residents, routines (not fixed schedules), WorldClock, sim loop.**
+      10 residents complete believable routines through the world; deterministic;
+      no teleporting; everyone ends the day at home. 11 tests pass.
 - [ ] Phase 3 — Living-object framework + the Old Oak.
 - [ ] Phase 4 — First executable simulation (full observed day/multi-day).

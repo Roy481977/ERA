@@ -1,28 +1,22 @@
 //! First Breath observer binary.
 //!
-//!   cargo run          # Phase 1: build + print + validate the district
+//!   cargo run          # Phase 1: the district, then Phase 2: one simulated day
 //!
-//! (Phase 2 extends this to run one simulated day; see the `sim` module.)
+//! Deterministic: the same build always produces the same day.
 
 use std::collections::BTreeSet;
 
+use era_first_breath::sim::{cast, Simulation};
 use era_first_breath::world::build_world;
 
 fn main() {
+    // ---- Phase 1: the district ----
     let world = build_world();
-
     println!("=== ERA — First Breath · Phase 1: the district ===\n");
-
     println!("Locations (5):");
     for l in &world.locations {
-        println!(
-            "  {:<16} {:<12} affordances: {}",
-            l.id,
-            l.name,
-            l.affordances.join(", ")
-        );
+        println!("  {:<16} {:<12} affordances: {}", l.id, l.name, l.affordances.join(", "));
     }
-
     println!("\nNavigation graph (undirected; weight = travel ticks):");
     let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
     for node in world.nav.nodes() {
@@ -33,23 +27,41 @@ fn main() {
             }
         }
     }
-
-    println!("\nSample shortest paths:");
-    for (a, b) in [("loc_bakery", "loc_riverside"), ("loc_stadium", "loc_cafe")] {
-        let path = world.nav.shortest_path(a, b).unwrap();
-        let t = world.nav.travel_time(a, b).unwrap();
-        println!("  {a} -> {b}: {}  ({t} ticks)", path.join(" -> "));
-    }
-
     let problems = world.validate();
-    println!("\nValidation:");
-    if problems.is_empty() {
-        println!("  OK — 5 locations, graph connected, all affordances present.");
-        println!("\nPhase 1 complete: the district can be executed and observed.");
-    } else {
+    if !problems.is_empty() {
         for p in &problems {
             println!("  PROBLEM: {p}");
         }
         std::process::exit(1);
     }
+    println!("\nValidation: OK — 5 locations, graph connected, all affordances present.");
+
+    // ---- Phase 2: one simulated day ----
+    println!("\n=== Phase 2: one day in the district (10 residents, routines) ===\n");
+    let mut sim = Simulation::new(cast());
+    sim.run(1); // 24 ticks = one day
+
+    let mut last_hour = u64::MAX;
+    for e in &sim.log {
+        if e.hour != last_hour {
+            println!("\n-- {:02}:00 --", e.hour);
+            last_hour = e.hour;
+        }
+        println!("  {:<7} {}", e.resident, e.message);
+    }
+
+    println!("\nEnd of day — where everyone is:");
+    for r in &sim.residents {
+        let home = if r.place == r.home { "(home)" } else { "(!)" };
+        println!("  {:<7} at {:<16} {}", r.name, r.place, home);
+    }
+
+    // Spotlight: prove one resident completed a believable routine.
+    if let Some(tomas) = sim.resident("res_tomas") {
+        println!(
+            "\nSpotlight — Tomas (age 9) completed today: {}",
+            tomas.done_today.join(", ")
+        );
+    }
+    println!("\nPhase 2 complete: residents complete believable routines through the world.");
 }

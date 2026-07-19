@@ -69,8 +69,13 @@ edges over travel-time ticks — **no teleporting**.
 ## 2. Ten residents
 
 Fields per resident (from the schema): `id`, `name`, `age`, `occupation`, `home`,
-`current_location`, `daily_schedule`, `relationships`. **Deterministic schedules**
-(time-block → location) stand in for the intention layer this sprint.
+`current_location`, `routine`, `relationships`. **Routines, not fixed
+schedules** (per Roy): a routine is a set of *activities*, each with the
+affordance it needs, the time-blocks in which it is appropriate, a priority and a
+duration. Each tick a resident selects the highest-priority eligible activity it
+has not yet done today — a deterministic **proto-intention** (CD-006), so future
+decision-making (needs, mood, relationships, interruptions) can modify *selection*
+without changing the structure.
 
 | id | Name | Age | Occupation | Home |
 |---|---|---|---|---|
@@ -85,10 +90,11 @@ Fields per resident (from the schema): `id`, `name`, `age`, `occupation`, `home`
 | `res_milo` | Milo | 22 | Street musician | `loc_main_square` |
 | `res_tomas` | Tomas | 9 | Schoolchild | `loc_riverside` |
 
-**Daily schedule** — six time-blocks per day (deterministic):
-`NIGHT · MORNING · MIDDAY · AFTERNOON · EVENING · LATE`. Example (Hana):
-NIGHT→Bakery, MORNING→Bakery, MIDDAY→Main Square, AFTERNOON→Bakery,
-EVENING→Bakery, LATE→Bakery. Full schedules are defined in code in Phase 2.
+**Time-blocks** (from one shared WorldClock; 1 tick = 1 hour, 24 ticks/day):
+`NIGHT · MORNING · MIDDAY · AFTERNOON · EVENING · LATE`. A resident's routine
+maps activities onto these blocks by priority, not to fixed clock times; the
+resident *navigates* to each activity's location over travel time. Routines are
+defined in code (Phase 2, `sim/cast.rs`).
 
 **Relationships** (edges, lightweight this sprint): Hana–Sofia (mentor), Hana–Tomas
 (gives him a roll), Luca–Victor (keeps his corner), Elias–Agnes (old friends),

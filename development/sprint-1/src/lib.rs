@@ -4,4 +4,5 @@
 //! semantic places (affordances, not coordinates), one authoritative world,
 //! deterministic behaviour. Language rationale: `creative-decisions/CD-007`.
 
+pub mod sim;
 pub mod world;
