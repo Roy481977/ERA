@@ -169,3 +169,37 @@ Feedback → Living-World expression → Possible exploits → Failure analysis.
 - Every meaningful doc answers the six ALWAYS questions in §1.
 - Preserve intent, not just words.
 - Nothing is ever silently changed; every change is logged in CHANGELOG.
+- **Preserve what proved meaningful, not everything that happened.**
+
+---
+
+## 6. Package Streams & Research Phases
+
+*Established 2026-07-19, effective after IP-001.*
+
+**Phase shift.** With the worldview foundation captured (IP-001), the work moves
+from refining wording to **discovering deeper human truths about attachment that
+may change the Constitution itself.** Research is allowed to reshape philosophy;
+that is expected and welcome, not a threat to the foundation.
+
+**Package streams.** Every future ERA Import Package declares which stream it
+belongs to, so different kinds of knowledge stay distinct and are never silently
+confused with one another:
+
+- **Philosophy** — worldview: what ERA is and the emotions it exists to create.
+- **Human Attachment Research** — findings about how real human attachment works
+  (psychology, football fandom, communities, memory, ritual). May challenge
+  Philosophy, and is expected to.
+- **Constitutional Decisions** — the ratified, timeless promises the Constitution
+  encodes and protects. Only these can be canonical.
+- **Design Translation** — how principles become mechanics, systems and features
+  (the design-governance trace of §4).
+
+A package may contribute to more than one stream but must label each
+contribution. Philosophy is never confused with research, ratified canon, or
+implementation.
+
+**Meta-principle — institutional memory is built the way we want players to build
+Clubs.** We preserve what survived challenge and proved meaningful — decisions,
+live questions, and the reasons they held — not the full transcript.
+Brainstorming is not preserved.

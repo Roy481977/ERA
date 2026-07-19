@@ -5,8 +5,9 @@ rules that bind this repository live in [GOVERNANCE.md](GOVERNANCE.md); the full
 history of changes lives in [CHANGELOG.md](CHANGELOG.md).
 
 **Status:** 2026-07-19. GitHub mirror live. First Import Package **IP-001
-(Worldview Foundation)** received and distilled; **under Roy's review**. No
-canonical content yet — accepted truths are proposed, pending ratification.
+(Worldview Foundation)** distilled, organized into five sections, and confirmed
+by Roy — held **PROPOSED**, pending explicit ratification. No canonical content
+yet. Next phase: Human Attachment Research (see GOVERNANCE §6).
 
 ---
 
@@ -56,10 +57,10 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 | RESEARCH | 0 | `research/` |
 | DRAFT | 0 | `draft/` |
 
-Note: IP-001 currently holds **16 accepted truths** (proposed → canonical),
-**7 open questions** (OQ-2…OQ-8) and **4 rejected ideas** within it. On
-ratification these split out into `constitution/`, `open/` and `rejected/`, and
-the counts update accordingly.
+Note: IP-001 holds **15 accepted truths + 1 candidate** (AT-4, proposed/not
+final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) and
+**4 rejected directions**. On ratification these split into `constitution/`,
+`open/` and `rejected/`, and the counts update accordingly.
 
 ---
 
@@ -79,10 +80,15 @@ the counts update accordingly.
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — IP-001 confirmed & restructured.** Roy confirmed the
+  distillation and set the five-section form (Accepted Truths / Open Questions /
+  Rejected Directions / Key Constitutional Principles / Decision Rationale). AT-4
+  ("grown, not built") demoted to a candidate (proposed/not final). Core Loop
+  (AT-2) amended: the economy is part of the loop, driven by the fantasy score.
+  Package streams + phase shift recorded in GOVERNANCE §6. Still PROPOSED.
 - **2026-07-19 — IP-001 (Worldview Foundation) received.** First Import Package;
-  worldview distilled into 16 accepted truths, 7 open questions, 4 rejected
-  ideas. Held PROPOSED, awaiting Roy's ratification to promote accepted truths to
-  CANONICAL. See `intake/IP-001-worldview-foundation.md`.
+  worldview distilled. Held PROPOSED, awaiting Roy's ratification to promote
+  accepted truths to CANONICAL. See `intake/IP-001-worldview-foundation.md`.
 - **2026-07-19 — Intake = ERA Import Packages.** Design material enters as
   structured ERA Import Packages from ChatGPT, not raw conversations. Raw
   conversations are recommended for packaging first unless Roy says otherwise.

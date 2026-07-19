@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — IP-001 confirmed, restructured; next phase set — PROPOSED
+
+Roy confirmed the IP-001 distillation and directed three changes plus a
+forward-looking phase.
+
+Changed in IP-001:
+- Reorganized into five sections: Accepted Philosophical Truths, Open
+  Philosophical Questions, Rejected Philosophical Directions, Key Constitutional
+  Principles (8), and Decision Rationale (why each accepted truth survived
+  challenge).
+- **AT-4 ("a Club is grown, not built") demoted to a Candidate Truth** — held
+  PROPOSED and not final, per Roy. Removed from accepted truths; OQ-3 remains.
+- **AT-2 (Core Loop) amended:** the Club's economy is part of the loop, driven by
+  the fantasy score (real results → fantasy → economy).
+- Still fully PROPOSED; nothing canonical.
+
+Changed in GOVERNANCE:
+- Added §6 **Package Streams & Research Phases**: future packages declare a
+  stream — Philosophy, Human Attachment Research, Constitutional Decisions, or
+  Design Translation. Phase shift recorded: after IP-001 the goal moves from
+  refining wording to discovering deeper human truths about attachment that may
+  change the Constitution itself. Added the meta-principle "preserve what proved
+  meaningful, not everything that happened."
+
 ## 2026-07-19 — IP-001 (Worldview Foundation) received — PROPOSED
 
 First ERA Import Package. Roy directed capture of the *converged philosophy*
