@@ -96,8 +96,10 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | architecture/systems/ (15 briefs) | PROPOSED | Subsystem briefs: town, time, world-persistence, relationship, memory, recognition, event, matchday, club-culture, economy, narrative, ai-director, crowd, weather-season, audio-ecology |
 | architecture/system-contracts/ (WI-01, 7 docs) | PROPOSED | System Contracts & Vertical Slice: world-state schema, engine boundaries, inter-engine contracts, Town Engine vertical slice, acceptance tests, observability |
 | **`architecture/` module itself** | **RATIFIED (permanent)** | The module is a permanent first-class part of the repository (contents remain PROPOSED) |
-| development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): 5 locations, 10 residents, Old Oak, 4-phase roadmap |
-| development/sprint-1/ (code) | in progress | **Rust** headless core. Phase 1 (world) + Phase 2 (WorldClock, residents, routines, sim loop) done: 10 residents complete believable routines, deterministic, no teleport, 11 tests pass. Lives in GitHub. |
+| development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): district (now 8 locations), 10 residents, Old Oak, roadmap |
+| development/DS-002-living-world.md | PROPOSED | Sprint 1 Phases 3–8 progress tracker (per-phase: what/files/choices/tests/limits) |
+| development/DS-003-sprint-1-report.md | PROPOSED | Sprint 1 final report: commits, systems, tests, run commands, samples, next steps |
+| development/sprint-1/ (code) | in progress | **Rust** headless core, Phases 1–8: believable routines, residences + opening hours + weekday variation, social life (relationships/interactions/memories), small deviations, the living Old Oak, matchday, and a terminal observer. Deterministic; everyone home every day incl. matchday; **34 tests pass**. Lives in GitHub. |
 
 ---
 
