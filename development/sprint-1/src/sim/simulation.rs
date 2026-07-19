@@ -54,13 +54,15 @@ impl Simulation {
     /// Advance one tick.
     pub fn step(&mut self) {
         let day = self.clock.day();
-        if day != self.last_day {
+        let day_rolled = day != self.last_day;
+        if day_rolled {
             for r in &mut self.residents {
                 r.done_today.clear();
             }
             self.last_day = day;
         }
         let hour = self.clock.hour();
+        let weekday = self.clock.weekday();
 
         // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
         let Simulation { world, residents, log, clock, .. } = self;
@@ -73,9 +75,13 @@ impl Simulation {
                 Status::Performing { activity, left } => {
                     if left > 1 {
                         r.status = Status::Performing { activity, left: left - 1 };
-                    } else {
-                        r.done_today.push(activity); // finished -> Idle (selects below)
+                    } else if !day_rolled {
+                        // finished -> Idle (selects below)
+                        r.done_today.push(activity);
                     }
+                    // If the day just rolled over, this activity was carried in
+                    // from yesterday; let it finish without marking today's list,
+                    // so the resident may still do it again today (e.g. go home).
                 }
                 Status::Traveling { activity, purpose, dest, dur, path, mut idx, leg_left } => {
                     if leg_left > 1 {
@@ -108,7 +114,7 @@ impl Simulation {
                 // Resolve to owned values so the immutable borrow of `r` ends
                 // before we mutate its status/place below.
                 let choice = r
-                    .select(hour, world)
+                    .select(hour, weekday, world)
                     .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
                 if let Some((aid, apurpose, adur, dest_opt)) = choice {
                     if let Some(dest) = dest_opt {

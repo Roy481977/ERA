@@ -44,9 +44,9 @@ fn main() {
     println!("\nValidation: OK — 5 locations, graph connected, all affordances present.");
 
     // ---- Phase 2: one simulated day ----
-    println!("\n=== Phase 2: one day in the district (10 residents, routines) ===\n");
+    println!("\n=== Phase 2: one day in the district (10 residents, routines) — Mon ===\n");
     let mut sim = Simulation::new(cast());
-    sim.run(1); // 24 ticks = one day
+    sim.run(1); // 24 ticks = one day (day 0 = Monday)
 
     let mut last_hour = u64::MAX;
     for e in &sim.log {

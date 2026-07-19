@@ -5,6 +5,11 @@
 //! stays a plain counter with no notion of named blocks.
 
 pub const TICKS_PER_DAY: u64 = 24;
+pub const DAYS_PER_WEEK: u64 = 7;
+
+/// Weekday names, index 0 = Monday … 6 = Sunday.
+pub const WEEKDAY_NAMES: [&str; 7] =
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WorldClock {
@@ -23,5 +28,12 @@ impl WorldClock {
     }
     pub fn hour(&self) -> u64 {
         self.tick % TICKS_PER_DAY
+    }
+    /// Weekday of the current day, 0 = Monday … 6 = Sunday.
+    pub fn weekday(&self) -> u64 {
+        self.day() % DAYS_PER_WEEK
+    }
+    pub fn weekday_name(&self) -> &'static str {
+        WEEKDAY_NAMES[(self.weekday()) as usize]
     }
 }

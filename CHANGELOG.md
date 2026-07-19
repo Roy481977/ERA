@@ -18,6 +18,27 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 3d: weekday routine variation — PROPOSED
+
+The `Condition` seam now does real work. The WorldClock gained `weekday()`
+(0 = Mon … 6 = Sun) and `Condition` gained `OnWeekdays(days)`; `select` takes the
+weekday and filters on it. Two residents now visibly differ by day: Hana and Karim
+work Mon–Sat and take a distinct Sunday (a river walk / a quiet square), via a
+fluent `Activity::on_weekdays(..)` builder.
+
+Fixed a **multi-day correctness bug** surfaced by a new week-long test: an activity
+still performing at midnight (e.g. arriving home at 20:00 for a 4-hour stay)
+finished on the day-rollover tick and was recorded into the *next* day's
+`done_today`, so the resident thought it had already gone home and never returned
+(failing every other day). Completions that land on the rollover tick are no
+longer recorded against the new day. New tests: weekday routines differ;
+**everyone ends every day at home across a full week**. **15 tests pass.**
+
+This completes **Phase 3**. Acceptance met: residents wake at different times,
+nobody sleeps in a public location, occupations show distinct rhythms, shops open
+and close, every move follows graph edges, and all residents reach a valid home
+every day of the week.
+
 ## 2026-07-19 — Phase 3b: residential nodes (no public sleeping) — PROPOSED
 
 The district gained three residential locations — **Miller's Row**, **High Street

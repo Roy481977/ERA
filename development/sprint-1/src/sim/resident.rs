@@ -79,13 +79,13 @@ impl Resident {
     /// resident prefers the one it wants to be doing *soonest* (earliest
     /// preferred arrival), breaking ties by higher priority, then by routine
     /// order — so selection is fully deterministic.
-    pub fn select(&self, hour: u64, world: &World) -> Option<&Activity> {
+    pub fn select(&self, hour: u64, weekday: u64, world: &World) -> Option<&Activity> {
         self.routine
             .activities
             .iter()
             .enumerate()
             .filter(|(_, a)| {
-                a.condition.holds()
+                a.condition.holds(weekday)
                     && !self.done_today.contains(&a.id)
                     && a.in_window(hour)
                     && self.destination_open(a, hour, world)

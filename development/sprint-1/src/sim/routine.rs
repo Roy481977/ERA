@@ -14,20 +14,24 @@
 
 use crate::world::location::LocationId;
 
-/// A gate that must hold for an activity to be eligible. Today only `Always`
-/// exists; this is the seam where future needs/mood/relationship conditions
-/// attach without changing the routine structure.
+/// A gate that must hold for an activity to be eligible. This is the seam where
+/// future needs/mood/relationship conditions attach without changing the routine
+/// structure. Today: `Always`, plus weekday gating so routines vary by day.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
     /// Always eligible.
     Always,
+    /// Eligible only on the listed weekdays (0 = Monday … 6 = Sunday).
+    OnWeekdays(&'static [u64]),
 }
 
 impl Condition {
-    /// Whether the condition currently holds. Deterministic and side-effect free.
-    pub fn holds(&self) -> bool {
+    /// Whether the condition holds on the given weekday. Deterministic and
+    /// side-effect free.
+    pub fn holds(&self, weekday: u64) -> bool {
         match self {
             Condition::Always => true,
+            Condition::OnWeekdays(days) => days.contains(&weekday),
         }
     }
 }
@@ -64,6 +68,12 @@ impl Activity {
         let lo = self.preferred_arrival.saturating_sub(self.flexibility);
         let hi = self.preferred_arrival + self.flexibility;
         hour >= lo && hour <= hi
+    }
+
+    /// Restrict this activity to the given weekdays (0 = Mon … 6 = Sun).
+    pub fn on_weekdays(mut self, days: &'static [u64]) -> Self {
+        self.condition = Condition::OnWeekdays(days);
+        self
     }
 }
 

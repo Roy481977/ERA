@@ -11,6 +11,10 @@ use crate::sim::resident::Resident;
 use crate::sim::routine::{Activity, Condition};
 use crate::world::location::LocationId;
 
+/// Working week: Monday–Saturday (0–5). The shops rest on Sunday (6).
+const WORKING_DAYS: &[u64] = &[0, 1, 2, 3, 4, 5];
+const SUNDAY: &[u64] = &[6];
+
 /// An activity that resolves its place from its affordance.
 #[allow(clippy::too_many_arguments)]
 fn act(
@@ -72,9 +76,10 @@ pub fn cast() -> Vec<Resident> {
     vec![
         Resident::new("res_hana", "Hana", 58, "Baker", "loc_millers_row", vec![
             act("hana_sleep", "sleeps on Miller's Row", "HOME", 0, 1, 10, 3),
-            act("hana_bake", "fires the ovens before dawn", "WORK_BAKERY_COUNTER", 5, 2, 9, 3),
-            act_at("hana_square", "a midday breath on the square", "GATHER", "loc_main_square", 11, 3, 5, 2),
-            act("hana_pm", "the afternoon counter", "WORK_BAKERY_COUNTER", 15, 3, 8, 3),
+            act("hana_bake", "fires the ovens before dawn", "WORK_BAKERY_COUNTER", 5, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act_at("hana_square", "a midday breath on the square", "GATHER", "loc_main_square", 11, 3, 5, 2).on_weekdays(WORKING_DAYS),
+            act("hana_pm", "the afternoon counter", "WORK_BAKERY_COUNTER", 15, 3, 8, 3).on_weekdays(WORKING_DAYS),
+            act_at("hana_rest", "a slow Sunday walk to the river", "WALK", "loc_riverside", 11, 3, 5, 2).on_weekdays(SUNDAY),
             act("hana_home", "home to Miller's Row", "HOME", 20, 4, 6, 3),
         ]),
         Resident::new("res_sofia", "Sofia", 27, "Baker's assistant", "loc_millers_row", vec![
@@ -113,9 +118,10 @@ pub fn cast() -> Vec<Resident> {
         ]),
         Resident::new("res_karim", "Karim", 34, "Kiosk vendor", "loc_high_street", vec![
             act("karim_sleep", "sleeps in the High Street rooms", "HOME", 0, 1, 10, 6),
-            act("karim_am", "opens the kiosk", "KIOSK", 7, 2, 9, 3),
-            act("karim_mid", "the midday papers", "KIOSK", 11, 3, 8, 3),
-            act("karim_pm", "the afternoon trade", "KIOSK", 15, 3, 7, 3),
+            act("karim_am", "opens the kiosk", "KIOSK", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act("karim_mid", "the midday papers", "KIOSK", 11, 3, 8, 3).on_weekdays(WORKING_DAYS),
+            act("karim_pm", "the afternoon trade", "KIOSK", 15, 3, 7, 3).on_weekdays(WORKING_DAYS),
+            act_at("karim_sun", "a quiet Sunday on the square", "GATHER", "loc_main_square", 11, 4, 5, 3).on_weekdays(SUNDAY),
             act("karim_home", "home above the High Street", "HOME", 20, 4, 6, 3),
         ]),
         Resident::new("res_agnes", "Agnes", 81, "Retired supporter", "loc_oakside", vec![
