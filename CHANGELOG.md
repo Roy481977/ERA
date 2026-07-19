@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Sprint 1 (DS-001 First Breath): spec + Phase 1 — PROPOSED
+
+Transitioned ERA from architecture into implementation, working from the ratified
+contracts (world-state schema, semantic places, CD-006, WI-01 vertical slice) —
+no redesign, no new philosophy, no scope expansion.
+
+- New `development/` module + **DS-001 spec** ("First Breath"): the smallest
+  living district that can be executed and observed — 5 semantic locations
+  (Stadium, Main Square, Bakery, Café, Riverside), 10 residents (id/name/age/
+  occupation/home/current-location/deterministic schedule/relationships), the
+  **Old Oak** persistent living object (independent of the player), and a 4-phase
+  roadmap.
+- **Implementation-language decision (flagged for veto):** the logical core is
+  built in Python 3 (stdlib only) — headless, deterministic, engine-decoupled, per
+  the Town Engine strategy. This is the *logical core only*; the **game-engine
+  choice (Unreal/Unity) is untouched and remains open (IP-003)**.
+- **Phase 1 shipped:** `development/sprint-1/` — locations + affordances, the
+  navigation graph (edges, travel time, deterministic shortest path), the World
+  container with validation (connected graph, no islands, affordances present), an
+  executable observer (`run_phase1.py`), and 7 unit tests. **Runs; all tests
+  pass.** Code lives in GitHub (canonical); the project mirrors the specs/docs.
+- Next: Phase 2 (residents + deterministic schedules + WorldClock), on Roy's go.
+  All PROPOSED; not promoted to canonical.
+
 ## 2026-07-19 — RATIFIED: architecture/ permanent module + WI-01 created
 
 **Ratification (first in the repository).** Roy ratified `architecture/` as a

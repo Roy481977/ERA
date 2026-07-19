@@ -33,6 +33,7 @@ intake/             ← ERA Import Packages (IP-###): discoveries (the WHAT)
 creative-decisions/ ← Creative Decisions (CD-###): why a discovery won (the WHY)
 research/           ← external inputs + technical evaluations (e.g. Town Engine)
 architecture/       ← systems architecture (RATIFIED permanent module; contents PROPOSED)
+development/        ← implementation: sprint specs (DS-###) + code (works from architecture)
 living-world/       ← the district: places, residents, interwoven lives, mysteries
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
@@ -95,6 +96,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | architecture/systems/ (15 briefs) | PROPOSED | Subsystem briefs: town, time, world-persistence, relationship, memory, recognition, event, matchday, club-culture, economy, narrative, ai-director, crowd, weather-season, audio-ecology |
 | architecture/system-contracts/ (WI-01, 7 docs) | PROPOSED | System Contracts & Vertical Slice: world-state schema, engine boundaries, inter-engine contracts, Town Engine vertical slice, acceptance tests, observability |
 | **`architecture/` module itself** | **RATIFIED (permanent)** | The module is a permanent first-class part of the repository (contents remain PROPOSED) |
+| development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): 5 locations, 10 residents, Old Oak, 4-phase roadmap |
+| development/sprint-1/ (code) | in progress | Phase 1 done: world representation (locations, nav graph, validator, tests). Runs headless in Python. Lives in GitHub. |
 
 ---
 
@@ -103,6 +106,14 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Sprint 1 begins (DS-001 First Breath): Phase 1 shipped.**
+  Transitioned from architecture into implementation, working from the ratified
+  contracts. New `development/` module with the DS-001 spec (5 semantic locations,
+  10 residents, the Old Oak living object, 4-phase roadmap) and **Phase 1 code**:
+  world representation — locations + affordances, navigation graph (travel time,
+  shortest path), World container + validation, an executable observer, and 7
+  passing unit tests. Headless deterministic Python core; the game-engine choice
+  (IP-003) is untouched and remains open. PROPOSED.
 - **2026-07-19 — RATIFIED: `architecture/` is a permanent module** (Roy). First
   ratification in the repository. Only the *module's permanence* is canonical;
   IP-003 and every architecture document remain PROPOSED. Resolves the IP-003
