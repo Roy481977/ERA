@@ -8,6 +8,19 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Residents cast expanded (13 biographies) — PROPOSED
+
+Wrote full template biographies for the rest of the canonical cast in
+`living-world/residents.md`: Daniel & Sofia (the couple), Elias (groundskeeper),
+Mrs. Hana (baker), Luca (café), Karim (kiosk), Eva (florist), Milo (musician),
+Nora (curator), Otto (publican), the Twins (children), Agnes (oldest supporter),
+Victor (retired legend), Emma (journalist). Roles are CKO-proposed and grounded
+in the district's places/rhythms; the cast is cross-linked so the world coheres,
+and each quietly instantiates the attachment mechanisms (Living Memory,
+Recognition via Victor/Emma/Nora, honest history via Nora/Agnes/Otto, and
+"never performs for the player" = independence). PROPOSED — awaiting Roy's
+approval/edits on roles and content.
+
 ## 2026-07-19 — Living World module started (district / living aspect) — PROPOSED
 
 Per Roy: follow the proposal ChatGPT chat closely as the evolution of the idea,
