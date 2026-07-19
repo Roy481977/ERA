@@ -27,6 +27,7 @@ structure invented ahead of content. Planned layout (relative to repo root):
 INDEX.md            ← this file: master map + status dashboard
 GOVERNANCE.md       ← constitution: authority, classification law, protocols
 CHANGELOG.md        ← every change, dated. Nothing changes silently.
+intake/             ← ERA Import Packages (IP-###), the intake records
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
 proposed/           ← PROPOSED, awaiting Roy's ruling
@@ -64,9 +65,6 @@ the counts update accordingly.
 
 ## Document register
 
-No design documents yet. As documents are created, each is listed here with its
-status, purpose, and cross-references.
-
 | Doc | Status | Purpose |
 |---|---|---|
 | GOVERNANCE.md | meta | Repository constitution & classification law |
@@ -102,8 +100,6 @@ their own documents and in CHANGELOG.
 ---
 
 ## Open questions register
-
-Unresolved questions the repository is tracking. None design-level yet.
 
 - **OQ-1 (infrastructure) — RESOLVED 2026-07-19.** GitHub authentication for the
   mirror push. Resolved via fine-grained PAT; mirror live at `Roy481977/ERA`.
