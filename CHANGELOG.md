@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Living World module started (district / living aspect) — PROPOSED
+
+Per Roy: follow the proposal ChatGPT chat closely as the evolution of the idea,
+document the living aspect well and within the main files, and continue the work
+ChatGPT crashed mid-way through. Consolidated the living-world layer from all
+three sources (proposal chat, Book of ERA v1.2, Design Bible Vols V–VII) into a
+new `living-world/` module:
+
+- `living-world/README.md` — The Living World (district): what it is,
+  constitutional discoveries about place, district identity, emotional geography
+  (both the zone view and the ring view, flagged for unification), composition &
+  camera, landmarks, daily rhythms & match day, "the world continues without the
+  player," visible-consequence table, weather/time, AI-as-world-building (tied to
+  the Human Test), visual direction (four rules, density, Nintendo principle,
+  "come and look not use me," the art north star), richness standard, open
+  questions. Cross-referenced to IP-002 axioms (Independence/AR, Recognition,
+  Meaning, Human Test).
+- `living-world/residents.md` — residents system: canonical draft resident list,
+  the resident design template, and a first fully-drafted example biography (the
+  Old Dog) to fill the "expand each resident" gap.
+
+Faithful to the sources; CKO-proposed additions marked `_[CKO-proposed]_`. All
+PROPOSED — nothing canonical until Roy ratifies.
+
 ## 2026-07-19 — Source corpus received & secured (4 documents)
 
 Roy handed over the full accumulated ERA material for documentation. All four

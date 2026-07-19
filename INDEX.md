@@ -51,7 +51,7 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 | Status | Count | Location |
 |---|---|---|
 | CANONICAL | 0 | `canon/`, `constitution/` |
-| PROPOSED | 2 | `intake/IP-001`, `intake/IP-002` |
+| PROPOSED | 2 pkgs + living-world | `intake/IP-001`, `intake/IP-002`, `living-world/` |
 | OPEN | 0 | `open/` |
 | REJECTED | 0 | `rejected/` |
 | SUPERSEDED | 0 | `superseded/` |
@@ -77,6 +77,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package (Philosophy): the converged worldview |
 | intake/IP-002-human-attachment.md | PROPOSED | Second Import Package (Human Attachment Research): candidate axioms, compression events, constitutional consequences |
 | sources/ (4 docs + manifest) | SOURCE | Roy's primary ERA corpus, verbatim, pending distillation — Design Bible, Book of ERA, Beginning, proposal chat |
+| living-world/README.md | PROPOSED | The Living World (district) — consolidated from all three sources |
+| living-world/residents.md | PROPOSED | Residents system, template, and first drafted biography |
 
 ---
 
@@ -85,6 +87,12 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Living World module started.** Following Roy's steer to document
+  the living aspect (the leading edge of the idea) well and within the main files,
+  the living-world layer was consolidated from all three sources into
+  `living-world/` (overview + residents), deduplicated and cross-referenced to the
+  IP-002 axioms. First resident biography (the Old Dog) drafted to fill a
+  ChatGPT-left gap. PROPOSED; CKO-proposed additions flagged.
 - **2026-07-19 — Source corpus received (4 documents).** Roy handed over the
   full accumulated ERA material: the **Design Bible v0.1** (9-volume bible with
   its own 7-law Constitution), the **Book of ERA v1.2** (district / living-world
