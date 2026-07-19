@@ -124,8 +124,9 @@ concepts without surfacing the conflict for Roy's ruling.
 ## 3. Intake Protocol — ERA Import Packages
 
 Refines the charter's "WHEN I IMPORT A CHATGPT DISCUSSION" steps per Roy's
-update of 2026-07-19. The charter text in §1 is preserved verbatim; this is the
-current operational protocol.
+update of 2026-07-19, and **ratified as the standard operating procedure** the
+same day. The charter text in §1 is preserved verbatim; this is the current
+operational protocol.
 
 **Unit of intake:** design material enters the repository as a structured **ERA
 Import Package** prepared by ChatGPT — curated design material, not a raw
@@ -135,10 +136,10 @@ For every Import Package the CKO will:
 1. Read all of it.
 2. **Verify consistency** with existing knowledge, especially CANONICAL
    material.
-3. **Identify conflicts** and contradictions.
+3. **Detect contradictions and duplicates** against existing material.
 4. **Recommend a classification** for each idea (per §2).
 5. **Suggest document placement** — which file/domain each idea belongs in.
-6. **Draft decision records** for Roy's ruling.
+6. **Draft or update decision records** for Roy's ruling.
 7. **Wait for Roy's approval before updating any canonical document.**
 
 Every intake ends with a "what is proposed / what changed" report to Roy. Only

@@ -8,6 +8,15 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — ERA Import Package intake ratified as SOP
+
+Roy restated and ratified the ERA Import Package intake as the standard
+operating procedure. Two refinements folded into GOVERNANCE §3 to match the
+stated steps exactly: duplicate detection is now explicit alongside
+contradiction detection, and decision records may be "drafted or updated" (not
+only drafted). No change to authority, classification law, or the verbatim
+charter.
+
 ## 2026-07-19 — Intake protocol changed to ERA Import Packages
 
 Roy directed that design material no longer be imported as raw conversations.
