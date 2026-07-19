@@ -210,3 +210,28 @@ existing truth more clearly. Research packages record discoveries as first-class
 entries (e.g. "compression events"); explanations live inside the truths they
 support and never stand alone. This keeps the repository growing through genuine
 progress rather than elaboration.
+
+---
+
+## 7. Creative Decisions
+
+*Permanent architecture, established 2026-07-19.*
+
+The repository preserves governance, Import Packages (discoveries), canon, and the
+living world — but a discovery can be recorded and ratified while the reasoning
+that made it **win over the alternatives** is lost. The `creative-decisions/`
+module closes that gap.
+
+**Import Package vs. Creative Decision:**
+- An **Import Package** describes the *discovery* — *what* was found. (The WHAT.)
+- A **Creative Decision** explains why the discovery *survived* — the alternatives
+  it beat and the reasoning that made it win. (The WHY.)
+
+They are distinct artifacts, cross-linked, never merged.
+
+**Rule.** Whenever ChatGPT and Roy reach a significant conclusion that changes
+ERA's philosophy, world, or design, ChatGPT produces a **Creative Decision.** For
+each one the CKO will: **classify** it, **cross-reference** it, **link** it to the
+relevant Import Package(s), **update the INDEX**, and **preserve it permanently**
+— a Creative Decision is never deleted; a reversed decision is *superseded* by a
+new one, and both are kept. Format and workflow: `creative-decisions/README.md`.

@@ -29,7 +29,9 @@ structure invented ahead of content. Planned layout (relative to repo root):
 INDEX.md            ← this file: master map + status dashboard
 GOVERNANCE.md       ← constitution: authority, classification law, protocols
 CHANGELOG.md        ← every change, dated. Nothing changes silently.
-intake/             ← ERA Import Packages (IP-###), the intake records
+intake/             ← ERA Import Packages (IP-###): discoveries (the WHAT)
+creative-decisions/ ← Creative Decisions (CD-###): why a discovery won (the WHY)
+living-world/       ← the district: places, residents, interwoven lives, mysteries
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
 proposed/           ← PROPOSED, awaiting Roy's ruling
@@ -82,6 +84,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | living-world/residents.md | PROPOSED | Residents system, template, and full cast biographies |
 | living-world/interwoven-lives.md | PROPOSED | The shared-timeline web: lives interacting and aging across years ("the same rails") |
 | living-world/the-quiet-mysteries.md | PROPOSED | The never-explained mystical root (the two moons) |
+| creative-decisions/README.md | meta | Creative Decisions module: purpose, format, workflow, register |
+| creative-decisions/CD-001-attachment-not-addiction.md | PROPOSED | Why Attachment (not addiction) won as the North Star |
 
 ---
 
@@ -90,6 +94,12 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — New module: Creative Decisions (permanent architecture).** Added
+  `creative-decisions/` to preserve *why* a discovery won over the alternatives —
+  distinct from Import Packages (which describe the discovery). ChatGPT produces
+  Creative Decisions; the CKO classifies, cross-references, links to Import
+  Packages, indexes, and preserves them permanently. Recorded in GOVERNANCE §7.
+  Seeded with CD-001 (Attachment, not addiction). PROPOSED.
 - **2026-07-19 — Living World: interwoven lives ("the same rails").** Per Roy,
   documented the connective system: all lives interact on one shared timeline,
   bonding and aging across years, scripted at milestones with emergent daily

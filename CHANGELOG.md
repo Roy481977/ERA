@@ -8,6 +8,26 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — New module: Creative Decisions (permanent architecture)
+
+Roy established a permanent workflow/architecture change: a new top-level module
+`creative-decisions/` to preserve the **reasoning behind major creative decisions
+— why a discovery won over the alternatives** — a gap the repository did not
+explicitly cover (it held discoveries via Import Packages and canon, but not the
+*why it survived*).
+
+- **Import Package vs. Creative Decision:** IP describes the discovery (the WHAT);
+  CD explains why it survived (the WHY). Distinct artifacts, cross-linked, never
+  merged.
+- **Rule:** when ChatGPT + Roy reach a significant conclusion that changes ERA's
+  philosophy, world or design, ChatGPT produces a Creative Decision; the CKO
+  classifies, cross-references, links to the Import Package(s), updates the INDEX,
+  and preserves it permanently (reversed decisions are superseded, never deleted).
+- Recorded in **GOVERNANCE §7**. Added `creative-decisions/README.md` (purpose,
+  CD template, workflow, register) and seeded **CD-001 — Attachment, not
+  addiction** as a CKO-backfilled example (PROPOSED; also resolves the sources'
+  addiction-vs-attachment contradiction in attachment's favour).
+
 ## 2026-07-19 — Living World: interwoven lives ("the same rails") — PROPOSED
 
 Per Roy: all the living must interact, in a town, on the same rails — bonding and
