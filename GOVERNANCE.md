@@ -121,19 +121,33 @@ concepts without surfacing the conflict for Roy's ruling.
 
 ---
 
-## 3. Intake Protocol (what happens when Roy provides material)
+## 3. Intake Protocol — ERA Import Packages
 
-For every intake the CKO will:
+Refines the charter's "WHEN I IMPORT A CHATGPT DISCUSSION" steps per Roy's
+update of 2026-07-19. The charter text in §1 is preserved verbatim; this is the
+current operational protocol.
+
+**Unit of intake:** design material enters the repository as a structured **ERA
+Import Package** prepared by ChatGPT — curated design material, not a raw
+conversation transcript. Raw conversations are no longer imported directly.
+
+For every Import Package the CKO will:
 1. Read all of it.
-2. Separate distinct ideas; remove repetition.
-3. Identify decisions, unresolved questions, and contradictions (especially
-   against existing CANONICAL material).
-4. Propose a classification and destination for every idea.
-5. State plainly what it recommends become canonical vs. remain proposed.
-6. Update INDEX, cross-references, and CHANGELOG.
-7. **Wait for Roy's approval before writing anything into CANONICAL.**
+2. **Verify consistency** with existing knowledge, especially CANONICAL
+   material.
+3. **Identify conflicts** and contradictions.
+4. **Recommend a classification** for each idea (per §2).
+5. **Suggest document placement** — which file/domain each idea belongs in.
+6. **Draft decision records** for Roy's ruling.
+7. **Wait for Roy's approval before updating any canonical document.**
 
-Every intake ends with a "what changed" report to Roy.
+Every intake ends with a "what is proposed / what changed" report to Roy. Only
+after Roy's approval are INDEX, cross-references, and CHANGELOG updated to
+reflect canonical changes.
+
+**Raw conversations:** if Roy provides a raw conversation instead of an Import
+Package, the CKO recommends first converting it into an ERA Import Package
+before intake — unless Roy explicitly asks to proceed with the raw material.
 
 ---
 

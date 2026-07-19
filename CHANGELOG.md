@@ -8,6 +8,20 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Intake protocol changed to ERA Import Packages
+
+Roy directed that design material no longer be imported as raw conversations.
+The unit of intake is now a structured **ERA Import Package** prepared by
+ChatGPT (curated design material). On each package the CKO verifies consistency,
+identifies conflicts, recommends classifications, suggests placement, drafts
+decision records, and waits for approval before updating canonical documents.
+Raw conversations are bounced with a recommendation to package them first,
+unless Roy explicitly asks to proceed with the raw material.
+
+Changed:
+- `GOVERNANCE.md` §3 — rewritten as the Import Package intake protocol. The
+  verbatim charter in §1 is untouched; §3 refines its operational steps.
+
 ## 2026-07-19 — GitHub mirror live
 
 The canonical GitHub mirror is now live at `Roy481977/ERA`. The three

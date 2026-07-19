@@ -76,6 +76,10 @@ status, purpose, and cross-references.
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Intake = ERA Import Packages.** Design material enters as
+  structured ERA Import Packages from ChatGPT, not raw conversations. Raw
+  conversations are recommended for packaging first unless Roy says otherwise.
+  See GOVERNANCE §3.
 - **2026-07-19 — GitHub mirror live.** Authenticated via a fine-grained PAT
   (Contents: read/write) scoped to `Roy481977/ERA`. Note: `api.github.com` is
   blocked by the container egress proxy, so sync uses the git transport over
