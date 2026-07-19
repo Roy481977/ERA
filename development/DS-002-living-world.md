@@ -133,3 +133,38 @@ arrives the same tick isn't seen until the next.
 
 **Commands:** `cargo run` (see "Spontaneous deviations over five days") ·
 `cargo test`
+
+---
+
+## Phase 6 — The Old Oak becomes living history ✅
+
+**What became more alive:** the Oak stopped being a place to walk to and became a
+thing with a past. It remembers that Agnes sat beneath it, that Tomas played
+there, that Elias and Tomas met beside it one Wednesday evening — a small, growing
+chronicle that exists whether or not the player ever looks.
+
+**Implemented:** `sim/oak.rs` — `OldOak` (identity, age ~400, location, tallies,
+append-only `history`) and `Season` (derived from the day; appearance in data).
+The simulation records a visit when a resident performs `VISIT_OAK` (a child
+"plays", an adult "sits"), gives the visitor an Oak memory, and records a
+"gathering" when residents interact at the riverside. `readable_history` renders
+the chronicle. Scarf/flowers event kinds are defined ready for matchday.
+
+**Files changed:** `sim/oak.rs` (new), `sim/resident.rs` (`affordance_of`,
+`is_child`), `sim/simulation.rs` (Oak field, visit + gathering recording),
+`sim/mod.rs`, `main.rs` (Oak section), `tests/oak.rs` (new).
+
+**Architectural choices:** the Oak owns its history (single owner); the simulation
+*records into* it through `record`, never edits past entries. Visits are collected
+during movement and applied after the borrow scope, keeping the Oak's mutation in
+one place. History is plain data, ready to serialise.
+
+**Tests added (5):** accumulates across days; deterministic; the child plays;
+residents meet beside it; visitors carry a memory. 29 tests total.
+
+**Known limitations:** seasons change slowly (four-week seasons), so a short run
+stays in one season; the Oak's event-driven changes (scarf after a win, flowers
+after a loss) arrive with matchday in Phase 7; no save/load yet (state is
+serialisation-ready, not yet serialised).
+
+**Commands:** `cargo run` (see "The Old Oak — …") · `cargo test`

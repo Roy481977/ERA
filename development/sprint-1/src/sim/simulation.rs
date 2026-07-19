@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::sim::clock::{WorldClock, TICKS_PER_DAY};
 use crate::sim::intention;
+use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
 use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::routine::Routine;
 use crate::sim::social::{self, Relationships};
@@ -27,12 +28,44 @@ pub struct Simulation {
     pub clock: WorldClock,
     pub residents: Vec<Resident>,
     pub relationships: Relationships,
+    pub oak: OldOak,
     pub log: Vec<Event>,
     /// Structured record of every interaction (observability / tests / Oak).
     pub interactions: Vec<social::Interaction>,
     last_day: u64,
     /// Pairs that have already interacted today (once-per-day cap).
     social_seen_today: BTreeSet<(&'static str, &'static str)>,
+}
+
+/// If the activity a resident just began is a visit to the Old Oak, record it as
+/// an Oak event and give the resident a memory of it.
+fn record_oak_visit(
+    r: &mut Resident,
+    activity_id: &str,
+    clock: &WorldClock,
+    out: &mut Vec<OakEvent>,
+) {
+    if r.affordance_of(activity_id) != Some("VISIT_OAK") {
+        return;
+    }
+    let kind = if r.is_child() {
+        OakEventKind::ChildrenPlay
+    } else {
+        OakEventKind::Visit
+    };
+    out.push(OakEvent {
+        day: clock.day(),
+        hour: clock.hour(),
+        kind,
+        who: Some(r.id),
+        with: None,
+    });
+    r.memories.push(Memory {
+        day: clock.day(),
+        hour: clock.hour(),
+        note: "sat with the Old Oak by the riverside".to_string(),
+        other: None,
+    });
 }
 
 fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
@@ -50,6 +83,7 @@ impl Simulation {
             clock: WorldClock::new(),
             residents,
             relationships: Relationships::seeded(),
+            oak: OldOak::new(),
             log: Vec::new(),
             interactions: Vec::new(),
             last_day: 0,
@@ -85,6 +119,10 @@ impl Simulation {
             .iter()
             .map(|r| (r.id, r.name, r.place, r.is_present()))
             .collect();
+
+        // Oak visits are collected here and applied to the Oak after the
+        // movement borrow scope ends (the Oak is world truth, one owner).
+        let mut oak_events: Vec<OakEvent> = Vec::new();
 
         // --- movement + activity selection ---
         // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
@@ -122,6 +160,7 @@ impl Simulation {
                                 resident: r.name,
                                 message: format!("{purpose} — at {}", r.place),
                             });
+                            record_oak_visit(r, activity, clock, &mut oak_events);
                         } else {
                             let leg = edge_weight(nav, path[idx], path[idx + 1]);
                             r.status = Status::Traveling {
@@ -178,6 +217,7 @@ impl Simulation {
                                 resident: r.name,
                                 message: format!("{apurpose} — at {}", r.place),
                             });
+                            record_oak_visit(r, aid, clock, &mut oak_events);
                         } else if let Some(path) = nav.shortest_path(r.place, dest) {
                             let leg = edge_weight(nav, path[0], path[1]);
                             let route = path.join(" -> ");
@@ -196,6 +236,11 @@ impl Simulation {
             }
         }
         } // end movement borrow scope
+
+        // Apply Oak visits to world truth (the Oak owns its history).
+        for ev in oak_events {
+            self.oak.record(ev);
+        }
 
         // --- social interactions among co-located residents ---
         self.social_pass();
@@ -293,6 +338,16 @@ impl Simulation {
                     hour,
                     note: format!("{verb} with {a_name} at the {place_name}"),
                     other: Some(ap.a),
+                });
+            }
+            // A meeting beside the Oak becomes part of its history.
+            if ap.place == crate::sim::oak::OAK_LOCATION {
+                self.oak.record(OakEvent {
+                    day,
+                    hour,
+                    kind: OakEventKind::Gathering,
+                    who: Some(ap.a),
+                    with: Some(ap.b),
                 });
             }
             self.social_seen_today.insert((ap.a, ap.b));

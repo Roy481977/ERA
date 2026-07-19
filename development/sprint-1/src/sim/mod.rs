@@ -3,11 +3,13 @@
 pub mod cast;
 pub mod clock;
 pub mod intention;
+pub mod oak;
 pub mod resident;
 pub mod routine;
 pub mod simulation;
 pub mod social;
 
 pub use cast::cast;
+pub use oak::{OakEventKind, OldOak, Season};
 pub use simulation::{Event, Simulation};
 pub use social::{InteractionKind, Rel, Relationships};

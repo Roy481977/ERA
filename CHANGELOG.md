@@ -18,6 +18,23 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 6: the Old Oak becomes living history — PROPOSED
+
+New `sim/oak.rs`: the Old Oak is now a persistent world object, not just a
+destination. It has identity, an age (~400), a location, a seasonal state derived
+from the day (`Season`: summer→autumn→winter→spring, appearance in data), and an
+**append-only history**. When a resident visits, the Oak records it (children
+"play beneath" it, adults "sit a while"), the visitor gains a memory of the Oak,
+and its tallies update; when two residents meet at the riverside, the Oak records
+that they "met beside" it. The Oak owns its own history — other systems record
+into it, never rewrite it — and it's ready for later serialisation. A readable
+history renders as "Day 2 (Wed) 18:00 — Elias and Tomas met beside the Oak".
+
+Scarf/flowers event kinds exist for Phase 7 (matchday). Five new tests (history
+accumulates across days, deterministic, the child plays, residents meet beside it,
+visitors carry a memory). **29 tests pass.** Observer prints the Oak's state and
+recent history.
+
 ## 2026-07-19 — Phase 5: intentions & small deviations — PROPOSED
 
 New `sim/intention.rs`: a lightweight, deterministic layer above the routine. The

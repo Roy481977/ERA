@@ -92,6 +92,21 @@ impl Resident {
         !matches!(self.status, Status::Traveling { .. })
     }
 
+    /// The affordance a routine activity needs, by id (None for non-routine
+    /// activities such as spontaneous deviations).
+    pub fn affordance_of(&self, activity_id: &str) -> Option<&'static str> {
+        self.routine
+            .activities
+            .iter()
+            .find(|a| a.id == activity_id)
+            .map(|a| a.affordance)
+    }
+
+    /// Whether this resident is a child.
+    pub fn is_child(&self) -> bool {
+        self.age < 18
+    }
+
     /// Choose the most appropriate eligible, not-yet-done activity for this hour.
     ///
     /// Eligible means: its condition holds, it hasn't been done today, the hour

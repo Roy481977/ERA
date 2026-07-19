@@ -106,4 +106,25 @@ fn main() {
     }
 
     println!("\nPhase 5 complete: residents form intentions and sometimes deviate — explainably.");
+
+    // Phase 6: the Old Oak's living history (accumulated over the five days).
+    let season = sim.oak.season(sim.clock.day().saturating_sub(1));
+    println!(
+        "\nThe Old Oak — {} years old, by the riverside, {} this {}.",
+        sim.oak.age_years,
+        season.appearance(),
+        season.name()
+    );
+    println!(
+        "  {} visits · {} scarves · {} bouquets recorded.",
+        sim.oak.visit_count, sim.oak.scarves, sim.oak.bouquets
+    );
+    let history = sim
+        .oak
+        .readable_history(|id| sim.resident(id).map(|r| r.name.to_string()).unwrap_or_else(|| id.to_string()));
+    println!("  Its history so far:");
+    for line in history.iter().rev().take(8).rev() {
+        println!("    · {line}");
+    }
+    println!("\nPhase 6 complete: the Old Oak remembers who came, and when.");
 }
