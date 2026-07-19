@@ -8,6 +8,24 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — IP-001 (Worldview Foundation) received — PROPOSED
+
+First ERA Import Package. Roy directed capture of the *converged philosophy*
+only — accepted truths, open questions, rejected ideas — as the beginning of
+institutional memory, deliberately excluding brainstorming. The CKO curated the
+"Emotional Foundation" philosophy and the subsequent design review into
+`intake/IP-001-worldview-foundation.md`.
+
+Contents: 16 accepted truths (proposed → canonical), 7 open constitutional
+questions (OQ-2…OQ-8), 4 rejected/superseded ideas, a placement map, and 7
+drafted decision records (DR-001…DR-007).
+
+Status: held **PROPOSED**. Per SOP, nothing is canonical until Roy ratifies.
+On approval the accepted truths split into `constitution/`, open questions into
+`open/`, rejected ideas into `rejected/`, and the decision records are
+finalized. INDEX updated (dashboard, register, decision record, open-questions
+register).
+
 ## 2026-07-19 — ERA Import Package intake ratified as SOP
 
 Roy restated and ratified the ERA Import Package intake as the standard

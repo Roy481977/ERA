@@ -4,8 +4,9 @@ The single map of the ERA knowledge repository. Start here. Governance and the
 rules that bind this repository live in [GOVERNANCE.md](GOVERNANCE.md); the full
 history of changes lives in [CHANGELOG.md](CHANGELOG.md).
 
-**Status:** Initialized 2026-07-19. GitHub mirror live. No design content yet —
-this is scaffolding, awaiting the first material.
+**Status:** 2026-07-19. GitHub mirror live. First Import Package **IP-001
+(Worldview Foundation)** received and distilled; **under Roy's review**. No
+canonical content yet — accepted truths are proposed, pending ratification.
 
 ---
 
@@ -44,17 +45,20 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 
 ## Status dashboard
 
-Live counts. All zero at initialization.
-
 | Status | Count | Location |
 |---|---|---|
-| CANONICAL | 0 | `canon/` |
-| PROPOSED | 0 | `proposed/` |
+| CANONICAL | 0 | `canon/`, `constitution/` |
+| PROPOSED | 1 | `intake/IP-001` |
 | OPEN | 0 | `open/` |
 | REJECTED | 0 | `rejected/` |
 | SUPERSEDED | 0 | `superseded/` |
 | RESEARCH | 0 | `research/` |
 | DRAFT | 0 | `draft/` |
+
+Note: IP-001 currently holds **16 accepted truths** (proposed → canonical),
+**7 open questions** (OQ-2…OQ-8) and **4 rejected ideas** within it. On
+ratification these split out into `constitution/`, `open/` and `rejected/`, and
+the counts update accordingly.
 
 ---
 
@@ -68,6 +72,7 @@ status, purpose, and cross-references.
 | GOVERNANCE.md | meta | Repository constitution & classification law |
 | INDEX.md | meta | This master map |
 | CHANGELOG.md | meta | Change history |
+| intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package: the converged worldview (accepted / open / rejected) |
 
 ---
 
@@ -76,6 +81,10 @@ status, purpose, and cross-references.
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — IP-001 (Worldview Foundation) received.** First Import Package;
+  worldview distilled into 16 accepted truths, 7 open questions, 4 rejected
+  ideas. Held PROPOSED, awaiting Roy's ratification to promote accepted truths to
+  CANONICAL. See `intake/IP-001-worldview-foundation.md`.
 - **2026-07-19 — Intake = ERA Import Packages.** Design material enters as
   structured ERA Import Packages from ChatGPT, not raw conversations. Raw
   conversations are recommended for packaging first unless Roy says otherwise.
@@ -99,6 +108,20 @@ Unresolved questions the repository is tracking. None design-level yet.
 - **OQ-1 (infrastructure) — RESOLVED 2026-07-19.** GitHub authentication for the
   mirror push. Resolved via fine-grained PAT; mirror live at `Roy481977/ERA`.
   Retained here for traceability.
+
+Design-level open questions (from IP-001, full text in the package):
+
+- **OQ-2 — Presence vs. authenticity (AI vs. human).** Is authentic simulation
+  sufficient for belonging, or is real human presence required? Largest open
+  question.
+- **OQ-3 — Does "grown, not built" under-serve football's competitiveness?**
+- **OQ-4 — The arrow of real time / stepping away.** Returning to a Club reshaped
+  in your absence: strength or alienation?
+- **OQ-5 — Newcomers vs. veterans.** Does accumulated history gatekeep the new?
+- **OQ-6 — Structure of the Emotional Pillars.**
+- **OQ-7 — The negative promises** (what ERA constitutionally refuses to do).
+- **OQ-8 — The boundary of emergent culture** (can the Club hold ground against
+  the owner?).
 
 ---
 
