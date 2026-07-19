@@ -32,7 +32,7 @@ CHANGELOG.md        ← every change, dated. Nothing changes silently.
 intake/             ← ERA Import Packages (IP-###): discoveries (the WHAT)
 creative-decisions/ ← Creative Decisions (CD-###): why a discovery won (the WHY)
 research/           ← external inputs + technical evaluations (e.g. Town Engine)
-architecture/       ← systems architecture: system map, roadmap, subsystem briefs
+architecture/       ← systems architecture (RATIFIED permanent module; contents PROPOSED)
 living-world/       ← the district: places, residents, interwoven lives, mysteries
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
@@ -93,6 +93,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | research/town-engine-technical-strategy.md | RESEARCH / PROPOSED | Town Engine build-vs-buy architecture + six-week vertical slice (technical companion to CD-006) |
 | architecture/ (README, system-map, execution-roadmap) | PROPOSED | Systems architecture: federation of bounded systems, one world state + one clock; layer map; phased roadmap |
 | architecture/systems/ (15 briefs) | PROPOSED | Subsystem briefs: town, time, world-persistence, relationship, memory, recognition, event, matchday, club-culture, economy, narrative, ai-director, crowd, weather-season, audio-ecology |
+| architecture/system-contracts/ (WI-01, 7 docs) | PROPOSED | System Contracts & Vertical Slice: world-state schema, engine boundaries, inter-engine contracts, Town Engine vertical slice, acceptance tests, observability |
+| **`architecture/` module itself** | **RATIFIED (permanent)** | The module is a permanent first-class part of the repository (contents remain PROPOSED) |
 
 ---
 
@@ -101,6 +103,18 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — RATIFIED: `architecture/` is a permanent module** (Roy). First
+  ratification in the repository. Only the *module's permanence* is canonical;
+  IP-003 and every architecture document remain PROPOSED. Resolves the IP-003
+  placement open question.
+- **2026-07-19 — New work item: WI-01 System Contracts & Vertical Slice.** Created
+  `architecture/system-contracts/` (7 docs): authoritative world-state schema with
+  per-field ownership, engine boundaries (owns/reads/proposes/mutates/never), the
+  inter-engine event+command contracts, the Town Engine vertical slice (one
+  district, 25–40 residents, weekday/matchday/storm, persistence across absence),
+  13 acceptance tests, and the six observability tools. Reconciled to CD-006, the
+  Town Engine strategy, the system map, and the roadmap. Scope-guarded: no new
+  engines. PROPOSED.
 - **2026-07-19 — Intake: IP-003 + `architecture/` module (Systems Architecture
   Foundation).** All net-new; nothing live was replaced. Added IP-003 and a
   top-level `architecture/` module (README, system-map, execution-roadmap, 15

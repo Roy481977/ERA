@@ -39,12 +39,19 @@ AI may recommend, compose and schedule. It may not silently rewrite authoritativ
 
 See `system-map.md` and `execution-roadmap.md`.
 
-## Placement
+## Placement — RATIFIED
 
-`architecture/` is a **top-level module** (Design Translation stream). Its
-*content* is PROPOSED; whether it is a permanent first-class module is Roy's to
-ratify (IP-003 open question) — the CKO has placed it top-level rather than under
-`research/` because it is a distinct, growing domain.
+`architecture/` is a **ratified, permanent, first-class repository module**
+(Design Translation stream), ratified by Roy on 2026-07-19. This resolves the
+IP-003 open question about placement. **Only the module's permanence is
+ratified** — *every architecture document, including IP-003 and all subsystem
+briefs and contracts, remains PROPOSED* until Roy ratifies its specific design.
+
+Work items in this module:
+- `systems/` — subsystem briefs (the 15 engines).
+- `system-map.md`, `execution-roadmap.md` — the map and the phased plan.
+- [`system-contracts/`](system-contracts/README.md) — **WI-01: System Contracts &
+  Vertical Slice Specification** (implementable contracts + the Town Engine slice).
 
 ## Reconciliation with the repository (CKO)
 

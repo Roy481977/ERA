@@ -8,6 +8,40 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — RATIFIED: architecture/ permanent module + WI-01 created
+
+**Ratification (first in the repository).** Roy ratified `architecture/` as a
+**permanent, first-class repository module**. Only the module's *permanence* is
+canonical; **IP-003 and every architecture document remain PROPOSED.** Resolves
+the IP-003 placement open question. Recorded in `architecture/README.md`
+(Placement — RATIFIED) and INDEX.
+
+**New work item — WI-01: System Contracts & Vertical Slice Specification.** Created
+`architecture/system-contracts/` to make the conceptual architecture implementable
+without engineers inventing the core rules:
+- `world-state-schema.md` — authoritative schema (WorldClock, Entity, Place,
+  Resident, Relationship, Intention, Reservation, Event, Memory, Recognition,
+  ReasonCode) with **per-field single ownership**.
+- `engine-boundaries.md` — for all 15 engines: owns / may read / may propose / may
+  mutate / must never control.
+- `inter-engine-contracts.md` — the event + command model; per-engine inputs,
+  outputs, events, commands, failure behavior, determinism (deterministic vs
+  seeded-probabilistic).
+- `vertical-slice.md` — the Town Engine slice: one district (~12 semantic places),
+  25–40 persistent residents, ordinary weekday + matchday + a disruptive storm,
+  persistence across two weeks of absence, all four fidelity tiers.
+- `acceptance-tests.md` — 13 checkable tests (semantic correctness, bend-not-break,
+  relationships alter behavior, interruption propagation, no teleport/reset, one
+  visible world state, AI cannot rewrite truth, determinism, offscreen continuity,
+  believability).
+- `observability-and-debugging.md` — intention inspector, "why is this person
+  here?" trace, world-state timeline, relationship-change log, event causality
+  graph, deterministic replay + contradiction/liveness reports.
+
+Reconciled with CD-006, the Town Engine strategy, the system map and the execution
+roadmap; terminology kept identical. **Scope-guarded: no new engines, no
+broadening.** All WI-01 material PROPOSED — not promoted to canonical.
+
 ## 2026-07-19 — Intake: IP-003 + architecture module (Systems Architecture Foundation) — PROPOSED
 
 Roy provided the "ERA Systems Architecture Foundation" package (ChatGPT-authored),
