@@ -51,6 +51,12 @@ but life is visually and emotionally *larger than football*. Everything in the
 district exists because football exists — every place answers the question
 *"why would this naturally exist around a famous football club?"*
 
+The district also has a **never-explained mystical root** — it is a football
+place *just beside the real*, designed from the first stroke **under two moons.**
+This is the source of its warmth and quiet, it threads silently through every
+place, and it is **never named or discussed** in-game. See
+[`the-quiet-mysteries.md`](the-quiet-mysteries.md).
+
 ---
 
 ## 4. Emotional geography
@@ -269,19 +275,25 @@ should see a believable combination of macro-state and micro-detail:
 
 ## 14. Open questions
 
-From the Book of ERA, plus questions the CKO surfaced while consolidating:
+Progress and remaining questions:
 
-- Finalize the district layout (single canonical map).
-- Define Main Street in detail; define the plaza and fountain; define the bridge,
-  river and old oak.
-- Expand each canonical resident into a complete biography (see
-  [`residents.md`](residents.md)).
-- Create routines for every landmark across seasons and match days.
-- **_[CKO-proposed]_ Unify the two emotional-geography views** (zones vs. rings)
-  into one canonical map.
-- **_[CKO-proposed]_ Confirm the stadium size/placement** (documented here as
-  ~20–25%, lower-right, non-dominant, per Roy's revision).
+- ~~Define Main Street; the plaza and fountain; the bridge, river and old oak.~~
+  **Done** — see [`places.md`](places.md).
+- ~~Expand each canonical resident into a complete biography.~~ **Done** — see
+  [`residents.md`](residents.md).
+- ~~Unify the two emotional-geography views.~~ **Proposed** — zones are the
+  canonical spine, rings a radial reading (see `places.md`). Awaiting Roy.
+- Create **routines for every landmark across seasons and match days** in detail
+  (next).
+- **_[CKO-proposed]_ Confirm the stadium size/placement** (~20–25%, lower-right,
+  non-dominant, per Roy's revision).
 
 ---
 
-*Residents system and template: [`residents.md`](residents.md).*
+## This module
+
+- [`README.md`](README.md) — this overview.
+- [`places.md`](places.md) — the district's places (the emotional-geography spine).
+- [`residents.md`](residents.md) — the residents system, template and biographies.
+- [`the-quiet-mysteries.md`](the-quiet-mysteries.md) — the never-explained
+  mystical root (the two moons).

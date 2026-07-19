@@ -8,6 +8,24 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Living World: places defined + the two moons — PROPOSED
+
+Defined the district's places in `living-world/places.md` (Club/Stadium, Main
+Street, Plaza & Fountain, the Riverside — Bridge/River/Old Oak, Museum Quarter,
+Academy, Railway), each on a shared place template, filling the Book of ERA's
+open questions. Proposed a map unification (emotional zones = canonical spine,
+concentric rings = a supporting radial reading).
+
+Introduced the never-explained **mystical root** per Roy in
+`living-world/the-quiet-mysteries.md`: the district was designed **under two
+moons** — a football place *just beside the real*. The layer is **"seen, never
+said"**: no resident remarks on it, no lore/menu/quest/text ever names it, it
+grants no advantage, and one quiet thread runs through each place (the fountain's
+two reflections, the river's double-tide and the old oak, the museum's oldest
+photograph, the academy's double shadow, the railway line into a distance no map
+shows). Tied to Wonder (IP-001) and the deepest Independence (IP-002 AR). All
+PROPOSED.
+
 ## 2026-07-19 — Residents cast expanded (13 biographies) — PROPOSED
 
 Wrote full template biographies for the rest of the canonical cast in

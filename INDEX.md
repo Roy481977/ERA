@@ -78,7 +78,9 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | intake/IP-002-human-attachment.md | PROPOSED | Second Import Package (Human Attachment Research): candidate axioms, compression events, constitutional consequences |
 | sources/ (4 docs + manifest) | SOURCE | Roy's primary ERA corpus, verbatim, pending distillation — Design Bible, Book of ERA, Beginning, proposal chat |
 | living-world/README.md | PROPOSED | The Living World (district) — consolidated from all three sources |
-| living-world/residents.md | PROPOSED | Residents system, template, and first drafted biography |
+| living-world/places.md | PROPOSED | The district's places (emotional-geography spine) + place template |
+| living-world/residents.md | PROPOSED | Residents system, template, and full cast biographies |
+| living-world/the-quiet-mysteries.md | PROPOSED | The never-explained mystical root (the two moons) |
 
 ---
 
@@ -87,6 +89,12 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Living World: places + the two moons.** Defined the district's
+  places (Club, Main Street, Plaza & Fountain, Riverside/Bridge/Oak, Museum
+  Quarter, Academy, Railway) with a place template, and introduced the
+  never-explained mystical root per Roy — the **two moons** — threaded silently
+  through every place ("seen, never said"). Proposed the map unification (zones =
+  spine, rings = radial reading). PROPOSED.
 - **2026-07-19 — Living World module started.** Following Roy's steer to document
   the living aspect (the leading edge of the idea) well and within the main files,
   the living-world layer was consolidated from all three sources into
