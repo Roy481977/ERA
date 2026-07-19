@@ -8,6 +8,25 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Foundational Creative Decisions backfilled (CD-001…CD-005) — PROPOSED
+
+At Roy's request, backfilled the five foundational Creative Decisions, each with
+its alternatives, the reasoning that made it win, what it rejects/supersedes,
+consequences, and cross-references to the Import Packages:
+
+- **CD-001 — Attachment, not addiction** (North Star) → IP-001 AT-1/AT-3/DR-001.
+- **CD-002 — Grown, not built** (over "Club as Partner") → IP-002 AT-4/RJ-1;
+  IP-001 AT-5.
+- **CD-003 — Recognition beneath Memory** → IP-002 A2/CE-1/CR-1; IP-001 AT-9.
+- **CD-004 — Meaning split from Recognition** → IP-002 A3/A2/CE-3/CR-2.
+- **CD-005 — The Relational Axiom** (over "Non-Control") → IP-002 AR/CE-6/CR-8/
+  RQ-1; supersedes AT-6.
+
+All PROPOSED (CKO seeds), awaiting Roy's ratification. Register updated in
+`creative-decisions/README.md`; INDEX updated. From here, every significant
+philosophical or design breakthrough receives a Creative Decision as part of the
+normal workflow.
+
 ## 2026-07-19 — New module: Creative Decisions (permanent architecture)
 
 Roy established a permanent workflow/architecture change: a new top-level module

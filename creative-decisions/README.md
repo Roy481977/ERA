@@ -65,3 +65,7 @@ Each Creative Decision is its own file, `CD-###-slug.md`:
 | CD | Title | Status | Links |
 |---|---|---|---|
 | [CD-001](CD-001-attachment-not-addiction.md) | Attachment, not addiction (the North Star) | PROPOSED (CKO seed) | IP-001 AT-1/AT-3/DR-001; resolves the sources' addiction-vs-attachment contradiction |
+| [CD-002](CD-002-grown-not-built.md) | Grown, not built (over "Club as Partner") | PROPOSED (CKO seed) | IP-002 AT-4, RJ-1; IP-001 AT-5; feeds CD-005 |
+| [CD-003](CD-003-recognition-beneath-memory.md) | Recognition beneath Memory | PROPOSED (CKO seed) | IP-002 A2, CE-1, CR-1; IP-001 AT-9 |
+| [CD-004](CD-004-meaning-split-from-recognition.md) | Meaning split from Recognition | PROPOSED (CKO seed) | IP-002 A3, A2, CE-3, CR-2 |
+| [CD-005](CD-005-relational-axiom.md) | The Relational Axiom (over "Non-Control") | PROPOSED (CKO seed) | IP-002 AR, CE-6, CR-8, RQ-1; supersedes AT-6 |
