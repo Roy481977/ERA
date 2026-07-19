@@ -13,6 +13,11 @@ familiar faces: through recurrence, not interaction. *(This is IP-002 A3 Meaning
 via familiarity, and the Living-Memory half of IP-001 AT-9 — the people you'd
 miss if they vanished, though you never tell a story about them.)*
 
+How these lives **interact with each other and age across years** — the
+shared-timeline web that turns the cast into a town — is defined in
+[`interwoven-lives.md`](interwoven-lives.md). The "Relationships" and "slowly
+changes" fields below are the edges and arcs that system runs on.
+
 ---
 
 ## Canonical draft residents

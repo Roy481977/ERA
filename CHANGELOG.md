@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Living World: interwoven lives ("the same rails") — PROPOSED
+
+Per Roy: all the living must interact, in a town, on the same rails — bonding and
+aging across years; tens of lives on different days/occasions; scripted for
+years. Added `living-world/interwoven-lives.md`, the connective system beneath
+residents + places:
+
+- **One shared clock** — all lives on a single persistent timeline, so
+  interactions are consistent, co-witnessed and rememberable (a world with a
+  past, not a loop).
+- **Three levels of life** — named residents · minor residents (the "tens of
+  lives") · micro-life (squirrels, cats, foxes) — all on the same rails.
+- **The web** — relationships as edges (bonds, chance "sometimes" encounters,
+  care, rivalry, romance, cross-species) with evolving strength and encounter rules.
+- **Scripted for years** — authored milestone arcs (aging, loss, growing up) +
+  emergent daily texture; AI orchestrates within authored bounds, Human Test
+  governs. The agency–otherness balance applied to authorship of the world.
+- **Worked example** — the boy (provisional "Tomas") and the Old Dog: a bond, the
+  "sometimes" search, the squirrels, multi-year aging, and a loss that strikes all
+  four textures at once and is never undone.
+- Player sees only fragments over years; never the cause, never a quest.
+
+Cross-linked from residents.md and README. PROPOSED.
+
 ## 2026-07-19 — Living World: places defined + the two moons — PROPOSED
 
 Defined the district's places in `living-world/places.md` (Club/Stadium, Main

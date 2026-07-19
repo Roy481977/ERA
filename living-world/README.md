@@ -285,6 +285,8 @@ Progress and remaining questions:
   canonical spine, rings a radial reading (see `places.md`). Awaiting Roy.
 - Create **routines for every landmark across seasons and match days** in detail
   (next).
+- Populate the **minor lives** (the "tens of lives") and author their arcs on the
+  shared rails (see [`interwoven-lives.md`](interwoven-lives.md)).
 - **_[CKO-proposed]_ Confirm the stadium size/placement** (~20–25%, lower-right,
   non-dominant, per Roy's revision).
 
@@ -295,5 +297,7 @@ Progress and remaining questions:
 - [`README.md`](README.md) — this overview.
 - [`places.md`](places.md) — the district's places (the emotional-geography spine).
 - [`residents.md`](residents.md) — the residents system, template and biographies.
+- [`interwoven-lives.md`](interwoven-lives.md) — the shared-timeline web: how all
+  the lives interact and age across years ("the same rails").
 - [`the-quiet-mysteries.md`](the-quiet-mysteries.md) — the never-explained
   mystical root (the two moons).

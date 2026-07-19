@@ -80,6 +80,7 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | living-world/README.md | PROPOSED | The Living World (district) — consolidated from all three sources |
 | living-world/places.md | PROPOSED | The district's places (emotional-geography spine) + place template |
 | living-world/residents.md | PROPOSED | Residents system, template, and full cast biographies |
+| living-world/interwoven-lives.md | PROPOSED | The shared-timeline web: lives interacting and aging across years ("the same rails") |
 | living-world/the-quiet-mysteries.md | PROPOSED | The never-explained mystical root (the two moons) |
 
 ---
@@ -89,6 +90,12 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Living World: interwoven lives ("the same rails").** Per Roy,
+  documented the connective system: all lives interact on one shared timeline,
+  bonding and aging across years, scripted at milestones with emergent daily
+  texture (tens of lives, named + minor + micro). Boy-and-the-Old-Dog developed
+  as the canonical worked example (bond, "sometimes" searches, squirrels, aging,
+  a four-textures loss). New doc `living-world/interwoven-lives.md`. PROPOSED.
 - **2026-07-19 — Living World: places + the two moons.** Defined the district's
   places (Club, Main Street, Plaza & Fountain, Riverside/Bridge/Oak, Museum
   Quarter, Academy, Railway) with a place template, and introduced the
