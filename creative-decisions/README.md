@@ -69,3 +69,4 @@ Each Creative Decision is its own file, `CD-###-slug.md`:
 | [CD-003](CD-003-recognition-beneath-memory.md) | Recognition beneath Memory | PROPOSED (CKO seed) | IP-002 A2, CE-1, CR-1; IP-001 AT-9 |
 | [CD-004](CD-004-meaning-split-from-recognition.md) | Meaning split from Recognition | PROPOSED (CKO seed) | IP-002 A3, A2, CE-3, CR-2 |
 | [CD-005](CD-005-relational-axiom.md) | The Relational Axiom (over "Non-Control") | PROPOSED (CKO seed) | IP-002 AR, CE-6, CR-8, RQ-1; supersedes AT-6 |
+| [CD-006](CD-006-simulate-intention-not-movement.md) | Simulate Intention, Not Movement (the Town Engine) | PROPOSED | IP-002 AR; living-world (README, interwoven-lives, places); tech companion `research/town-engine-technical-strategy.md` |

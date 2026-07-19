@@ -31,6 +31,7 @@ GOVERNANCE.md       ← constitution: authority, classification law, protocols
 CHANGELOG.md        ← every change, dated. Nothing changes silently.
 intake/             ← ERA Import Packages (IP-###): discoveries (the WHAT)
 creative-decisions/ ← Creative Decisions (CD-###): why a discovery won (the WHY)
+research/           ← external inputs + technical evaluations (e.g. Town Engine)
 living-world/       ← the district: places, residents, interwoven lives, mysteries
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
@@ -38,7 +39,7 @@ proposed/           ← PROPOSED, awaiting Roy's ruling
 open/               ← OPEN unresolved questions
 rejected/           ← REJECTED ideas, kept with reasons
 superseded/         ← SUPERSEDED material, kept with replacement pointers
-research/           ← RESEARCH: external inputs informing ERA
+research/           ← RESEARCH: external inputs and technical evaluations informing ERA
 draft/              ← DRAFT incomplete working material
 ```
 
@@ -57,7 +58,7 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 | OPEN | 0 | `open/` |
 | REJECTED | 0 | `rejected/` |
 | SUPERSEDED | 0 | `superseded/` |
-| RESEARCH | 0 | `research/` |
+| RESEARCH | 1 | `research/` (Town Engine technical strategy) |
 | DRAFT | 0 | `draft/` |
 
 Note: IP-001 holds **15 accepted truths + 1 candidate** (AT-4, proposed/not
@@ -86,6 +87,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | living-world/the-quiet-mysteries.md | PROPOSED | The never-explained mystical root (the two moons) |
 | creative-decisions/README.md | meta | Creative Decisions module: purpose, format, workflow, register |
 | creative-decisions/CD-001…CD-005 | PROPOSED | Foundational Creative Decisions (why each survived): Attachment-not-addiction · Grown-not-built · Recognition-beneath-Memory · Meaning-split-from-Recognition · Relational-Axiom |
+| creative-decisions/CD-006-simulate-intention-not-movement.md | PROPOSED | Simulate intention, not movement — the Town Engine principle |
+| research/town-engine-technical-strategy.md | RESEARCH / PROPOSED | Town Engine build-vs-buy architecture + six-week vertical slice (technical companion to CD-006) |
 
 ---
 
@@ -94,6 +97,14 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Intake: CD-006 + Town Engine (from Roy's repo update).** Intook
+  an updated-repo zip; philosophy, living-world and sources were identical, so
+  integrated only the new material: **CD-006 — Simulate Intention, Not Movement**
+  (the Town Engine principle) and `research/town-engine-technical-strategy.md`
+  (build-vs-buy + six-week vertical slice). Numbering (CD-006) and cross-refs
+  verified; the zip's INDEX/CHANGELOG/GOVERNANCE/CD-README were **not** taken
+  (older/parallel state missing CD-001–005 and GOVERNANCE §7). PROPOSED — not
+  promoted.
 - **2026-07-19 — Foundational Creative Decisions backfilled (CD-001…CD-005).**
   The reasoning behind the five foundational decisions is now captured: CD-001
   Attachment-not-addiction, CD-002 Grown-not-built (over "Partner"), CD-003

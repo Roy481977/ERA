@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Intake: CD-006 + Town Engine (repo-update zip) — PROPOSED
+
+Roy provided an updated-repository zip (ChatGPT-authored) adding CD-006 and a
+Town Engine technical strategy. Intake per the CKO protocol:
+
+- **Consistency check.** Compared the zip against the live repo file-by-file:
+  `intake/` (IP-001/002), all of `living-world/`, and all of `sources/` were
+  **identical**. The only genuinely new files were CD-006 and the Town Engine doc.
+- **Not taken (parallel/older state).** The zip's `GOVERNANCE.md` was an *older*
+  copy missing live **§7 (Creative Decisions)**; its `INDEX.md`, `CHANGELOG.md`
+  and `creative-decisions/README.md` reflected a state that did not include the
+  live **CD-001…CD-005**. These were kept from the live repo, not overwritten.
+- **Integrated.** Added `creative-decisions/CD-006-simulate-intention-not-movement.md`
+  ("ERA simulates intention; movement is its visible consequence" — the Town
+  Engine) and `research/town-engine-technical-strategy.md` (build-vs-buy, tiers,
+  semantic-place graph, six-week vertical slice).
+- **Reconciliation.** Numbering **CD-006** is correct (next after CD-005).
+  Cross-refs verified (CD-006 ↔ town-engine ↔ IP-002 AR ↔ living-world). Added an
+  `ID` row to CD-006 for format parity; adopted the broadened `research/`
+  definition ("external inputs and technical evaluations"); linked the chain from
+  `living-world/interwoven-lives.md` → CD-006 → the technical strategy. Register,
+  INDEX and dashboard (RESEARCH → 1) updated.
+- **Status.** All PROPOSED. **Not promoted to canonical.**
+
 ## 2026-07-19 — Foundational Creative Decisions backfilled (CD-001…CD-005) — PROPOSED
 
 At Roy's request, backfilled the five foundational Creative Decisions, each with

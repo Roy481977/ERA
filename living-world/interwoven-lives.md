@@ -7,6 +7,12 @@ connective system that binds [`residents.md`](residents.md) and
 [`places.md`](places.md) into one living town rather than a set of parallel
 routines.
 
+> The **decision** to realize this by simulating *intention* (not movement) is
+> [`CD-006`](../creative-decisions/CD-006-simulate-intention-not-movement.md); its
+> **technical strategy** (build-vs-buy, the Town Engine, a six-week vertical slice)
+> is [`town-engine-technical-strategy.md`](../research/town-engine-technical-strategy.md).
+> Both PROPOSED.
+
 ---
 
 ## 1. The principle
