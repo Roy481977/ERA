@@ -1,0 +1,46 @@
+# ERA — Audio Ecology Engine
+
+**Status: PROPOSED.**
+
+## Purpose
+
+Renders persistent and reactive sound from place, time, weather, crowd, football, memory and culture.
+
+## Constitutional connection
+
+Supports attachment by making the Club and district persistent, independent, legible and capable of reflecting consequence over time. Every implementation must pass the Human Test and preserve the Relational Axiom: consequential agency inside an independent world.
+
+## Owns
+
+The authoritative state and rules implied by the purpose above. Exact schemas remain open.
+
+## Must not own
+
+It does not use music as a substitute for missing world state.
+
+## Dependencies
+
+Reads all presentation-relevant systems.
+
+## Inputs and outputs
+
+Inputs are explicit state reads or requests from dependent systems. Outputs are versioned state changes and domain events, never hidden side effects.
+
+## First proof
+
+A listener can infer place, time and matchday state with the screen hidden.
+
+## Failure modes
+
+- hidden authority overlap with another system;
+- behavior that cannot explain its cause;
+- content loops visible to the player;
+- state that cannot survive save/load or off-screen simulation;
+- AI-generated exceptions that bypass authored rules.
+
+## Open questions
+
+- Exact data model and update frequency.
+- Deterministic versus stochastic behavior boundaries.
+- Authoring tools required for designers.
+- Performance and simulation-fidelity budgets.

@@ -8,6 +8,37 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Intake: IP-003 + architecture module (Systems Architecture Foundation) — PROPOSED
+
+Roy provided the "ERA Systems Architecture Foundation" package (ChatGPT-authored),
+declared as net-new only. Intake per protocol:
+
+- **Consistency check.** Every file was net-new (nothing live replaced, as
+  stated). All 15 subsystem briefs carry Status: PROPOSED and a "Constitutional
+  connection" citing the Human Test and the Relational Axiom. Recognition Engine
+  maps to IP-002 A2; the roadmap's 6-week Town Engine slice matches
+  `research/town-engine-technical-strategy.md`. **No contradictions with
+  canon-track.**
+- **Integrated (wrapper folder stripped):**
+  - `intake/IP-003-systems-architecture-foundation.md` — the Import Package
+    (Design Translation): ERA as a **federation of bounded living systems sharing
+    one authoritative world state and one clock; AI proposes/orchestrates inside
+    authored bounds and never silently owns or rewrites world truth.**
+  - `architecture/` (top-level module): `README.md`, `system-map.md`,
+    `execution-roadmap.md`, and `systems/` (15 engine briefs: town, time,
+    world-persistence, relationship, memory, recognition, event, matchday,
+    club-culture, economy, narrative, ai-director, crowd, weather-season,
+    audio-ecology).
+- **Reconciliation.** IP-003 numbering correct (after IP-002). Placed
+  `architecture/` top-level (per the module's own tree), noting its permanence is
+  Roy's to ratify (IP-003 open question). Added a CKO **reconciliation map** in
+  `architecture/README.md` (each engine → its IP/CD/living-world roots) and
+  cross-linked the Town Engine brief ↔ CD-006 ↔ the technical strategy ↔
+  `living-world/interwoven-lives.md`. The intake instruction file
+  (`README-FOR-CLAUDE.md`) was not committed (transient guidance, not a repo
+  artifact).
+- **Status.** All PROPOSED. **Not promoted to canonical.**
+
 ## 2026-07-19 — Intake: CD-006 + Town Engine (repo-update zip) — PROPOSED
 
 Roy provided an updated-repository zip (ChatGPT-authored) adding CD-006 and a

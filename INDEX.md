@@ -32,6 +32,7 @@ CHANGELOG.md        ← every change, dated. Nothing changes silently.
 intake/             ← ERA Import Packages (IP-###): discoveries (the WHAT)
 creative-decisions/ ← Creative Decisions (CD-###): why a discovery won (the WHY)
 research/           ← external inputs + technical evaluations (e.g. Town Engine)
+architecture/       ← systems architecture: system map, roadmap, subsystem briefs
 living-world/       ← the district: places, residents, interwoven lives, mysteries
 constitution/       ← ERA's foundational principles (the design Constitution)
 canon/              ← CANONICAL, approved by Roy, split by domain
@@ -54,7 +55,7 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 | Status | Count | Location |
 |---|---|---|
 | CANONICAL | 0 | `canon/`, `constitution/` |
-| PROPOSED | 2 pkgs + living-world | `intake/IP-001`, `intake/IP-002`, `living-world/` |
+| PROPOSED | 3 pkgs + living-world + architecture + 6 CDs | `intake/IP-001…IP-003`, `living-world/`, `architecture/`, `creative-decisions/` |
 | OPEN | 0 | `open/` |
 | REJECTED | 0 | `rejected/` |
 | SUPERSEDED | 0 | `superseded/` |
@@ -79,6 +80,7 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | CHANGELOG.md | meta | Change history |
 | intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package (Philosophy): the converged worldview |
 | intake/IP-002-human-attachment.md | PROPOSED | Second Import Package (Human Attachment Research): candidate axioms, compression events, constitutional consequences |
+| intake/IP-003-systems-architecture-foundation.md | PROPOSED | Third Import Package (Design Translation): the federation-of-systems architecture proposition |
 | sources/ (4 docs + manifest) | SOURCE | Roy's primary ERA corpus, verbatim, pending distillation — Design Bible, Book of ERA, Beginning, proposal chat |
 | living-world/README.md | PROPOSED | The Living World (district) — consolidated from all three sources |
 | living-world/places.md | PROPOSED | The district's places (emotional-geography spine) + place template |
@@ -89,6 +91,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | creative-decisions/CD-001…CD-005 | PROPOSED | Foundational Creative Decisions (why each survived): Attachment-not-addiction · Grown-not-built · Recognition-beneath-Memory · Meaning-split-from-Recognition · Relational-Axiom |
 | creative-decisions/CD-006-simulate-intention-not-movement.md | PROPOSED | Simulate intention, not movement — the Town Engine principle |
 | research/town-engine-technical-strategy.md | RESEARCH / PROPOSED | Town Engine build-vs-buy architecture + six-week vertical slice (technical companion to CD-006) |
+| architecture/ (README, system-map, execution-roadmap) | PROPOSED | Systems architecture: federation of bounded systems, one world state + one clock; layer map; phased roadmap |
+| architecture/systems/ (15 briefs) | PROPOSED | Subsystem briefs: town, time, world-persistence, relationship, memory, recognition, event, matchday, club-culture, economy, narrative, ai-director, crowd, weather-season, audio-ecology |
 
 ---
 
@@ -97,6 +101,14 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Intake: IP-003 + `architecture/` module (Systems Architecture
+  Foundation).** All net-new; nothing live was replaced. Added IP-003 and a
+  top-level `architecture/` module (README, system-map, execution-roadmap, 15
+  subsystem briefs) proposing ERA as a **federation of bounded systems sharing one
+  authoritative world state and one clock; AI proposes/orchestrates but never owns
+  or rewrites world truth.** Added a CKO reconciliation map (each engine → its
+  IP/CD/living-world roots) and cross-linked the Town Engine brief ↔ CD-006 ↔ the
+  technical strategy. No contradictions found. PROPOSED — not promoted.
 - **2026-07-19 — Intake: CD-006 + Town Engine (from Roy's repo update).** Intook
   an updated-repo zip; philosophy, living-world and sources were identical, so
   integrated only the new material: **CD-006 — Simulate Intention, Not Movement**
