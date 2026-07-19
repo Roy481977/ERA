@@ -18,6 +18,22 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 5: intentions & small deviations — PROPOSED
+
+New `sim/intention.rs`: a lightweight, deterministic layer above the routine. The
+routine is still the default plan, but a resident who is winding down to go home
+may instead **detour to join a nearby friend** — if that friend is present at an
+open public place, reachable, the bond is strong enough (affinity ≥ 2), a seeded
+gate passes, and there is provably still time to visit *and* get home. Bounded to
+one deviation per resident per day. Every deviation is logged with its reason
+("Eva meant to head home, but Karim was at the Main Square and the two are
+close — Eva detours to join them"), and the deviations emerge from relationships
+built up in Phase 4 rather than any script.
+
+Four new tests (residents deviate; deterministic; capped once per day; never
+stranded — everyone still reaches home every day). **24 tests pass.** The observer
+lists the week's spontaneous visits.
+
 ## 2026-07-19 — Phase 4: first social life — PROPOSED
 
 Residents who share a public place at a compatible time may now interact. New

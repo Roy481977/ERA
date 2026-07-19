@@ -96,3 +96,40 @@ strengthen bonds; cap at once per pair per day; leave memories. 20 tests total.
 places, not at home; dialogue is structured, not generated.
 
 **Commands:** `cargo run` (see "Today's connections") · `cargo test`
+
+---
+
+## Phase 5 — Intentions and small deviations ✅
+
+**What became more alive:** residents stopped being pure routine-executors. Now a
+resident heading home who spots a friend nearby may change their mind and go join
+them — a small, human swerve that comes from who is where *right now*, not from a
+script. Because the bonds that drive it grow through Phase 4, the town's evenings
+differ as friendships deepen.
+
+**Implemented:** `sim/intention.rs` — `consider_social_detour`: when the routine
+would send a resident home in the late-afternoon window, the intention layer looks
+for a present friend at a reachable, open public place, checks there is time to
+visit and still get home, and (behind a seeded gate) returns a `Deviation`. The
+simulation applies it as a one-off visit, then the routine resumes (they head
+home). Bounded to one deviation per resident per day.
+
+**Files changed:** `sim/intention.rs` (new), `sim/resident.rs`
+(`deviations_today`), `sim/simulation.rs` (presence snapshot + deviation hook in
+selection), `sim/mod.rs`, `sim/social.rs` (one extra seeded bond), `main.rs`
+(five-day deviation summary), `tests/intention.rs` (new).
+
+**Architectural choices:** the routine stays the default; deviation only overrides
+a "go home" plan (the safe, believable case) and is proven time-safe before it
+triggers, so no resident is ever stranded. Determinism via the same seeded hash.
+Presence is read from a start-of-tick snapshot to avoid borrow conflicts.
+
+**Tests added (4):** residents deviate; deterministic; capped once per day; never
+stranded. 24 tests total.
+
+**Known limitations:** only one deviation type (the social detour); no needs/mood
+driving choices yet; deviations read start-of-tick presence, so a friend who
+arrives the same tick isn't seen until the next.
+
+**Commands:** `cargo run` (see "Spontaneous deviations over five days") ·
+`cargo test`

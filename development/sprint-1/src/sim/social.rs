@@ -44,6 +44,7 @@ impl Relationships {
         r.set("res_milo", "res_karim", 2, 1); // busks by the kiosk
         r.set("res_sofia", "res_milo", 1, 1); // young friends
         r.set("res_tomas", "res_agnes", 1, 2); // the boy and the elder
+        r.set("res_eva", "res_karim", 2, 2); // stall & kiosk neighbours
         r
     }
 

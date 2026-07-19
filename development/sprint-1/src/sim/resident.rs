@@ -59,6 +59,8 @@ pub struct Resident {
     pub status: Status,
     pub done_today: Vec<&'static str>,
     pub memories: Vec<Memory>,
+    /// Deviations taken today (bounds spontaneity to keep the day coherent).
+    pub deviations_today: u32,
 }
 
 impl Resident {
@@ -81,6 +83,7 @@ impl Resident {
             status: Status::Idle,
             done_today: Vec::new(),
             memories: Vec::new(),
+            deviations_today: 0,
         }
     }
 

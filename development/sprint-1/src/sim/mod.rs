@@ -2,6 +2,7 @@
 
 pub mod cast;
 pub mod clock;
+pub mod intention;
 pub mod resident;
 pub mod routine;
 pub mod simulation;

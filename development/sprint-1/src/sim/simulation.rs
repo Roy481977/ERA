@@ -5,6 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::sim::clock::{WorldClock, TICKS_PER_DAY};
+use crate::sim::intention;
 use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::routine::Routine;
 use crate::sim::social::{self, Relationships};
@@ -69,6 +70,7 @@ impl Simulation {
         if day_rolled {
             for r in &mut self.residents {
                 r.done_today.clear();
+                r.deviations_today = 0;
             }
             self.social_seen_today.clear();
             self.last_day = day;
@@ -76,10 +78,18 @@ impl Simulation {
         let hour = self.clock.hour();
         let weekday = self.clock.weekday();
 
+        // Snapshot of where everyone is at the start of the tick (for the
+        // intention layer to read without borrowing residents mutably).
+        let presence: Vec<crate::sim::intention::Presence> = self
+            .residents
+            .iter()
+            .map(|r| (r.id, r.name, r.place, r.is_present()))
+            .collect();
+
         // --- movement + activity selection ---
         // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
         {
-        let Simulation { world, residents, log, clock, .. } = self;
+        let Simulation { world, residents, log, clock, relationships, .. } = self;
         let nav: &NavGraph = &world.nav;
 
         for r in residents.iter_mut() {
@@ -130,8 +140,37 @@ impl Simulation {
                 let choice = r
                     .select(hour, weekday, world)
                     .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
-                if let Some((aid, apurpose, adur, dest_opt)) = choice {
-                    if let Some(dest) = dest_opt {
+
+                // Intention layer: a resident about to head home may instead
+                // detour to join a nearby friend (Phase 5). The routine remains
+                // the default; deviation only overrides a plan to go home.
+                let plan = match choice {
+                    Some((aid, apurpose, adur, Some(dest))) => {
+                        let heading_home = dest == r.home;
+                        let deviation = if heading_home {
+                            intention::consider_social_detour(
+                                r, hour, clock.tick, &presence, relationships, world, nav,
+                            )
+                        } else {
+                            None
+                        };
+                        match deviation {
+                            Some(dev) => {
+                                log.push(Event {
+                                    tick: clock.tick, day: clock.day(), hour: clock.hour(),
+                                    resident: r.name, message: dev.reason,
+                                });
+                                r.deviations_today += 1;
+                                Some((dev.activity_id, dev.purpose, dev.duration, dev.dest))
+                            }
+                            None => Some((aid, apurpose, adur, dest)),
+                        }
+                    }
+                    _ => None,
+                };
+
+                if let Some((aid, apurpose, adur, dest)) = plan {
+                    {
                         if dest == r.place {
                             r.status = Status::Performing { activity: aid, left: adur };
                             log.push(Event {

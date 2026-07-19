@@ -88,5 +88,22 @@ fn main() {
             it.hour, a, b, it.kind.verb(), rel.affinity, rel.trust
         );
     }
-    println!("\nPhase 4 complete: residents meet, acknowledge one another, and remember it.");
+    // Phase 5: spontaneous deviations. Extend the run and surface the choices
+    // that came from the world rather than the routine.
+    sim.run(4); // continue to five days
+    let deviations: Vec<_> = sim
+        .log
+        .iter()
+        .filter(|e| e.message.contains("detours to join"))
+        .collect();
+    println!(
+        "\nSpontaneous deviations over five days ({}):",
+        deviations.len()
+    );
+    for e in &deviations {
+        let wd = era_first_breath::sim::clock::WEEKDAY_NAMES[(e.day % 7) as usize];
+        println!("  {} {:02}:00 — {}", wd, e.hour, e.message);
+    }
+
+    println!("\nPhase 5 complete: residents form intentions and sometimes deviate — explainably.");
 }
