@@ -6,8 +6,9 @@ history of changes lives in [CHANGELOG.md](CHANGELOG.md).
 
 **Status:** 2026-07-19. GitHub mirror live. Two Import Packages captured, both
 **PROPOSED**: **IP-001 (Worldview Foundation)** and **IP-002 (Human Attachment
-Research)**. No canonical content yet. Phase 2 (Human Attachment) continues —
-pressing the roots (RQ-1) before locking the axioms.
+Research)**. No canonical content yet. Phase 2 reached a compression (axiom AR /
+CE-6: "the player shapes the Club but never solely authors it"); axioms not yet
+locked, wording open.
 
 ---
 
