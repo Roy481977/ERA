@@ -1,146 +1,268 @@
-//! First Breath observer binary.
+//! First Breath — the observer (Phase 8).
 //!
-//!   cargo run          # Phase 1: the district, then Phase 2: one simulated day
+//! A structured terminal window onto the living district. Deterministic: the same
+//! command always prints the same world.
 //!
-//! Deterministic: the same build always produces the same day.
+//!   cargo run                 # a normal day, hour by hour (Monday)
+//!   cargo run -- matchday     # a Saturday: how the town reacts to the football
+//!   cargo run -- week         # a seven-day summary (interactions, deviations, results)
+//!   cargo run -- days 14      # an N-day summary
+//!   cargo run -- explain Tomas    # one resident's day, with the reason for every move
+//!   cargo run -- district     # just the world (locations, hours, nav graph)
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
+use std::env;
 
+use era_first_breath::sim::clock::{TICKS_PER_DAY, WEEKDAY_NAMES};
+use era_first_breath::sim::matchday::{self, MatchResult};
+use era_first_breath::sim::resident::Status;
 use era_first_breath::sim::{cast, Simulation};
-use era_first_breath::world::build_world;
+use era_first_breath::world::{build_world, World};
 
 fn main() {
-    // ---- Phase 1: the district ----
-    let world = build_world();
-    println!("=== ERA — First Breath · Phase 1: the district ===\n");
+    let args: Vec<String> = env::args().skip(1).collect();
+    let mode = args.first().map(|s| s.as_str()).unwrap_or("normal");
+    match mode {
+        "normal" => normal_day(),
+        "matchday" => matchday_view(),
+        "week" => summary_view(7),
+        "days" => {
+            let n = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(7);
+            summary_view(n);
+        }
+        "explain" => explain(args.get(1).cloned().unwrap_or_else(|| "Tomas".to_string())),
+        "district" => print_district(&build_world()),
+        _ => {
+            eprintln!("unknown mode '{mode}'. try: normal | matchday | week | days N | explain NAME | district");
+        }
+    }
+}
+
+// ---------------------------------------------------------------- views
+
+fn normal_day() {
+    print_district(&build_world());
+    let mut sim = Simulation::new(cast());
+    sim.run(1);
+    println!("\n=== A day in the district — {} ===", weekday(0));
+    print_day_timeline(&sim, 0);
+    print_occupancy(12); // midday snapshot
+    print_connections(&sim, 0);
+    print_oak(&sim);
+    print_end_positions(&sim);
+    println!("\n(For the football: `cargo run -- matchday`. For a whole week: `cargo run -- week`.)");
+}
+
+fn matchday_view() {
+    let mut sim = Simulation::new(cast());
+    sim.run(6); // through Saturday (day 5)
+    let week = 5 / 7;
+    println!(
+        "=== Matchday — {} (Rain Town {} today) ===",
+        weekday(5),
+        MatchResult::for_week(week).verb()
+    );
+    print_day_timeline(&sim, 5);
+    print_occupancy_on(&sim, 5, matchday::KICKOFF); // who is where at kick-off
+    print_oak(&sim);
+    print_end_positions(&sim);
+}
+
+fn summary_view(days: u64) {
+    let mut sim = Simulation::new(cast());
+    sim.run(days);
+    println!("=== {days}-day summary ===\n");
+    println!("{:<6} {:<5} {:<12} {:<11} {}", "Day", "Wkdy", "Interactions", "Deviations", "Matchday");
+    for d in 0..days {
+        let interactions = sim.interactions.iter().filter(|i| i.day == d).count();
+        let deviations = sim
+            .log
+            .iter()
+            .filter(|e| e.day == d && e.message.contains("detours to join"))
+            .count();
+        let md = if matchday::is_matchday(d % 7) {
+            format!("match: Rain Town {}", MatchResult::for_week(d / 7).verb())
+        } else {
+            "—".to_string()
+        };
+        println!("{:<6} {:<5} {:<12} {:<11} {}", d, weekday(d), interactions, deviations, md);
+    }
+    print_oak(&sim);
+    print_strongest_bonds(&sim);
+}
+
+fn explain(name: String) {
+    let mut sim = Simulation::new(cast());
+    sim.run(6);
+    let id = sim
+        .residents
+        .iter()
+        .find(|r| r.name.eq_ignore_ascii_case(&name))
+        .map(|r| r.id);
+    let Some(id) = id else {
+        eprintln!("no resident named '{name}'. try one of: {}", cast().iter().map(|r| r.name).collect::<Vec<_>>().join(", "));
+        return;
+    };
+    let who = sim.resident(id).unwrap();
+    println!("=== {} ({}, {}) — six days, and why ===", who.name, who.age, who.occupation);
+    for d in 0..6 {
+        println!("\n-- {} (day {d}) --", weekday(d));
+        for e in sim.log.iter().filter(|e| e.day == d && e.resident == who.name) {
+            println!("  {:02}:00  {}", e.hour, e.message);
+        }
+    }
+    println!("\n{} remembers, in all:", who.name);
+    for m in &who.memories {
+        println!("  · day {} {:02}:00 — {}", m.day, m.hour, m.note);
+    }
+}
+
+// ---------------------------------------------------------------- sections
+
+fn print_district(world: &World) {
+    println!("=== The First Breath district ===\n");
     println!("Locations ({}):", world.locations.len());
     for l in &world.locations {
         let hours = match l.hours {
             Some(h) => format!("[{:02}:00–{:02}:00]", h.open, h.close),
             None => "[always open]".to_string(),
         };
+        let kind = if l.is_residential() { "home" } else { "civic" };
         println!(
-            "  {:<16} {:<18} {:<14} affordances: {}",
-            l.id, l.name, hours, l.affordances.join(", ")
+            "  {:<16} {:<18} {:<6} {:<14} {}",
+            l.id, l.name, kind, hours, l.affordances.join(", ")
         );
     }
     println!("\nNavigation graph (undirected; weight = travel ticks):");
-    let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
+    let mut seen = std::collections::BTreeSet::new();
     for node in world.nav.nodes() {
         for (other, w) in world.nav.neighbors(node) {
             let key = if node < other { (node, other) } else { (other, node) };
             if seen.insert(key) {
-                println!("  {:<16} <-> {:<16} {} tick(s)", key.0, key.1, w);
+                println!("  {:<16} <-> {:<16} {}", key.0, key.1, w);
             }
         }
     }
     let problems = world.validate();
-    if !problems.is_empty() {
+    if problems.is_empty() {
+        println!("\nValidation: OK.");
+    } else {
         for p in &problems {
             println!("  PROBLEM: {p}");
         }
-        std::process::exit(1);
     }
-    println!("\nValidation: OK — 5 locations, graph connected, all affordances present.");
+}
 
-    // ---- Phase 2: one simulated day ----
-    println!("\n=== Phase 2: one day in the district (10 residents, routines) — Mon ===\n");
-    let mut sim = Simulation::new(cast());
-    sim.run(1); // 24 ticks = one day (day 0 = Monday)
-
+fn print_day_timeline(sim: &Simulation, day: u64) {
     let mut last_hour = u64::MAX;
-    for e in &sim.log {
+    for e in sim.log.iter().filter(|e| e.day == day) {
         if e.hour != last_hour {
             println!("\n-- {:02}:00 --", e.hour);
             last_hour = e.hour;
         }
-        println!("  {:<7} {}", e.resident, e.message);
+        println!("  {:<8} {}", e.resident, e.message);
     }
+}
 
-    println!("\nEnd of day — where everyone is:");
+/// Occupancy snapshot: rebuild deterministically and read positions at an hour.
+fn print_occupancy(hour: u64) {
+    let mut sim = Simulation::new(cast());
+    // Step to `hour` on day 0.
+    for _ in 0..hour {
+        sim.step();
+    }
+    println!("\n-- who is where at {:02}:00 --", hour);
+    render_occupancy(&sim);
+}
+
+fn print_occupancy_on(_sim: &Simulation, day: u64, hour: u64) {
+    let mut sim = Simulation::new(cast());
+    for _ in 0..(day * TICKS_PER_DAY + hour) {
+        sim.step();
+    }
+    println!("\n-- who is where at {:02}:00, {} --", hour, weekday(day));
+    render_occupancy(&sim);
+}
+
+fn render_occupancy(sim: &Simulation) {
+    let mut by_place: BTreeMap<&str, Vec<String>> = BTreeMap::new();
     for r in &sim.residents {
-        let home = if r.place == r.home { "(home)" } else { "(!)" };
-        println!("  {:<7} at {:<16} {}", r.name, r.place, home);
+        let what = match &r.status {
+            Status::Idle => r.name.to_string(),
+            Status::Performing { .. } => r.name.to_string(),
+            Status::Traveling { dest, .. } => format!("{}→{}", r.name, dest),
+        };
+        by_place.entry(r.place).or_default().push(what);
     }
-
-    // Spotlight: prove one resident completed a believable routine.
-    if let Some(tomas) = sim.resident("res_tomas") {
-        println!(
-            "\nSpotlight — Tomas (age 9) completed today: {}",
-            tomas.done_today.join(", ")
-        );
-        if !tomas.memories.is_empty() {
-            println!("  Tomas will remember:");
-            for m in &tomas.memories {
-                println!("    · {:02}:00 — {}", m.hour, m.note);
-            }
-        }
+    for (place, who) in by_place {
+        let name = sim.world.location(place).map(|l| l.name).unwrap_or(place);
+        println!("  {:<18} {}", name, who.join(", "));
     }
+}
 
-    // Social summary.
-    println!("\nToday's connections ({} interactions):", sim.interactions.len());
-    for it in &sim.interactions {
+fn print_connections(sim: &Simulation, day: u64) {
+    let today: Vec<_> = sim.interactions.iter().filter(|i| i.day == day).collect();
+    println!("\n-- connections today ({}) --", today.len());
+    for it in today {
         let a = sim.resident(it.a).map(|r| r.name).unwrap_or(it.a);
         let b = sim.resident(it.b).map(|r| r.name).unwrap_or(it.b);
         let rel = sim.relationships.get(it.a, it.b);
         println!(
-            "  {:02}:00 {:<7} & {:<7} {:<28} (now affinity {}, trust {})",
+            "  {:02}:00 {:<7} & {:<7} {:<28} (affinity {}, trust {})",
             it.hour, a, b, it.kind.verb(), rel.affinity, rel.trust
         );
     }
-    // Phase 5: spontaneous deviations. Extend the run and surface the choices
-    // that came from the world rather than the routine.
-    sim.run(4); // continue to five days
-    let deviations: Vec<_> = sim
-        .log
-        .iter()
-        .filter(|e| e.message.contains("detours to join"))
-        .collect();
-    println!(
-        "\nSpontaneous deviations over five days ({}):",
-        deviations.len()
-    );
-    for e in &deviations {
-        let wd = era_first_breath::sim::clock::WEEKDAY_NAMES[(e.day % 7) as usize];
-        println!("  {} {:02}:00 — {}", wd, e.hour, e.message);
-    }
+}
 
-    println!("\nPhase 5 complete: residents form intentions and sometimes deviate — explainably.");
-
-    // Phase 6: the Old Oak's living history (accumulated over the five days).
-    let season = sim.oak.season(sim.clock.day().saturating_sub(1));
+fn print_oak(sim: &Simulation) {
+    let day = sim.clock.day().saturating_sub(1);
+    let season = sim.oak.season(day);
     println!(
-        "\nThe Old Oak — {} years old, by the riverside, {} this {}.",
+        "\n-- The Old Oak ({} yrs, {} this {}) --",
         sim.oak.age_years,
         season.appearance(),
         season.name()
     );
     println!(
-        "  {} visits · {} scarves · {} bouquets recorded.",
+        "  {} visits · {} scarves · {} bouquets",
         sim.oak.visit_count, sim.oak.scarves, sim.oak.bouquets
     );
     let history = sim
         .oak
         .readable_history(|id| sim.resident(id).map(|r| r.name.to_string()).unwrap_or_else(|| id.to_string()));
-    println!("  Its history so far:");
     for line in history.iter().rev().take(8).rev() {
         println!("    · {line}");
     }
-    println!("\nPhase 6 complete: the Old Oak remembers who came, and when.");
+}
 
-    // Phase 7: matchday. Continue to Saturday and show how the town reacts.
-    sim.run(1); // day 5 = Saturday
-    println!("\n=== Matchday (Saturday) — how the district reacts ===");
-    for e in sim.log.iter().filter(|e| e.day == 5) {
-        let is_match = e.resident == "Matchday"
-            || e.message.contains("match")
-            || e.message.contains("Stadium")
-            || e.message.contains("square after")
-            || e.message.contains("scarf")
-            || e.message.contains("flowers");
-        if is_match {
-            println!("  {:02}:00 {:<8} {}", e.hour, e.resident, e.message);
+fn print_strongest_bonds(sim: &Simulation) {
+    // Show the warmest relationships that have formed.
+    let mut pairs: Vec<(&str, &str, i32, i32)> = Vec::new();
+    for i in 0..sim.residents.len() {
+        for j in (i + 1)..sim.residents.len() {
+            let (a, b) = (sim.residents[i].id, sim.residents[j].id);
+            let rel = sim.relationships.get(a, b);
+            if rel.affinity > 0 {
+                pairs.push((sim.residents[i].name, sim.residents[j].name, rel.affinity, rel.trust));
+            }
         }
     }
-    println!("\nPhase 7 complete: matchday moves the whole town — and marks the Oak.");
+    pairs.sort_by(|a, b| b.2.cmp(&a.2).then(b.3.cmp(&a.3)));
+    println!("\n-- strongest bonds --");
+    for (a, b, aff, trust) in pairs.into_iter().take(6) {
+        println!("  {:<8} & {:<8} affinity {}, trust {}", a, b, aff, trust);
+    }
+}
+
+fn print_end_positions(sim: &Simulation) {
+    println!("\n-- end of day --");
+    for r in &sim.residents {
+        let tag = if r.place == r.home { "(home)" } else { "(!)" };
+        let name = sim.world.location(r.place).map(|l| l.name).unwrap_or(r.place);
+        println!("  {:<8} {:<18} {}", r.name, name, tag);
+    }
+}
+
+fn weekday(day: u64) -> &'static str {
+    WEEKDAY_NAMES[(day % 7) as usize]
 }

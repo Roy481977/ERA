@@ -209,3 +209,38 @@ opens early / café busier" is conveyed by announcement and foot-traffic, not ye
 changed hours or stock.
 
 **Commands:** `cargo run` (see "Matchday (Saturday)") · `cargo test`
+
+---
+
+## Phase 8 — Observation & demonstration ✅
+
+**What became more alive:** you can now *watch* it. The observer turns the
+simulation into something you read like a diary — a day hour by hour, a matchday,
+a week at a glance, or one person's life with the reason behind every step.
+
+**Implemented:** `main.rs` rewritten as a mode-driven terminal observer:
+`normal` (default), `matchday`, `week`, `days N`, `explain NAME`, `district`. It
+renders time, locations and routes, current intentions, an occupancy snapshot,
+interactions, state changes, and the Oak's history — deterministically.
+
+**Files changed:** `main.rs` (rewritten), Sprint-1 README (setup, commands,
+expected output, limitations).
+
+**The eight demonstration requirements:** setup (`rustup`), run (`cargo run`),
+test (`cargo test`), normal day (`cargo run`), matchday (`cargo run -- matchday`),
+multi-day (`cargo run -- week` / `days N`), expected output (README), known
+limitations (README) — all provided.
+
+**Known limitations:** terminal, not graphical (a viewer would be disproportionate
+now); no interactive stepping; snapshots rebuild the run to a tick (cheap at this
+scale).
+
+**Commands:** see the Sprint-1 README.
+
+---
+
+## Status
+
+Phases 3–8 are complete and committed as small reviewable steps. 34 tests pass;
+determinism, no-teleport, one-owner-per-fact, and end-of-day-home invariants hold
+across a full week including matchday. Paused here for review.

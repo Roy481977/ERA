@@ -18,6 +18,27 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 8: observation & demonstration — PROPOSED
+
+Rewrote `main.rs` into a structured terminal **observer** with modes (the earlier
+per-phase print sections were scaffolding, now replaced):
+
+- `cargo run` — a normal day, hour by hour, with a midday occupancy snapshot,
+  the day's connections, and the Oak's state.
+- `cargo run -- matchday` — a Saturday: buildup, converging supporters, kick-off
+  occupancy, result, post-match, Oak mark.
+- `cargo run -- week` / `-- days N` — a per-day summary table (interactions,
+  deviations, matchday result) plus Oak growth and the strongest bonds formed.
+- `cargo run -- explain NAME` — one resident's six days with the reason attached
+  to every move, and everything they remember.
+- `cargo run -- district` — the world alone (locations, hours, nav graph).
+
+The observer shows simulation time, locations and routes, current intentions
+(who is where / en route), occupancy, interactions, state changes, and the Oak's
+history — all deterministic. The Sprint-1 README now documents setup, every run
+command, expected output, and limitations. **34 tests pass.** This completes the
+Phases 3–8 arc; stopping here for review.
+
 ## 2026-07-19 — Phase 7: first matchday life — PROPOSED
 
 New `sim/matchday.rs`: every Saturday the club plays (kick-off 15:00), and the

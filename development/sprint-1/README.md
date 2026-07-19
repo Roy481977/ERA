@@ -1,99 +1,86 @@
 # ERA — Sprint 1 code (First Breath)
 
-Headless, deterministic simulation core in **Rust** (see
-[`../../creative-decisions/CD-007-core-language-rust.md`](../../creative-decisions/CD-007-core-language-rust.md)).
-No game engine (that choice remains open — IP-003). Spec:
-[`../DS-001-first-breath.md`](../DS-001-first-breath.md).
+A headless, deterministic simulation core in **Rust** (see
+[`../../creative-decisions/CD-007-core-language-rust.md`](../../creative-decisions/CD-007-core-language-rust.md)) —
+no game engine (that choice stays open, IP-003). It grows a small district into a
+world that visibly lives: people wake at different times, keep individual routines,
+meet and remember one another, occasionally change their minds, tend a 400-year-old
+oak, and react to the Saturday football.
+
+Specs: [`../DS-001-first-breath.md`](../DS-001-first-breath.md) (the district) and
+[`../DS-002-living-world.md`](../DS-002-living-world.md) (phases 3–8, per-phase
+progress).
+
+## Setup
+
+Requires the Rust toolchain (`cargo`). One-time install if you don't have it:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
+
+No other dependencies — the core is standard-library only.
 
 ## Run
 
-```bash
-cd development/sprint-1
-cargo run            # build + observe the district (and, from Phase 2, one day)
-cargo test           # unit + integration tests
-```
-
-## Demonstration — watch a resident live a believable day
-
-Everything needed to run the simulation and watch the first resident complete a
-believable routine, in one place.
-
-### Exact commands
+From this folder (`development/sprint-1`):
 
 ```bash
-# from the repository root
-cd development/sprint-1
-cargo run            # prints the district, then one full simulated day
-cargo test           # optional: proves the run is correct (11 tests)
+cargo run                  # a normal day, hour by hour (Monday)
+cargo run -- matchday      # a Saturday: how the town reacts to the football
+cargo run -- week          # a seven-day summary (interactions, deviations, results)
+cargo run -- days 14       # an N-day summary
+cargo run -- explain Tomas # one resident's six days, with the reason for every move
+cargo run -- district      # just the world (locations, hours, nav graph)
+cargo test                 # the full test suite (34 tests)
 ```
 
-(Rust toolchain required — install once from https://rustup.rs if `cargo` is
-missing. No other dependencies; the core is standard-library only.)
+Everything is deterministic: the same command always prints the same world.
 
-### Expected output
+## What the observer shows
 
-`cargo run` prints two parts:
+- **Simulation time** — day, weekday, and hour on every line.
+- **Resident locations & routes** — each move prints where they set out for, the
+  purpose, and the exact path walked (never a teleport).
+- **Current intention** — the occupancy snapshot shows who is where and who is
+  *en route* to where.
+- **Location occupancy** — a "who is where at HH:00" snapshot (midday on a normal
+  day; kick-off on a matchday).
+- **Interactions** — who met whom, what passed between them, and the running
+  affinity/trust.
+- **Important state changes** — matchday buildup and result, deviations, the Oak's
+  scarves and flowers.
+- **The Old Oak** — its age, season, tallies, and recent history.
+- **Decision explanations** — `explain NAME` prints a resident's whole day with the
+  reason attached to every choice (route, detour, interaction, matchday).
 
-1. **Phase 1 — the district:** the five locations with their affordances, the
-   navigation graph (edges + travel ticks), and a validation line ending
-   `Validation: OK`.
-2. **Phase 2 — one day:** an hour-by-hour timeline from `00:00` onward. Each line
-   is a resident either *setting out for* a place (with the route) or *arriving*
-   to do something. It closes with an **end-of-day roll-call** (every resident
-   should read `(home)`) and a **Spotlight** on Tomas listing what he did today.
+## Expected output (normal day, abridged)
 
-The run is deterministic: the same build always prints the exact same day.
+```
+=== A day in the district — Mon ===
+-- 04:00 --
+  Hana     fires the ovens before dawn — at loc_bakery
+...
+-- who is where at 12:00 --
+  Bakery             Hana, Sofia
+  Café               Luca, Milo
+  Main Square        Eva, Karim, Agnes, Tomas
+  Stadium            Victor
+...
+-- connections today (8) --
+  07:00 Hana    & Sofia   shared a word of encouragement (affinity 4, trust 5)
+...
+-- The Old Oak (400 yrs, in full green leaf this Summer) --
+  3 visits · 0 scarves · 0 bouquets
+    · Day 0 (Mon) 15:00 — Agnes sat a while beneath the Oak
+-- end of day --
+  Hana     Miller's Row       (home)
+  ...                          (home)
+```
 
-### What to observe — the district wakes in a spread
-
-Nobody rises in unison. Hana the baker `fires the ovens before dawn` at **04:00**;
-the working residents open up around **05:00–06:00**; young Tomas is up at
-**07:00**; Milo the musician `sleeps off the late crowd` until **09:00**. Each
-wake time comes from the resident's own sleep length, not a shared alarm.
-
-### Follow one life — Tomas (age 9)
-
-- **00:00** he `sleeps — at loc_riverside` (his home).
-- **07:00** he `sets out for loc_bakery (runs for a warm roll)` — note the *route*
-  `loc_riverside -> loc_cafe -> loc_bakery`: he walks it, edge by edge, never
-  teleporting.
-- **10:00** he arrives: `runs for a warm roll — at loc_bakery`.
-- **11:00–12:00** he heads to and `plays in the square`.
-- **15:00–17:00** he walks back to the riverside and `visits the Old Oak`.
-- **19:00** he is `home for the evening — at loc_riverside`.
-- The **Spotlight** line confirms: `tomas_sleep, tomas_roll, tomas_play,
-  tomas_oak, tomas_home` — a whole believable day, chosen tick by tick, not
-  scripted to the clock.
-
-Watch the world *converge* on its own, too: around **14:00** both Elias and Victor
-drift into the café, and the Old Oak draws Agnes (14:00), Elias and Tomas (17:00)
-across the afternoon — nobody coordinated that; it falls out of independent
-routines sharing one world.
-
-### Why this is believable, not scheduled
-
-Each resident chooses each activity from a *preferred arrival time* it can slip
-within, an *overridable destination*, and a *condition* gate — a proto-intention
-(CD-006), not a fixed timestamp. Today the conditions are always true and choices
-are deterministic; the same shape is what a later needs/mood/relationship layer
-will steer, with no redesign.
-
-### Known limitations (Sprint 1, by design)
-
-- **No Old Oak object yet.** Residents *visit* the oak via the `VISIT_OAK`
-  affordance, but the living world-object (seasonal state, interaction history)
-  is Phase 3 — not built here.
-- **Residences are shared nodes.** Each resident sleeps in one of three
-  residential locations (Miller's Row, High Street Rooms, Oakside Cottages), so
-  nobody sleeps in a public place — but several residents share a residential
-  node rather than each having a private dwelling. Per-resident dwellings can come
-  later.
-- **Conditions are always `Always`.** The decision-making gate exists structurally
-  but does nothing yet — deliberately.
-- **No needs, mood, or relationship influence on selection.** Relationships are
-  documented in DS-001 §2 but do not yet bend behaviour.
-- **Seasons/weather not modelled.** One generic day; the clock tracks hours only.
-- **Reduced scale:** 5 locations / 10 residents, versus the WI-01 vertical slice.
+On a matchday you additionally see the buildup, supporters converging on the
+stadium for kick-off, the result, the post-match square, and the Oak's scarf/flowers.
 
 ## Layout
 
@@ -101,27 +88,46 @@ will steer, with no redesign.
 sprint-1/
   Cargo.toml
   src/
-    lib.rs               # crate root
-    world/               # Phase 1 — world representation
-      mod.rs             #   World + validation
-      location.rs        #   5 semantic locations + affordances
+    lib.rs
+    world/               # the district
+      location.rs        #   8 locations (5 civic + 3 residential), affordances, opening hours
       navigation.rs      #   nav graph: edges, travel time, shortest path
-    sim/                 # Phase 2 — clock, residents, routines, simulation
-      mod.rs             #   re-exports
-      clock.rs           #   WorldClock (hour counter; 24 ticks/day)
+      mod.rs             #   World + validation + is_open
+    sim/                 # the living simulation
+      clock.rs           #   WorldClock (hour counter; weekday)
       routine.rs         #   Activity/Routine/Condition (proto-intention model)
-      resident.rs        #   Resident + live status; hour-based selection
+      resident.rs        #   Resident, live status, memories
       cast.rs            #   the 10 residents' routines
-      simulation.rs      #   the tick loop + event log
-    main.rs              # observer binary
-  tests/                 # integration tests
+      social.rs          #   relationships + deterministic interactions
+      intention.rs       #   small deviations (the social detour)
+      oak.rs             #   the Old Oak: seasonal state + living history
+      matchday.rs        #   the Saturday match and its consequences
+      simulation.rs      #   the tick loop
+    main.rs              # the observer (this file's commands)
+  tests/                 # world, routine, social, intention, oak, matchday
 ```
 
-## Phase status
+## Phase status (Sprint 1)
 
-- [x] **Phase 1 — World representation** (locations, affordances, nav graph, validate).
-- [x] **Phase 2 — Residents, routines (not fixed schedules), WorldClock, sim loop.**
-      10 residents complete believable routines through the world; deterministic;
-      no teleporting; everyone ends the day at home. 11 tests pass.
-- [ ] Phase 3 — Living-object framework + the Old Oak.
-- [ ] Phase 4 — First executable simulation (full observed day/multi-day).
+- [x] **Phase 1** — world representation (locations, affordances, nav graph).
+- [x] **Phase 2** — residents, proto-intention routines, WorldClock, sim loop.
+- [x] **Phase 3** — believable daily structure (residences, staggered waking, opening hours, weekday variation).
+- [x] **Phase 4** — first social life (relationships, interactions, memories).
+- [x] **Phase 5** — intentions and small deviations (the social detour).
+- [x] **Phase 6** — the Old Oak becomes living history.
+- [x] **Phase 7** — first matchday life.
+- [x] **Phase 8** — observation & demonstration (this observer).
+
+## Known limitations (Sprint 1, by design)
+
+- **Terminal only** — a structured text observer, not a graphical viewer (a viewer
+  would be disproportionate work at this stage).
+- **Shared residences** — three residential nodes house several residents each; no
+  private dwellings yet.
+- **One club, one fixture a week**, with a seeded scoreline — the town's reaction is
+  the content, not match play.
+- **Fixed supporter list; one deviation type** (the social detour); no needs/mood
+  driving behaviour yet.
+- **Seasons turn slowly** (four-week seasons), so short runs stay in one season.
+- **No save/load** — all state is serialisation-ready, not yet serialised.
+- **Structured interactions**, not generated dialogue.
