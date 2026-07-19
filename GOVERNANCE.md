@@ -203,3 +203,10 @@ implementation.
 Clubs.** We preserve what survived challenge and proved meaningful — decisions,
 live questions, and the reasons they held — not the full transcript.
 Brainstorming is not preserved.
+
+**Discovery vs. explanation.** A *discovery* changes the philosophy — it adds,
+removes, replaces, or compresses a truth. An *explanation* only states an
+existing truth more clearly. Research packages record discoveries as first-class
+entries (e.g. "compression events"); explanations live inside the truths they
+support and never stand alone. This keeps the repository growing through genuine
+progress rather than elaboration.

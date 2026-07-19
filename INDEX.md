@@ -4,10 +4,10 @@ The single map of the ERA knowledge repository. Start here. Governance and the
 rules that bind this repository live in [GOVERNANCE.md](GOVERNANCE.md); the full
 history of changes lives in [CHANGELOG.md](CHANGELOG.md).
 
-**Status:** 2026-07-19. GitHub mirror live. First Import Package **IP-001
-(Worldview Foundation)** distilled, organized into five sections, and confirmed
-by Roy — held **PROPOSED**, pending explicit ratification. No canonical content
-yet. Next phase: Human Attachment Research (see GOVERNANCE §6).
+**Status:** 2026-07-19. GitHub mirror live. Two Import Packages captured, both
+**PROPOSED**: **IP-001 (Worldview Foundation)** and **IP-002 (Human Attachment
+Research)**. No canonical content yet. Phase 2 (Human Attachment) continues —
+pressing the roots (RQ-1) before locking the axioms.
 
 ---
 
@@ -50,7 +50,7 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 | Status | Count | Location |
 |---|---|---|
 | CANONICAL | 0 | `canon/`, `constitution/` |
-| PROPOSED | 1 | `intake/IP-001` |
+| PROPOSED | 2 | `intake/IP-001`, `intake/IP-002` |
 | OPEN | 0 | `open/` |
 | REJECTED | 0 | `rejected/` |
 | SUPERSEDED | 0 | `superseded/` |
@@ -71,7 +71,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | GOVERNANCE.md | meta | Repository constitution & classification law |
 | INDEX.md | meta | This master map |
 | CHANGELOG.md | meta | Change history |
-| intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package: the converged worldview (accepted / open / rejected) |
+| intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package (Philosophy): the converged worldview |
+| intake/IP-002-human-attachment.md | PROPOSED | Second Import Package (Human Attachment Research): candidate axioms, compression events, constitutional consequences |
 
 ---
 
@@ -80,6 +81,11 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — IP-002 (Human Attachment Research) captured.** Candidate axioms
+  (externalized/vulnerable self, Recognition, Meaning, Independence), five
+  compression events, constitutional consequences, active research questions, and
+  candidate ratifications. All PROPOSED. Adds the discovery-vs-explanation rule
+  to GOVERNANCE §6. Phase 2 continues on RQ-1 (the deeper root) before locking.
 - **2026-07-19 — IP-001 confirmed & restructured.** Roy confirmed the
   distillation and set the five-section form (Accepted Truths / Open Questions /
   Rejected Directions / Key Constitutional Principles / Decision Rationale). AT-4
@@ -113,9 +119,10 @@ their own documents and in CHANGELOG.
 
 Design-level open questions (from IP-001, full text in the package):
 
-- **OQ-2 — Presence vs. authenticity (AI vs. human).** Is authentic simulation
-  sufficient for belonging, or is real human presence required? Largest open
-  question.
+- **OQ-2 — Presence vs. authenticity (AI vs. human).** *Tentatively resolving via
+  IP-002:* Recognition is a property of a living Club (Internal), amplified by
+  real others (External) — belonging does not depend on multiplayer. Awaiting
+  ratification.
 - **OQ-3 — Does "grown, not built" under-serve football's competitiveness?**
 - **OQ-4 — The arrow of real time / stepping away.** Returning to a Club reshaped
   in your absence: strength or alienation?
@@ -124,6 +131,14 @@ Design-level open questions (from IP-001, full text in the package):
 - **OQ-7 — The negative promises** (what ERA constitutionally refuses to do).
 - **OQ-8 — The boundary of emergent culture** (can the Club hold ground against
   the owner?).
+
+Phase 2 research questions (from IP-002):
+
+- **RQ-1 — Is there a deeper root beneath the four axioms?** Candidate: "the self
+  extends past its boundary." Must predict a new specific truth or be dropped.
+- **RQ-2 — Does vulnerability break out as its own axiom?**
+- **RQ-3 — Is Internal Recognition sufficient on independence alone,** or must it
+  channel a genuine valuing perspective (the Human Test tether)?
 
 ---
 

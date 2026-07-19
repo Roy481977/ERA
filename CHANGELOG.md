@@ -8,6 +8,33 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — IP-002 (Human Attachment Research) captured — PROPOSED
+
+Second Import Package, opening the Human Attachment research repository. Curated
+from the Phase 2 dialogue into six sections: Candidate Axioms (externalized/
+vulnerable self, Recognition, Meaning, Independence, plus an exploratory root and
+the tension meta-truth), Compression Events (five discoveries that reduced the
+philosophy), Constitutional Consequences (what each discovery strengthens/
+weakens/replaces/creates), Active Research Questions (RQ-1…RQ-3), Rejected/
+Demoted Ideas, and Candidate Ratifications (CR-1…CR-7).
+
+Notable movements (all PROPOSED, none canonical):
+- Recognition rises toward bedrock; **Memory demoted** to a mechanism.
+- **"The player is never the sole author"** generalizes and would supersede
+  "reality is the Club's co-author" (AT-6).
+- The four Internal-Recognition conditions collapse into one ("independent of the
+  present self").
+- OQ-2 (presence vs authenticity) tentatively resolving: belonging does not
+  require multiplayer.
+
+Governance:
+- Added the **discovery-vs-explanation rule** to GOVERNANCE §6: discoveries
+  change the philosophy and are recorded first-class; explanations only clarify
+  and never stand alone.
+
+INDEX updated (dashboard → 2 PROPOSED, register, decision record, open/research
+questions). Phase 2 continues on RQ-1 before the axioms are locked.
+
 ## 2026-07-19 — IP-001 confirmed, restructured; next phase set — PROPOSED
 
 Roy confirmed the IP-001 distillation and directed three changes plus a
