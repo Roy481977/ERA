@@ -76,6 +76,7 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | CHANGELOG.md | meta | Change history |
 | intake/IP-001-worldview-foundation.md | PROPOSED | First Import Package (Philosophy): the converged worldview |
 | intake/IP-002-human-attachment.md | PROPOSED | Second Import Package (Human Attachment Research): candidate axioms, compression events, constitutional consequences |
+| sources/ (4 docs + manifest) | SOURCE | Roy's primary ERA corpus, verbatim, pending distillation — Design Bible, Book of ERA, Beginning, proposal chat |
 
 ---
 
@@ -84,6 +85,15 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Source corpus received (4 documents).** Roy handed over the
+  full accumulated ERA material: the **Design Bible v0.1** (9-volume bible with
+  its own 7-law Constitution), the **Book of ERA v1.2** (district / living-world
+  layer), **"The Beginning"** (manifesto), and the **proposal ChatGPT chat**.
+  Preserved verbatim under `sources/` (originals + text), unclassified and NOT
+  canonical. To be distilled into Import Packages and reconciled with IP-001/
+  IP-002. Two constitutional threads now coexist — reconciliation pending; key
+  contradictions flagged (addiction vs attachment; football-as-skin vs
+  constitutive). See `sources/README.md`.
 - **2026-07-19 — IP-002 updated: Relational compression (CE-6 / axiom AR).**
   RQ-1 paid out: *deep attachment requires consequential agency inside an
   independent world* — "the player shapes the Club but never solely authors it";

@@ -1,0 +1,1032 @@
+                                              ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+                FOUNDATIONAL EDITION / VERSION 0.1
+
+
+
+                             ERA
+                         DESIGN BIBLE
+
+
+
+        Real football creates the moments.
+      The player creates what they become.
+
+
+      A persistent football world built on real football,
+   where one player shapes one institution across time.
+
+
+
+
+VISION • CONSTITUTION • PLAYER EXPERIENCE • LIVING WORLD • DESIGN METHOD
+
+
+
+
+                                   CONFIDENTIAL WORKING DOCUMENT                    1
+                                                            ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+PREFACE
+
+
+
+Purpose of This Bible
+This document captures the foundation of the game before individual mechanics are locked. It is
+not a conventional game design document and it is not a feature list. It exists to preserve the
+reason the game should exist, the experience it must create, and the laws that every future
+system must obey.
+
+The central risk is not a shortage of ideas. It is allowing strong ideas to become disconnected
+features, or allowing the philosophy to promise more than the actual game can deliver. This bible
+is intended to prevent both.
+
+
+  The internal standard
+  A mechanic belongs only when it can be traced to the Constitution and to a player experience
+  the game intends to create.
+
+
+
+This is a living document. The Constitution should change rarely. Systems, balance and
+implementation will evolve through playtesting. The emotional promise must remain intact.
+
+
+How to Read It
+ • Volume I establishes the thesis and the emotional promise.
+
+ • Volume II defines the immutable laws of the game.
+
+ • Volume III describes the player experience across minutes, match days, seasons and years.
+
+ • Volume IV defines the Living Club: the visual, ambient and responsive world surrounding the
+   fantasy engine.
+
+ • Volume V introduces the method that will convert the vision into mechanics without losing
+   coherence.
+
+
+
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                    2
+                                   ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+NAVIGATION
+
+
+
+Contents
+I                                         Why this game should exist
+             The Thesis
+
+II                                        What the player should feel
+             The Emotional Promise
+
+III                                       What the game must always obey
+             The Constitution
+
+IV                                        How the game lives across time
+             The Experience
+             Architecture
+
+V                                         A place worth visiting in every
+             The Living Club              session
+
+
+VI                                        A full environmental layer
+             Weather, Time and the
+             Real World
+
+VII                                       Scale without losing authorship
+             AI as a World-Building
+             Capability
+
+VIII                                      The design method for the next phase
+             From Vision to
+             Mechanics
+
+IX                                        What must be defined next
+             Immediate Design
+             Agenda
+
+
+
+
+                          CONFIDENTIAL WORKING DOCUMENT                          3
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME I
+
+
+
+The Thesis
+Football is shared. What people build from it is their own.
+Every weekend, millions of people experience the same football: the same goals, mistakes,
+breakthroughs, victories and heartbreaks. Reality does not change according to who is watching.
+
+Yet football never produces one uniform experience. Supporters value different players,
+moments and traditions. Clubs interpret the same reality through different ambitions, cultures
+and choices. One club sees a young player as the future. Another sees an immediate competitive
+need. Another is drawn to a star because of what that star represents.
+
+Fantasy football already provides an elegant interface to this shared reality. It turns the
+performances of individual real footballers into objective scores. But conventional fantasy play
+largely ends when the points are counted. The next round begins, and little of lasting significance
+remains.
+
+The game begins at that boundary.
+
+
+  The thesis
+  Use real football and objective fantasy scoring as the engine of a persistent institution: a club,
+  enterprise and world shaped by one player across many seasons.
+
+
+
+
+Why ERA
+The name should not be forced into every description of the game. It belongs at the highest
+emotional level.
+
+An era is created because the same player remains responsible for the same institution through
+changing footballers, seasons, victories, failures, fashions and conditions. The continuity of
+stewardship is what turns separate decisions into a body of work.
+
+The game is played week by week. The institution is built season by season. Only in retrospect
+does it become an ERA.
+
+
+  Epic usage
+  Great clubs are remembered through eras. This game lets the player create one.
+
+
+
+
+                                                  CONFIDENTIAL WORKING DOCUMENT                        4
+                                                            ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+The Object Being Created
+The player is not merely assembling a fantasy lineup. The player is creating a football institution
+with competitive ambition, an economy, supporters, collections, visual character, traditions and
+accumulated consequence.
+
+Winning matters greatly. Economic strength matters. Long-term strategy matters. Taste matters.
+Fandom matters. The institution becomes distinctive through the interaction of all of them, not
+through history alone.
+
+Two players may use the same footballers and receive the same fantasy points. Their institutions
+can still become radically different because the same reality is converted into different decisions,
+investments, attachments and outcomes.
+
+
+
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                         5
+                                                                ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME II
+
+
+
+The Emotional Promise
+The game must earn emotional commitment before it asks for long-term commitment. Players
+should not have to wait months to understand why the institution matters. The immediate
+session and the multi-year journey must reinforce each other.
+
+
+The Five Core Emotions
+
+ Ownership
+ This is not ownership of football itself. It is the feeling that the institution, its choices, its
+ spaces and its accumulated meaning could only have been created by this player.
+
+
+
+
+ Delight
+ Every visit should contain something satisfying to see, hear, discover, arrange, collect,
+ anticipate or celebrate. Long-term depth is never an excuse for a dull session.
+
+
+
+
+ Competition
+ Winning should produce real joy, status and economic consequence. The institution is not a
+ decorative sandbox detached from performance.
+
+
+
+
+ Attachment
+ Players should care about footballers, supporters, places and objects because they have lived
+ with them, used them and connected them to memorable moments.
+
+
+
+
+ Expression
+ Taste should emerge through choices rather than through selecting a predefined archetype.
+ The player takes shared football to their own place.
+
+
+
+
+                                                    CONFIDENTIAL WORKING DOCUMENT                     6
+                                                     ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+The Promise Across Time
+HORIZON              THE PLAYER SHOULD FEEL                 THE GAME MUST PROVIDE
+
+                     Visual pleasure and curiosity          Motion, sound, atmosphere,
+Seconds                                                     responsive detail
+
+
+                     Agency and reward                      Clear choices, collecting,
+Minutes                                                     customization, feedback
+
+
+                     Tension and celebration                Live fantasy scoring, competition,
+Match day                                                   supporter reaction
+
+
+                     Progress and consequence               Winning, economy, growth, setbacks,
+Season                                                      milestones
+
+
+                     Pride and authorship                   A unique institution, recognizable
+Years                                                       taste, accumulated stories
+
+
+
+
+                                      CONFIDENTIAL WORKING DOCUMENT                               7
+                                                              ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME III
+
+
+
+The Constitution
+The Constitution defines what the game is. It should remain compact enough to guide decisions
+and strong enough to reject attractive features that do not belong.
+
+These laws are not marketing lines. Each law creates a design obligation and a test.
+
+
+                                                   Reality Is Shared and Immutable
+                                                   Real football is the common world.
+
+                       1
+                                                   Every player experiences the same matches,
+                                                   footballers and outcomes. The game may
+                                                   interpret reality, but it must never rewrite it.
+                                                   Design test: Does the feature preserve a single shared
+                                                   football reality for everyone?
+
+
+
+
+                                                   Fantasy Is the Objective Engine
+                                                   Fantasy measures football performance;
+                                                   the institution never alters the score.
+                                                   The scoring system must remain transparent
+
+                       2                           and independent of wealth, upgrades, status
+                                                   or institutional strategy. Civilization can
+                                                   respond to fantasy, but it cannot influence
+                                                   fantasy.
+                                                   Design test: Could a richer or older institution change
+                                                   the fantasy output of the same real performance? If
+                                                   yes, reject it.
+
+
+
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                               8
+                ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+
+
+      The Institution Persists
+      Footballers, seasons and circumstances
+      change. The institution continues.
+
+3
+      Cards and players may enter, contribute and
+      leave. The player remains the steward of one
+      continuing institution, allowing consequence
+      to accumulate across time.
+      Design test: What remains meaningful after a
+      footballer is sold, transferred or retired?
+
+
+
+
+      Ownership Emerges Through
+      Decisions and Taste
+      Shared reality becomes personal through
+      repeated choice.
+      Players may access the same footballers and
+4     outcomes. Their institutions become
+      different through what they value, how they
+      compete, where they invest, what they
+      collect and what they preserve. Identity is
+      not selected; it is recognized later.
+      Design test: Does the system enable genuine
+      expression, or merely assign a cosmetic label?
+
+
+
+
+      Performance and Economy Have
+      Real Consequence
+      Winning matters, and strength must be
+      built.
+      Competitive results should influence
+5     supporters, resources, opportunity and
+      reputation. Losing clubs may retain loyal
+      supporters and emotional meaning, but the
+      game must not pretend that winning and
+      losing are equivalent.
+      Design test: Does success create meaningful advantage
+      without making long-term recovery impossible?
+
+
+
+
+    CONFIDENTIAL WORKING DOCUMENT                             9
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+
+
+                                                    Decisions Compound Without
+                                                    Rewriting the Present
+                                                    Strategy shapes the future; it does not
+                                                    manipulate objective football today.
+                                                    Repeated decisions create capabilities,
+                       6                            constraints and institutional character over
+                                                    time. Development should reward the
+                                                    process within the institution, not distort
+                                                    universal prices or retroactively change
+                                                    fantasy results.
+                                                    Design test: Does the choice create future consequence
+                                                    while respecting shared current reality?
+
+
+
+
+                                                    Every Session Must Reward
+                                                    Attention
+                                                    The institution must be enjoyable now,
+                                                    not only meaningful later.
+                       7                            The world should always offer visual life,
+                                                    atmosphere, discovery, interaction or
+                                                    anticipation. Players should sometimes visit
+                                                    simply because being there feels good.
+                                                    Design test: What can the player enjoy or notice in this
+                                                    session even without completing a strategic objective?
+
+
+
+
+Supporting Design Principles
+• Success is multidimensional, but competitive success remains central.
+
+• Time creates meaning, rarity and attachment; it should not merely create waiting.
+
+• Supporters attach to winning, taste, continuity, fandom and stories in different proportions.
+
+• The economy rewards the process and the institution, not artificial transaction markups.
+
+• The player's decisions shape the future rather than rewrite the present.
+
+• Every important mechanic should generate a player story and a visible world response.
+
+• Richness is a requirement, not a final polish pass.
+
+
+
+
+                                                CONFIDENTIAL WORKING DOCUMENT                                  10
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME IV
+
+
+
+The Experience Architecture
+The game operates on several clocks at once. The immediate session must be pleasurable. Match
+days must be tense. Seasons must create consequence. Years must create authorship.
+
+
+The Player's Core Loop
+1. Observe the living institution and the current football world.
+
+2. Prepare: choose footballers, lineups, investments, collections or priorities.
+
+3. Compete through objective fantasy scoring generated by real football.
+
+4. Experience the result through rewards, losses, supporter reaction and visible change.
+
+5. Reinvest into the institution according to personal strategy and taste.
+
+6. Return to a world that has continued living.
+
+
+The Four Rhythms
+Every Visit
+ • See what changed
+
+ • Enjoy the space
+
+ • Collect or customize
+
+ • Notice ambient stories
+
+ • Make one meaningful choice
+
+Match Day
+ • Prepare lineups
+
+ • Follow real football
+
+ • Watch live fantasy scoring
+
+ • Compete
+
+ • See the club and supporters react
+
+Season
+ • Chase titles and objectives
+
+ • Manage economic trade-offs
+
+ • Grow the institution
+
+ • Review milestones and failures
+
+                                                  CONFIDENTIAL WORKING DOCUMENT                   11
+                                                               ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+ • Create new expectations
+
+Multi-Year
+ • Develop recognizable taste
+
+ • Build sustained advantage
+
+ • Preserve meaningful objects and moments
+
+ • Create a dynasty or recover from decline
+
+ • Become known for an era
+
+
+Player Stories Before Systems
+The next phase of design should begin from stories the game must consistently produce.
+Mechanics are then built as reliable causes of those stories.
+
+ • I visited my club for one minute and noticed three things I had never seen before.
+
+ • I won a major fantasy competition and watched the entire institution celebrate.
+
+ • I stayed with a young footballer through weaker weeks because the long-term institutional
+   value mattered to me.
+
+ • I sold a footballer at the same market price as everyone else, but the years I invested still
+   strengthened my institution.
+
+ • My real-life club fandom is visible in the objects and atmosphere of my online club.
+
+ • A friend understood my football taste within seconds of visiting my institution.
+
+ • I lost for a period, but I still cared about the club and wanted to rebuild it.
+
+ • After several years, the institution felt like a coherent body of work rather than a stack of
+   upgrades.
+
+
+
+
+                                                   CONFIDENTIAL WORKING DOCUMENT                    12
+                                                              ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME V
+
+
+
+The Living Club
+The institution should never feel like a menu. It should feel like
+a place.
+The Living Club is not decorative packaging around the real game. It is one of the game's defining
+systems. It converts abstract progress, competition, fandom and time into a place the player can
+observe and enjoy.
+
+
+  The ambition
+  Players should sometimes open the game with no objective other than to spend a minute in
+  their club.
+
+
+
+
+The World Must Continue Without the Player
+The club should appear to have lived between sessions. Staff work. Visitors arrive. Construction
+advances. Grounds are maintained. Trees grow. Light changes. Weather passes. Supporters
+gather and disperse. Objects move. Small stories begin and end.
+
+The world should not repeat the same idle loop forever. It should be orchestrated from the
+institution's state, local time, real football calendar, weather, recent results, construction,
+collections and supporter profile.
+
+
+Everyday Life
+ • Ground staff mowing lawns in visible patterns.
+
+ • Gardeners pruning, watering and replacing plants.
+
+ • Trees growing slowly across months and responding to season and weather.
+
+ • Deliveries, maintenance vehicles and construction crews.
+
+ • Supporters visiting the museum, store, plaza and training areas.
+
+ • Children playing football, families taking photographs and staff moving between buildings.
+
+ • Birds, insects, pets, litter, cleaning and other small environmental details.
+
+ • Buildings opening, closing and changing activity according to the hour.
+
+
+Match-Day Transformation
+ • Supporters arrive in increasing numbers before kickoff.
+
+                                                  CONFIDENTIAL WORKING DOCUMENT                    13
+                                                               ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+ • Transport, food stalls, security, flags, music and queues alter the grounds.
+
+ • The stadium and surrounding spaces respond live to fantasy events.
+
+ • Goals, clean sheets, major mistakes and final results create distinct crowd reactions.
+
+ • A major final should feel fundamentally different from an ordinary fixture.
+
+ • After the event, crowds leave gradually and the grounds carry visible traces of what happened.
+
+
+Night
+ • Floodlights, office windows, pathways and display cases create a different visual composition.
+
+ • Security patrols, maintenance work and late visitors replace daytime activity.
+
+ • Trophy rooms, statues and museum objects can become focal points through lighting.
+
+ • Quiet should feel intentional rather than empty.
+
+ • Night events, celebrations and adverse weather can produce rare scenes.
+
+
+Visible Consequence
+ SYSTEM STATE                                       LIVING-WORLD EXPRESSION
+
+
+                                                    More visitors, fuller transport, queues, banners, denser
+ Supporter growth                                   match-day atmosphere
+
+
+                                                    Maintenance quality, construction tempo, commercial
+ Economic strength                                  activity, staffing and presentation
+
+
+                                                    Celebrations, media presence, trophy displays, special
+ Winning                                            lighting, prestige behavior
+
+
+                                                    Lower attendance, quieter spaces, protest or concern,
+ Losing period                                      but continued loyal presence
+
+
+                                                    Museum exhibits, statues, murals, club rooms, supporter
+ Collections                                        clothing and commemorative events
+
+
+                                                    What the club displays, celebrates, preserves and invests
+ Institutional taste                                attention in
+
+
+
+Richness Standard
+Richness cannot mean visual noise. It means layered, coherent variation. The player should see a
+believable combination of macro-state and micro-detail.
+
+ • Macro layer: architecture, grounds, supporter density, construction and major events.
+
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                                 14
+                                                            ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+• Meso layer: plazas, stores, museums, training areas, traffic, queues and staff activity.
+
+• Micro layer: gestures, conversations, cleaning, plant growth, birds, signage, changing displays
+  and small incidents.
+
+• Temporal layer: time of day, weekday, match schedule, season, weather and recent history.
+
+• Personal layer: fandom, collections, victories, taste, economic choices and long-term strategy.
+
+
+Non-negotiable
+No session should feel visually abandoned. The world may be quiet, but it must never feel
+dead.
+
+
+
+
+                                                CONFIDENTIAL WORKING DOCUMENT                       15
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME VI
+
+
+
+Weather, Time and the Real World
+The player's real-world location can supply a powerful additional layer of presence. With explicit
+permission, the game can query current local weather and use it to shape the club environment.
+
+This is not intended as a gimmick or a one-to-one meteorological simulation. It is an experiential
+bridge: the player's physical day and the institution's day can feel connected.
+
+
+Local Weather Layer
+ • Current conditions: clear, cloudy, rain, storms, wind, heat, cold, fog or snow where relevant.
+
+ • Temperature and season influence clothing, crowd behavior, vegetation, shade, irrigation and
+   activity.
+
+ • Rain changes surfaces, umbrellas, reflections, traffic, groundskeeping and sound.
+
+ • Wind affects trees, flags, litter, clothing and stadium atmosphere.
+
+ • Sun position and cloud cover alter light, shadow, color and visibility.
+
+ • Forecasts can create anticipation: covers placed before rain, watering ahead of heat, early
+   lighting before dark weather.
+
+ • Rare local conditions can create memorable scenes without granting competitive advantage.
+
+
+Time Layer
+ • Local sunrise and sunset drive natural lighting.
+
+ • The club changes between morning, afternoon, evening and night.
+
+ • Weekdays, weekends and holidays alter visitor patterns.
+
+ • The real football schedule overrides ordinary routines on match days.
+
+ • The world should preserve continuity when the player changes device or returns later.
+
+
+Privacy and Fairness
+ • Location-based weather must be opt-in and clearly explained.
+
+ • The game should request only the level of location precision needed to obtain local conditions.
+
+ • Players who decline location access receive a chosen or default weather region.
+
+ • Weather should enrich atmosphere and light operational choices, not determine competitive
+   fantasy outcomes.
+
+ • Accessibility settings must allow reduction of lightning, heavy motion, sound intensity and
+   visual obstruction.
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                      16
+                                                           ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+Weather as Storytelling
+Weather becomes meaningful when it meets an event. A storm during a final, a sunset after a
+championship, rain on a quiet rebuilding week, or the first warm evening of a new season can
+become part of the player's memory.
+
+
+ Experience rule
+ The same club should feel meaningfully different at noon, at night, in rain, in heat, before a
+ final and the morning after defeat.
+
+
+
+
+                                               CONFIDENTIAL WORKING DOCUMENT                      17
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME VII
+
+
+
+AI as a World-Building Capability
+AI can make the richness standard economically achievable, but it must serve authored design
+rather than replace it. The goal is not uncontrolled generation. The goal is scalable variation
+inside a coherent world.
+
+
+What AI Can Orchestrate
+ • Selection and timing of ambient events based on world state.
+
+ • Variation in crowd behaviors, clothing, signage, conversations and small incidents.
+
+ • Contextual reactions to results, milestones, weather and collections.
+
+ • Personalized museum descriptions, club media and commemorative displays.
+
+ • Procedural combinations of approved animation, audio and environmental assets.
+
+ • Long-tail moments that reduce repetition across thousands of sessions.
+
+
+What AI Must Not Control
+ • Fantasy scoring or objective football truth.
+
+ • Economic balance without deterministic rules and auditability.
+
+ • Competitive outcomes.
+
+ • Unreviewed brand, safety or rights-sensitive content.
+
+ • Core visual identity without art-direction constraints.
+
+
+Authored World, Generative Variation
+The creative team defines the vocabulary, tone, boundaries and meaning of the world. AI
+combines and contextualizes approved elements. Important moments remain deliberately
+directed; everyday life gains breadth and freshness.
+
+
+  AI principle
+  Use AI to multiply authored richness, not to outsource authorship.
+
+
+
+
+                                                  CONFIDENTIAL WORKING DOCUMENT                   18
+                                                          ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME VIII
+
+
+
+From Vision to Mechanics
+The next phase must touch mechanics directly. The purpose of this method is not to delay design.
+It is to make sure the mechanics are strong enough to carry the promise.
+
+
+The Design Chain
+
+ 1. Constitutional law
+ What must remain true?
+
+
+
+
+ 2. Desired emotion
+ What should the player feel?
+
+
+
+
+ 3. Player story
+ What should the player later describe?
+
+
+
+
+ 4. Player verb
+ What does the player actually do?
+
+
+
+
+ 5. System rule
+ How does the game convert action into consequence?
+
+
+
+
+ 6. Feedback
+ How does the player understand the result?
+
+
+
+
+ 7. Living-world expression
+ How does the institution visibly react?
+
+
+                                               CONFIDENTIAL WORKING DOCUMENT                   19
+                                                                 ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+
+
+
+  8. Balance and failure test
+  Can it be exploited, ignored or made tedious?
+
+
+
+
+Example: Young Footballer Strategy
+This example is illustrative, not final balance.
+
+1. Law: fantasy scoring remains objective; decisions compound without changing universal
+    market prices.
+
+2. Emotion: patience, belief and pride.
+
+3. Story: the player retained and repeatedly used a young footballer before he became widely
+    valued.
+
+4. Verb: acquire, select, retain, eventually sell or preserve.
+
+5. System: age, ownership duration, meaningful fantasy use and seasons retained accumulate
+    development history inside the institution.
+
+6. Economic rule: the footballer's universal transaction price remains the same for every player.
+
+7. Institutional consequence: development history strengthens the academy or related
+    institutional capability rather than increasing sale proceeds.
+
+8. Living-world response: academy displays, supporter stories, youth activity, commemorative
+    objects and reputation visibly evolve.
+
+
+Example: Winning
+1. Law: performance and economy have real consequence.
+
+2. Emotion: tension, triumph, momentum and pressure.
+
+3. Story: a major fantasy victory changed what the institution could attempt next.
+
+4. Verb: prepare, select, compete, watch, win, reinvest.
+
+5. System: competitive performance produces rewards, supporter response, reputation and
+    access.
+
+6. Counterweight: success increases expectations and creates more to defend.
+
+7. Living-world response: crowds, media, celebrations, displays and commercial activity change
+    immediately.
+
+
+
+
+                                                   CONFIDENTIAL WORKING DOCUMENT                      20
+                                                           ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+Mechanics Must Be Simple to Use, Deep in Combination
+The philosophy is sophisticated. The interface cannot require the player to study the philosophy.
+Players should make understandable choices and experience rich consequences.
+
+
+  Mechanics standard
+  Simple verbs. Legible rules. Deep combinations. Visible consequences.
+
+
+
+
+                                               CONFIDENTIAL WORKING DOCUMENT                    21
+                                                            ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+VOLUME IX
+
+
+
+Immediate Design Agenda
+The philosophy is sufficiently defined. The next work should lock the actual game in a deliberate
+sequence.
+
+
+1. Define the First 30 Minutes
+ • What does the player receive?
+
+ • What can be seen immediately?
+
+ • What is the first meaningful choice?
+
+ • What is the first competitive promise?
+
+ • What creates delight before any long-term progression exists?
+
+
+2. Define One Complete Match Week
+ • Footballer acquisition and availability.
+
+ • Lineup construction and competition format.
+
+ • Live scoring and opponent visibility.
+
+ • Rewards, losses and economic movement.
+
+ • Supporter and Living Club reactions.
+
+ • What the player does on a day with no match.
+
+
+3. Define the Institution's Core Resources
+ • Money and its sources and uses.
+
+ • Supporters and the reasons they arrive, stay or leave.
+
+ • Institutional capabilities created by investment.
+
+ • Collections and their emotional, visual and systemic roles.
+
+ • Reputation, status and access.
+
+ • What persists permanently and what resets by season.
+
+
+4. Define Competitive Success
+ • Primary fantasy competitions.
+
+ • Short-session, weekly and seasonal objectives.
+
+ • How winning accelerates the institution.
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                   22
+                                                             ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+ • How losing remains meaningful without being equally rewarding.
+
+ • Recovery paths that preserve agency.
+
+
+5. Prototype the Living Club in Parallel
+The Living Club must not be postponed until the systems are complete. A vertical slice should
+prove that the world can feel alive with limited content before scale is attempted.
+
+ • One stadium and surrounding grounds.
+
+ • Day, night and one weather condition.
+
+ • Ordinary day and match-day population states.
+
+ • Visible reaction to one win and one loss.
+
+ • A small set of AI-orchestrated ambient events.
+
+ • One real-life club collectible displayed in the environment.
+
+
+Working Questions That Must Be Answered
+ • What exactly is a player card, and what rights or uses come with owning one?
+
+ • How are footballers acquired when everyone can ultimately access the same reality?
+
+ • What is scarce: cards, use rights, editions, aesthetics, competition entries, time, or something
+   else?
+
+ • What is the simplest fantasy format that can carry the larger institution?
+
+ • How does the economy avoid becoming either irrelevant or pay-to-win?
+
+ • What do supporters consume, produce and change?
+
+ • How do real-life fandom collectibles enter the game legally and meaningfully?
+
+ • What can a visitor understand about another institution in ten seconds?
+
+ • Which actions create immediate fun on a quiet Tuesday?
+
+ • What is the smallest viable version that still feels unmistakably rich?
+
+
+
+
+                                                 CONFIDENTIAL WORKING DOCUMENT                        23
+                                                            ERA DESIGN BIBLE / FOUNDATIONAL EDITION
+
+FINAL
+
+
+
+Closing Standard
+              The game should be strategically meaningful,
+              competitively serious and visually irresistible.
+The football must remain real. The fantasy layer must remain objective. The institution must
+persist. Winning and economy must matter. Taste must emerge through decisions. The world
+must reward attention in every session.
+
+The ambition is not merely to create another football product. It is to create a place where real
+football continues beyond the final whistle, where a player's choices accumulate into an
+institution, and where years of stewardship can eventually be understood as an ERA.
+
+
+  The final test
+  Would a player return today because the game is fun, and remain for years because the
+  institution became theirs?
+
+
+
+
+                                                CONFIDENTIAL WORKING DOCUMENT                       24
+

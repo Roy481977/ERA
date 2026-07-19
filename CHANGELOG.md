@@ -8,6 +8,26 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Source corpus received & secured (4 documents)
+
+Roy handed over the full accumulated ERA material for documentation. All four
+preserved verbatim under `sources/` (originals + `.txt` extracts), classified as
+**SOURCE MATERIAL — unclassified, not canonical**:
+
+- `design-bible-v0.1.pdf` — ERA Design Bible, Foundational Edition v0.1 (9
+  volumes; its own 7-law Constitution; 5 core emotions; design chain).
+- `book-of-era-edition-I-v1.2.docx` — The Book of ERA v1.2, the district /
+  living-world layer.
+- `era-the-beginning-for-gamma.docx` — "The Beginning," the manifesto.
+- `proposal-chatgpt-chat.pdf` — the raw ChatGPT proposal chat (world visual
+  design + early strategy).
+
+Manifest at `sources/README.md` maps each document, the alignments with IP-001/
+IP-002, and the contradictions to resolve (addiction vs attachment;
+football-as-skin vs constitutive; two parallel "Constitutions"). Next step:
+distil into PROPOSED Import Packages and produce a reconciliation — nothing
+canonical until Roy ratifies.
+
 ## 2026-07-19 — IP-002: Relational compression (CE-6 / axiom AR) — PROPOSED
 
 RQ-1 paid out. The "self past its boundary" root yielded a compression: **deep
