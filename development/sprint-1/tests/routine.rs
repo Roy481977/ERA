@@ -1,7 +1,34 @@
 //! Phase 2 tests: residents complete believable routines through the world.
 
+use era_first_breath::sim::resident::Resident;
+use era_first_breath::sim::routine::{Activity, Condition};
 use era_first_breath::sim::{cast, Simulation};
 use era_first_breath::world::build_world;
+
+fn coffee_only(home: &'static str) -> Resident {
+    // A resident whose sole activity is a café visit, in-window all day.
+    Resident::new("res_test", "Tester", 30, "Tester", home, vec![Activity {
+        id: "test_coffee",
+        purpose: "wants coffee",
+        affordance: "DRINK_COFFEE",
+        dest: None,
+        preferred_arrival: 10,
+        flexibility: 12,
+        priority: 5,
+        duration: 1,
+        condition: Condition::Always,
+    }])
+}
+
+#[test]
+fn resident_will_not_select_a_closed_destination() {
+    let world = build_world();
+    let r = coffee_only("loc_high_street");
+    // Café shut at 06:00 -> nothing selectable even though the window allows it.
+    assert!(r.select(6, &world).is_none(), "chose the café while it was closed");
+    // Café open at 10:00 -> the coffee activity is now selectable.
+    assert!(r.select(10, &world).is_some(), "failed to choose the open café");
+}
 
 #[test]
 fn day_is_deterministic() {

@@ -4,6 +4,14 @@ use std::cmp::Reverse;
 
 use crate::sim::routine::{Activity, Routine};
 use crate::world::location::LocationId;
+use crate::world::World;
+
+/// Affordances that bypass a destination's opening hours: staff opening/working
+/// their own premises, and going home to rest. Everything else is a visitor and
+/// must find the destination open.
+fn ignores_hours(affordance: &str) -> bool {
+    affordance.starts_with("WORK") || affordance == "HOME" || affordance == "REST"
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Status {
@@ -65,20 +73,35 @@ impl Resident {
 
     /// Choose the most appropriate eligible, not-yet-done activity for this hour.
     ///
-    /// Eligible means: its condition holds, it hasn't been done today, and the
-    /// hour lies inside its flexibility window. Among the eligible, the resident
-    /// prefers the one it wants to be doing *soonest* (earliest preferred
-    /// arrival), breaking ties by higher priority, then by routine order — so
-    /// selection is fully deterministic.
-    pub fn select(&self, hour: u64) -> Option<&Activity> {
+    /// Eligible means: its condition holds, it hasn't been done today, the hour
+    /// lies inside its flexibility window, and its destination is open (unless
+    /// the activity bypasses hours — staff/home). Among the eligible, the
+    /// resident prefers the one it wants to be doing *soonest* (earliest
+    /// preferred arrival), breaking ties by higher priority, then by routine
+    /// order — so selection is fully deterministic.
+    pub fn select(&self, hour: u64, world: &World) -> Option<&Activity> {
         self.routine
             .activities
             .iter()
             .enumerate()
             .filter(|(_, a)| {
-                a.condition.holds() && !self.done_today.contains(&a.id) && a.in_window(hour)
+                a.condition.holds()
+                    && !self.done_today.contains(&a.id)
+                    && a.in_window(hour)
+                    && self.destination_open(a, hour, world)
             })
             .min_by_key(|(i, a)| (a.preferred_arrival, Reverse(a.priority), *i))
             .map(|(_, a)| a)
+    }
+
+    /// Whether the activity's destination is open at `hour` (or exempt).
+    fn destination_open(&self, a: &Activity, hour: u64, world: &World) -> bool {
+        if ignores_hours(a.affordance) {
+            return true;
+        }
+        match Routine::target_location(a, self.home) {
+            Some(dest) => world.is_open(dest, hour),
+            None => true,
+        }
     }
 }

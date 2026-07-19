@@ -108,7 +108,7 @@ impl Simulation {
                 // Resolve to owned values so the immutable borrow of `r` ends
                 // before we mutate its status/place below.
                 let choice = r
-                    .select(hour)
+                    .select(hour, world)
                     .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
                 if let Some((aid, apurpose, adur, dest_opt)) = choice {
                     if let Some(dest) = dest_opt {

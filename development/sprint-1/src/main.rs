@@ -13,9 +13,16 @@ fn main() {
     // ---- Phase 1: the district ----
     let world = build_world();
     println!("=== ERA — First Breath · Phase 1: the district ===\n");
-    println!("Locations (5):");
+    println!("Locations ({}):", world.locations.len());
     for l in &world.locations {
-        println!("  {:<16} {:<12} affordances: {}", l.id, l.name, l.affordances.join(", "));
+        let hours = match l.hours {
+            Some(h) => format!("[{:02}:00–{:02}:00]", h.open, h.close),
+            None => "[always open]".to_string(),
+        };
+        println!(
+            "  {:<16} {:<18} {:<14} affordances: {}",
+            l.id, l.name, hours, l.affordances.join(", ")
+        );
     }
     println!("\nNavigation graph (undirected; weight = travel ticks):");
     let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();

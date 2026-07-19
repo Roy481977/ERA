@@ -20,6 +20,11 @@ impl World {
         self.locations.iter().find(|l| l.id == id)
     }
 
+    /// Whether the location `id` is open at `hour` (unknown id => not open).
+    pub fn is_open(&self, id: &str, hour: u64) -> bool {
+        self.location(id).map(|l| l.is_open(hour)).unwrap_or(false)
+    }
+
     /// Validate the Phase-1 single-world-state invariants.
     /// Empty vec == valid.
     pub fn validate(&self) -> Vec<String> {

@@ -8,6 +8,16 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Phase 3c: opening hours + closed-destination gate — PROPOSED
+
+Locations gained optional **opening hours**: the Bakery opens 05:00–17:00 and the
+Café 07:00–22:00; civic places and residences never close. Activity selection now
+**refuses a closed destination** — a visitor cannot choose the café before it
+opens — while staff/owner work affordances (`WORK*`) and going `HOME`/`REST`
+bypass hours, so proprietors still open their own premises before dawn. New tests
+cover the open/close windows and the selection gate. **13 tests pass**; the
+observer now prints each location's hours.
+
 ## 2026-07-19 — Phase 3b: residential nodes (no public sleeping) — PROPOSED
 
 The district gained three residential locations — **Miller's Row**, **High Street

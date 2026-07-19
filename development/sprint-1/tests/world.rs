@@ -22,6 +22,23 @@ fn world_is_valid() {
 }
 
 #[test]
+fn shops_open_and_close() {
+    let w = build_world();
+    // Bakery 05:00–17:00.
+    assert!(!w.is_open("loc_bakery", 4));
+    assert!(w.is_open("loc_bakery", 5));
+    assert!(w.is_open("loc_bakery", 16));
+    assert!(!w.is_open("loc_bakery", 17));
+    // Café 07:00–22:00.
+    assert!(!w.is_open("loc_cafe", 6));
+    assert!(w.is_open("loc_cafe", 7));
+    assert!(!w.is_open("loc_cafe", 22));
+    // The square never closes; residences never close.
+    assert!(w.is_open("loc_main_square", 3));
+    assert!(w.is_open("loc_oakside", 3));
+}
+
+#[test]
 fn graph_connected() {
     assert!(build_world().nav.is_connected());
 }
