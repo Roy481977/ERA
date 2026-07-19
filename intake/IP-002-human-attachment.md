@@ -30,6 +30,44 @@ repository growing through genuine progress, not elaboration.
 Confidence scale: **Strong** (survived repeated challenge) · **Moderate**
 (converged but contested in part) · **Exploratory** (proposed, not yet tested).
 
+### AR — The Relational Axiom (candidate primary; wording open)
+**Deep attachment requires consequential agency inside an independent world** —
+the player can leave an irreversible mark, but the thing receiving the mark has
+enough independence to respond, resist, surprise, and continue beyond the
+player's intention. Provisional constitutional expression: *"The player shapes
+the Club but never solely authors it."* Emotional relationship: **stewardship,
+not sovereignty.**
+- **Confidence:** Strong (as a compression); **wording deliberately open**.
+- **Supporting reasoning:** Attachment is not maximised by control or by its
+  absence — it is an inverted-U. Total control yields a sterile object that only
+  executes intention; zero control yields spectatorship or powerlessness;
+  attachment develops in the middle, where the player has *consequential
+  influence but never sovereignty*. The necessary tensions: without agency,
+  helplessness not ownership; without resistance, authorship without
+  relationship; without consequence, agency is cosmetic; without independence,
+  recognition becomes self-congratulation. **Note:** the objects we control and
+  still love (a house, a painting, a manuscript) are precisely the ones that
+  *resisted* us — the medium fought back, the material pushed back — so even they
+  are agency meeting otherness, which confirms rather than refutes the axiom.
+- **The peak is per-domain.** The optimum point on the agency–otherness curve is
+  not global: *direction/strategy* wants high agency and low resistance; *culture*
+  wants low agency and high otherness. ERA is a field of dials, each domain tuned
+  to a different point — not one setting everywhere.
+- **Structural consequence (PROPOSED):** AR fuses the authorship half of A1 with
+  the whole of A4 (Independence). **Vulnerability and Independence become
+  *derived*** — vulnerability because outcomes cannot be guaranteed inside
+  otherness; independence because otherness *is* the world's autonomy. A3
+  (Meaning) is *not* absorbed and stands apart, which supports its being a
+  genuinely separate axiom. Net: the set compresses from four toward three —
+  **AR (Relational) · A2 (Recognition) · A3 (Meaning)**.
+- **Design test (derived):** for every meaningful domain, ask *Can the player
+  shape this?* and *Can it answer back?* If the first is no, the player feels no
+  responsibility; if the second is no, the Club is not alive. (Extended: not just
+  whether, but *how much* of each, per domain.)
+- **Lineage:** corrects the CKO's over-strong "you can only bond with what you do
+  not fully control" (see §5). Grew out of RQ-1 (the "self past its boundary"
+  root), which has now paid out.
+
 ### A1 — The externalized, vulnerable self
 The self extends into what it marks; once part of the self lives outside the
 self, it can be lost — and that exposure is a *source* of attachment, not a side
@@ -42,6 +80,8 @@ effect.
   distinct axiom of its own (see RQ-2).
 - **Constitutional implications:** Grounds ownership, identity, legacy; and
   strengthens honest-history/scars (IP-001 AT-7) by giving loss a mechanism.
+- **Proposed restructure:** the *authorship/mark* half of A1 folds into AR; its
+  *vulnerability* half becomes a derivation of AR. Retained here for lineage.
 
 ### A2 — Recognition
 The need to be acknowledged by a regard one cannot generate for oneself.
@@ -95,6 +135,8 @@ moves on its own — it never waits for the player.
 - **Constitutional implications:** Replaces/subsumes AT-6 ("reality is
   co-author"); creates a principle beneath "The Club is Alive" (AT-14/AT-15);
   connects to the arrow-of-time question (OQ-4).
+- **Proposed restructure:** A4 folds into AR as the *otherness* half; Independence
+  becomes a derivation of AR. Retained here for lineage.
 
 ### Candidate root (Exploratory) — the self extending past its boundary
 A proposed single generative act beneath A1–A4: attachment is the self reaching
@@ -114,6 +156,23 @@ controlled; permanent yet changing; mine yet shared; safe yet at stake). The
 tensions are emotional *generators*, not implementation problems, and should
 remain permanently unresolved.
 - **Confidence:** Strong.
+
+### Derived research models (not axioms)
+
+Preserved for future emotional and design work; these *derive from* the axioms
+rather than simplifying them.
+
+- **The four textures of loss** — vulnerability manifests in four forms, one per
+  direction of self-extension: loss of **place/form** (matter), loss of
+  **regard** (recognition), loss of **narrative** (meaning), and loss through
+  **uncontrollable reality** (independence). Key prediction: **losses compound
+  when several textures collapse at once** (e.g. a homegrown legend — your
+  creation, the crowd's hero, the subject of your best story — forced out by a
+  real-world event strikes all four simultaneously, producing ERA's deepest
+  grief). Derived from AR + Recognition + Meaning; do not elevate to an axiom.
+- **The agency–otherness tuning field** — each domain sits at its own point on
+  the inverted-U (direction: high agency; culture: high otherness). A design tool
+  derived from AR, not a separate truth.
 
 ---
 
@@ -138,9 +197,14 @@ Discoveries that made the philosophy *smaller*. (Explanations excluded by rule.)
   co-author, emergence, the world's momentum, and "aliveness from the
   uncontrolled" — collapse into one axiom, **Independence** ("the player is never
   the sole author"), which then turns out to be the *ground* beneath Recognition.
-
-*(Candidate, not yet a compression event: the "self past its boundary" root —
-held in §1 and RQ-1 until it earns discovery status.)*
+- **CE-6 — The Relational compression (agency inside otherness).** *Wording open.*
+  Independence and vulnerability are not separate primitives: both derive from a
+  single relational law — **deep attachment requires consequential agency inside
+  an independent world** ("the player shapes the Club but never solely authors
+  it"; stewardship, not sovereignty). This fuses the authorship half of A1 with
+  A4, demotes Independence and Vulnerability to derivations, and leaves Meaning
+  (A3) standing apart. Corrects the CKO's over-strong "non-control" formulation
+  (§5). This is the root of RQ-1, now paid out. See axiom **AR**.
 
 ---
 
@@ -161,6 +225,9 @@ IP-001.
 | Human Test as the recognition tether | **STRENGTHENS / PROMOTES** | AT-11 / KCP-7 |
 | Internal vs External recognition | **RESOLVES (tentative)** — no multiplayer needed | OQ-2 |
 | Vulnerability foregrounded | **STRENGTHENS**; candidate new principle | AT-1, AT-7 |
+| Relational compression (CE-6) | **CREATES** primary principle; **DERIVES** Independence & Vulnerability from it | (new) AR; A4, A1 |
+| "Player shapes but never solely authors" | **CREATES** constitutional expression | (new) supersedes AT-6 framing |
+| Stewardship, not sovereignty | **CREATES / REFRAMES** the player–Club relationship | ownership → stewardship |
 
 ---
 
@@ -168,10 +235,12 @@ IP-001.
 
 Only genuinely unresolved questions.
 
-- **RQ-1 — Is there a deeper root beneath A1–A4?** Candidate: "the self extends
-  past its boundary." Resolves only if it predicts one specific ERA truth not
-  already derived; otherwise drop it. *(This is the compression event Roy still
-  believes exists.)*
+- **RQ-1 — Is there a deeper root beneath A1–A4? — PAID OUT (2026-07-19).** The
+  "self past its boundary" root yielded the Relational compression (CE-6 / axiom
+  AR): *deep attachment requires consequential agency inside an independent
+  world.* It predicted a new specific model (the four textures of loss and their
+  compounding) and reorganised the axiom set. Retained for lineage; final wording
+  of AR remains open.
 - **RQ-2 — Does vulnerability break out as its own axiom,** or stay inside A1?
 - **RQ-3 — Is Internal Recognition sufficient on independence alone,** or does it
   require clause (1) — channelling a genuine valuing perspective? (Roy leans
@@ -201,6 +270,12 @@ Preserved with reasons. All were PROPOSED material; demotions are reversible.
 - **"Belonging requires real human presence / multiplayer"** → **DEMOTED** from a
   blocking assumption to "External amplifies Internal"; belonging is a property of
   a living Club (tentative, via OQ-2 resolution).
+- **"You can only bond with what you do not fully control" (linear non-control)**
+  → **REJECTED** as too strong: humans deeply love things they substantially
+  control/create (a house, a painting, a manuscript). Replaced by AR — those
+  objects are loved because they *resisted* (agency meeting otherness), not
+  because control was absent. The relationship is an inverted-U, not a linear
+  inversion.
 
 ---
 
@@ -222,6 +297,11 @@ Roy's explicit ratification. None is canonical.**
   keeps Internal Recognition channelling real human regard. (Moderate–Strong)
 - **CR-7 — Vulnerability is constitutive of attachment** (candidate standalone
   principle). (Moderate)
+- **CR-8 — The player shapes the Club but never solely authors it** — the
+  Relational axiom (AR): consequential agency inside an independent world;
+  stewardship, not sovereignty. Would become the primary constitutional principle
+  and would supersede AT-6. **Final wording open.** (Strong as a principle;
+  wording provisional)
 
 ---
 

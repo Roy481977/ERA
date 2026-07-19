@@ -59,8 +59,10 @@ them. It is distinct from GOVERNANCE.md, which governs the *repository*.
 
 Note: IP-001 holds **15 accepted truths + 1 candidate** (AT-4, proposed/not
 final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) and
-**4 rejected directions**. On ratification these split into `constitution/`,
-`open/` and `rejected/`, and the counts update accordingly.
+**4 rejected directions**. IP-002 holds candidate axioms compressing toward
+**three** (Relational · Recognition · Meaning), **6 compression events**, and
+**8 candidate ratifications**. On ratification these split into `constitution/`,
+`open/`, `rejected/` and `superseded/`, and the counts update accordingly.
 
 ---
 
@@ -81,11 +83,18 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — IP-002 updated: Relational compression (CE-6 / axiom AR).**
+  RQ-1 paid out: *deep attachment requires consequential agency inside an
+  independent world* — "the player shapes the Club but never solely authors it";
+  stewardship, not sovereignty. Fuses A1-authorship + A4; Independence and
+  Vulnerability become derived; Meaning stands apart (set compresses 4 → 3). Four
+  textures of loss kept as a derived model. CKO's "non-control" formulation
+  rejected. Added CR-8. All PROPOSED, final wording open.
 - **2026-07-19 — IP-002 (Human Attachment Research) captured.** Candidate axioms
-  (externalized/vulnerable self, Recognition, Meaning, Independence), five
-  compression events, constitutional consequences, active research questions, and
-  candidate ratifications. All PROPOSED. Adds the discovery-vs-explanation rule
-  to GOVERNANCE §6. Phase 2 continues on RQ-1 (the deeper root) before locking.
+  (externalized/vulnerable self, Recognition, Meaning, Independence), compression
+  events, constitutional consequences, active research questions, and candidate
+  ratifications. All PROPOSED. Adds the discovery-vs-explanation rule to
+  GOVERNANCE §6.
 - **2026-07-19 — IP-001 confirmed & restructured.** Roy confirmed the
   distillation and set the five-section form (Accepted Truths / Open Questions /
   Rejected Directions / Key Constitutional Principles / Decision Rationale). AT-4
@@ -134,9 +143,13 @@ Design-level open questions (from IP-001, full text in the package):
 
 Phase 2 research questions (from IP-002):
 
-- **RQ-1 — Is there a deeper root beneath the four axioms?** Candidate: "the self
-  extends past its boundary." Must predict a new specific truth or be dropped.
-- **RQ-2 — Does vulnerability break out as its own axiom?**
+- **RQ-1 — PAID OUT (2026-07-19).** The root yielded the Relational compression
+  (axiom AR / CE-6): *deep attachment requires consequential agency inside an
+  independent world* — "the player shapes the Club but never solely authors it";
+  stewardship, not sovereignty. Independence and Vulnerability become derived.
+  Final wording open.
+- **RQ-2 — Does vulnerability break out as its own axiom?** (Likely resolved:
+  derived from AR — pending confirmation.)
 - **RQ-3 — Is Internal Recognition sufficient on independence alone,** or must it
   channel a genuine valuing perspective (the Human Test tether)?
 

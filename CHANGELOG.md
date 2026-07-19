@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — IP-002: Relational compression (CE-6 / axiom AR) — PROPOSED
+
+RQ-1 paid out. The "self past its boundary" root yielded a compression: **deep
+attachment requires consequential agency inside an independent world** —
+provisional constitutional expression *"the player shapes the Club but never
+solely authors it"*; the relationship is **stewardship, not sovereignty.**
+
+Recorded in IP-002:
+- New candidate primary axiom **AR** (wording open); design is an inverted-U
+  (agency without sovereignty), with a *per-domain* peak on the agency–otherness
+  curve.
+- **A1 (authorship half) + A4 (Independence) fuse into AR;** Independence and
+  Vulnerability become *derived*. Meaning (A3) stands apart. Axiom set compresses
+  4 → 3 (Relational · Recognition · Meaning).
+- Added compression event **CE-6**; candidate ratification **CR-8**.
+- **Four textures of loss** (place/form, regard, narrative, uncontrollable
+  reality) preserved as a *derived research model* — not an axiom — with the
+  compounding-loss prediction.
+- **Rejected** the CKO's over-strong "you can only bond with what you do not fully
+  control" (counterexamples: house, painting, manuscript — loved because they
+  *resisted*).
+
+All PROPOSED; final wording of AR deliberately open. INDEX updated.
+
 ## 2026-07-19 — IP-002 (Human Attachment Research) captured — PROPOSED
 
 Second Import Package, opening the Human Attachment research repository. Curated
