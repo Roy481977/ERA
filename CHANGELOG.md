@@ -8,6 +8,26 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Core = Rust (CD-007); Sprint 1 Phase 2 — PROPOSED
+
+Roy directed optimizing for the final architecture over dev speed. Outcome:
+
+- **CD-007 — the authoritative core is Rust** (PROPOSED). Engine-decoupled
+  sovereign brain: compiles to a native lib (FFI to Unreal/Unity), WASM, or a
+  server; best control over deterministic replay; GC-free scale; ECS-native;
+  memory-safe. The *core language only* — the game-engine choice (Unreal/Unity)
+  stays open (IP-003). The four-file Python spike was migrated to Rust while tiny.
+- **Phase 2 (Rust):** WorldClock (1h ticks + time-blocks); Resident entities;
+  **routines** — goal-and-time proto-intentions (CD-006), *not* fixed schedules,
+  so future decision-making can evolve without restructuring; a deterministic
+  simulation loop that navigates residents through the world over travel time.
+- **Result (verified):** 10 residents complete believable routines (wake →
+  work/errands → visit the Old Oak → home); the run is deterministic; nobody
+  teleports; everyone ends the day at home. **11 tests pass** (7 world + 4
+  routine). Observed via `cargo run`.
+- Stopped at the end of Phase 2 for Roy's review, per instruction. Next: Phase 3
+  (the Old Oak living object) + Phase 4 (full observed simulation).
+
 ## 2026-07-19 — Sprint 1 (DS-001 First Breath): spec + Phase 1 — PROPOSED
 
 Transitioned ERA from architecture into implementation, working from the ratified

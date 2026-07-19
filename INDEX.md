@@ -97,7 +97,7 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | architecture/system-contracts/ (WI-01, 7 docs) | PROPOSED | System Contracts & Vertical Slice: world-state schema, engine boundaries, inter-engine contracts, Town Engine vertical slice, acceptance tests, observability |
 | **`architecture/` module itself** | **RATIFIED (permanent)** | The module is a permanent first-class part of the repository (contents remain PROPOSED) |
 | development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): 5 locations, 10 residents, Old Oak, 4-phase roadmap |
-| development/sprint-1/ (code) | in progress | Phase 1 done: world representation (locations, nav graph, validator, tests). Runs headless in Python. Lives in GitHub. |
+| development/sprint-1/ (code) | in progress | **Rust** headless core. Phase 1 (world) + Phase 2 (WorldClock, residents, routines, sim loop) done: 10 residents complete believable routines, deterministic, no teleport, 11 tests pass. Lives in GitHub. |
 
 ---
 
@@ -106,6 +106,15 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 Governance-level decisions, most recent first. Design decisions are recorded in
 their own documents and in CHANGELOG.
 
+- **2026-07-19 — Core language = Rust (CD-007); Sprint 1 Phase 2 shipped.** At
+  Roy's direction, chose Rust for the authoritative engine-decoupled core
+  (CD-007, PROPOSED) and migrated the tiny Phase-1 codebase from Python. Built
+  **Phase 2**: WorldClock, resident entities, **routines** (goal+time proto-
+  intentions, not fixed schedules), and a deterministic simulation loop. 10
+  residents complete believable routines through the world (wake → work/errands →
+  visit the Old Oak → home); deterministic, no teleporting, everyone ends at
+  home; 11 tests pass. Game-engine choice still open (IP-003). Stopped at Phase 2
+  for review.
 - **2026-07-19 — Sprint 1 begins (DS-001 First Breath): Phase 1 shipped.**
   Transitioned from architecture into implementation, working from the ratified
   contracts. New `development/` module with the DS-001 spec (5 semantic locations,
