@@ -42,31 +42,43 @@ codebase was still tiny and the migration cheap.)*
 
 Logical locations (not graphical assets), each with semantic affordances:
 
+Five civic/work places, plus three residential nodes added in Phase 3b so that
+nobody sleeps in a public location:
+
 | id | Name | Affordances |
 |---|---|---|
 | `loc_stadium` | Stadium | `WORK_GROUNDSKEEP`, `MATCH_GATE`, `GATHER` |
 | `loc_main_square` | Main Square | `MARKET`, `KIOSK`, `SIT_BENCH`, `BUSK`, `GATHER` |
-| `loc_bakery` | Bakery | `WORK_BAKERY_COUNTER`, `BUY_BREAD`, `HOME` |
-| `loc_cafe` | Café | `WORK`, `DRINK_COFFEE`, `LEGENDS_CORNER`, `HOME` |
-| `loc_riverside` | Riverside | `WALK`, `SIT_BENCH`, `VISIT_OAK`, `HOME` |
+| `loc_bakery` | Bakery | `WORK_BAKERY_COUNTER`, `BUY_BREAD` |
+| `loc_cafe` | Café | `WORK`, `DRINK_COFFEE`, `LEGENDS_CORNER` |
+| `loc_riverside` | Riverside | `WALK`, `SIT_BENCH`, `VISIT_OAK` |
+| `loc_millers_row` | Miller's Row | `HOME`, `REST` |
+| `loc_high_street` | High Street Rooms | `HOME`, `REST` |
+| `loc_oakside` | Oakside Cottages | `HOME`, `REST` |
 
 **Navigation graph** (undirected; weight = travel time in ticks). The Main Square
-is the hub:
+is the hub; residential lanes hang off it and the nearest shops:
 
 ```
-Main Square — Bakery      (1)
-Main Square — Café        (1)
-Main Square — Stadium     (2)
-Main Square — Riverside   (2)
-Bakery      — Café        (1)
-Café        — Riverside   (2)
+Main Square — Bakery        (1)
+Main Square — Café          (1)
+Main Square — Stadium       (2)
+Main Square — Riverside     (2)
+Bakery      — Café          (1)
+Café        — Riverside     (2)
+Miller's Row  — Main Square  (1)
+Miller's Row  — Bakery       (1)
+High Street   — Main Square  (1)
+High Street   — Café         (1)
+Oakside       — Riverside    (1)
+Oakside       — Main Square  (2)
 ```
 
 The graph must be **connected** (every location reachable). Movement happens along
 edges over travel-time ticks — **no teleporting**.
 
-*(Sprint-1 reduction: there are no separate residential nodes yet; a resident's
-"home" is one of the five locations.)*
+*(`HOME` still resolves per-resident to that resident's own home node, never by
+affordance scan.)*
 
 ## 2. Ten residents
 
@@ -96,18 +108,21 @@ future decision-making (needs, mood, relationships, interruptions) can change
 *selection* without changing the structure — **deterministic today, ready for
 decision-making tomorrow, no redesign required.**
 
-| id | Name | Age | Occupation | Home |
-|---|---|---|---|---|
-| `res_hana` | Mrs. Hana | 58 | Baker | `loc_bakery` |
-| `res_sofia` | Sofia | 27 | Baker's assistant | `loc_main_square` |
-| `res_luca` | Luca | 29 | Café owner | `loc_cafe` |
-| `res_victor` | Victor | 63 | Retired footballer | `loc_cafe` |
-| `res_elias` | Elias | 66 | Groundskeeper | `loc_main_square` |
-| `res_eva` | Eva | 41 | Florist | `loc_main_square` |
-| `res_karim` | Karim | 34 | Kiosk vendor | `loc_main_square` |
-| `res_agnes` | Agnes | 81 | Retired (oldest supporter) | `loc_main_square` |
-| `res_milo` | Milo | 22 | Street musician | `loc_main_square` |
-| `res_tomas` | Tomas | 9 | Schoolchild | `loc_riverside` |
+| id | Name | Age | Occupation | Home | Wakes |
+|---|---|---|---|---|---|
+| `res_hana` | Mrs. Hana | 58 | Baker | `loc_millers_row` | 03:00 |
+| `res_sofia` | Sofia | 27 | Baker's assistant | `loc_millers_row` | 05:00 |
+| `res_luca` | Luca | 29 | Café owner | `loc_high_street` | 06:00 |
+| `res_victor` | Victor | 63 | Retired footballer | `loc_high_street` | 06:00 |
+| `res_elias` | Elias | 66 | Groundskeeper | `loc_oakside` | 05:00 |
+| `res_eva` | Eva | 41 | Florist | `loc_millers_row` | 06:00 |
+| `res_karim` | Karim | 34 | Kiosk vendor | `loc_high_street` | 06:00 |
+| `res_agnes` | Agnes | 81 | Retired (oldest supporter) | `loc_oakside` | 06:00 |
+| `res_milo` | Milo | 22 | Street musician | `loc_high_street` | 09:00 |
+| `res_tomas` | Tomas | 9 | Schoolchild | `loc_oakside` | 07:00 |
+
+Wake time is set by each resident's sleep duration (age/occupation/personality),
+so the district rises in a spread rather than in unison.
 
 **Time** comes from one shared WorldClock (1 tick = 1 hour, 24 ticks/day). The
 clock is a plain hour counter; activities reason about the hour directly through

@@ -12,7 +12,13 @@ pub struct Location {
     pub affordances: &'static [&'static str],
 }
 
-/// The five locations of the First Breath district (stable order).
+/// The locations of the First Breath district (stable order).
+///
+/// Five civic/work places plus three residential nodes. Residences carry only
+/// `HOME` (and `REST`): they are where residents sleep, so nobody sleeps in a
+/// public location. `HOME` still resolves per-resident (a resident's own home),
+/// never by affordance scan, so the extra `HOME` locations are harmless to
+/// affordance resolution.
 pub fn locations() -> Vec<Location> {
     vec![
         Location {
@@ -28,17 +34,32 @@ pub fn locations() -> Vec<Location> {
         Location {
             id: "loc_bakery",
             name: "Bakery",
-            affordances: &["WORK_BAKERY_COUNTER", "BUY_BREAD", "HOME"],
+            affordances: &["WORK_BAKERY_COUNTER", "BUY_BREAD"],
         },
         Location {
             id: "loc_cafe",
             name: "Café",
-            affordances: &["WORK", "DRINK_COFFEE", "LEGENDS_CORNER", "HOME"],
+            affordances: &["WORK", "DRINK_COFFEE", "LEGENDS_CORNER"],
         },
         Location {
             id: "loc_riverside",
             name: "Riverside",
-            affordances: &["WALK", "SIT_BENCH", "VISIT_OAK", "HOME"],
+            affordances: &["WALK", "SIT_BENCH", "VISIT_OAK"],
+        },
+        Location {
+            id: "loc_millers_row",
+            name: "Miller's Row",
+            affordances: &["HOME", "REST"],
+        },
+        Location {
+            id: "loc_high_street",
+            name: "High Street Rooms",
+            affordances: &["HOME", "REST"],
+        },
+        Location {
+            id: "loc_oakside",
+            name: "Oakside Cottages",
+            affordances: &["HOME", "REST"],
         },
     ]
 }

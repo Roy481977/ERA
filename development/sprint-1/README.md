@@ -83,10 +83,11 @@ will steer, with no redesign.
 - **No Old Oak object yet.** Residents *visit* the oak via the `VISIT_OAK`
   affordance, but the living world-object (seasonal state, interaction history)
   is Phase 3 — not built here.
-- **Home = one of the five locations.** No separate residential nodes yet
-  (Sprint-1 reduction). Square-dwellers are *narrated* as living in rooms beside
-  the square, but the end-of-day roll-call still prints their home node as
-  `loc_main_square` — a true fix needs residential nodes, deferred by design.
+- **Residences are shared nodes.** Each resident sleeps in one of three
+  residential locations (Miller's Row, High Street Rooms, Oakside Cottages), so
+  nobody sleeps in a public place — but several residents share a residential
+  node rather than each having a private dwelling. Per-resident dwellings can come
+  later.
 - **Conditions are always `Always`.** The decision-making gate exists structurally
   but does nothing yet — deliberately.
 - **No needs, mood, or relationship influence on selection.** Relationships are

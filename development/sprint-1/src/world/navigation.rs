@@ -17,6 +17,13 @@ pub const EDGES: &[(LocationId, LocationId, u32)] = &[
     ("loc_main_square", "loc_riverside", 2),
     ("loc_bakery", "loc_cafe", 1),
     ("loc_cafe", "loc_riverside", 2),
+    // Residential lanes connected into the district.
+    ("loc_millers_row", "loc_main_square", 1),
+    ("loc_millers_row", "loc_bakery", 1),
+    ("loc_high_street", "loc_main_square", 1),
+    ("loc_high_street", "loc_cafe", 1),
+    ("loc_oakside", "loc_riverside", 1),
+    ("loc_oakside", "loc_main_square", 2),
 ];
 
 #[derive(Debug, Clone)]

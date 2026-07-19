@@ -8,6 +8,16 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-19 — Phase 3b: residential nodes (no public sleeping) — PROPOSED
+
+The district gained three residential locations — **Miller's Row**, **High Street
+Rooms**, **Oakside Cottages** (`HOME`/`REST` only) — wired into the nav graph off
+the square and nearest shops. All ten residents now live in and return to a
+residential node; `HOME` and `REST` were removed from the Bakery/Café/Riverside so
+those read as civic/work places, not dwellings. Routine timings were re-tuned for
+the new commutes. Determinism, no-teleport, and end-at-home invariants all hold;
+world tests updated (now eight locations, three residential). **11 tests pass.**
+
 ## 2026-07-19 — Phase 3a: staggered waking + home narration — PROPOSED
 
 Roy approved Phase 2 and authorised autonomous progression through Phases 3–8
