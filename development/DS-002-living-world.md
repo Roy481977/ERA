@@ -57,3 +57,42 @@ hours themselves don't yet vary by weekday; no interactions between co-located
 residents yet (Phase 4).
 
 **Commands:** `cd development/sprint-1 && cargo run` · `cargo test`
+
+---
+
+## Phase 4 — First social life ✅
+
+**What became more alive:** the town stopped being a set of solitary paths that
+merely cross. Now when people share a place they sometimes *notice* each other —
+Hana gives Sofia a word of encouragement at the bakery, Agnes and Eva fall into
+conversation on the square, Luca and Victor share a coffee in his corner — and
+they carry the memory of it. Bonds visibly strengthen over days.
+
+**Implemented:** `sim/social.rs` — a `Relationships` store (affinity + trust,
+seeded from DS-001 §2) and a deterministic interaction resolver. Each tick,
+present co-located residents at public places are paired in deterministic order;
+a seeded FNV hash (no RNG) decides whether and how they interact, shaped by
+relationship and place (encouragement, shared coffee, conversation, greeting,
+recognition, disagreement). Residents gained a `memories` list; interactions are
+also recorded structurally (`interactions`).
+
+**Files changed:** `sim/social.rs` (new), `sim/resident.rs` (`Memory`,
+`memories`, `is_present`), `sim/simulation.rs` (relationships, social pass,
+structured interactions), `sim/mod.rs`, `world/location.rs` (`is_residential`),
+`main.rs` (connections summary), `tests/social.rs` (new).
+
+**Architectural choices:** the relationship store is the single owner of
+affinity/trust; residents own their memories; the interaction system *proposes*
+from world state and applies through those owners (never rewrites truth).
+Determinism via a seeded hash, not RNG. Caps: one interaction per resident per
+tick, one per pair per day; ~24 % base chance so co-location usually passes
+quietly.
+
+**Tests added (5):** interactions happen; are deterministic across runs;
+strengthen bonds; cap at once per pair per day; leave memories. 20 tests total.
+
+**Known limitations:** interactions don't yet change where a resident goes next
+(that's Phase 5); no mood/temporary state yet; residents socialise only at public
+places, not at home; dialogue is structured, not generated.
+
+**Commands:** `cargo run` (see "Today's connections") · `cargo test`

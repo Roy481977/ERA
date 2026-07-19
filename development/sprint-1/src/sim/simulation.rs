@@ -2,9 +2,12 @@
 //! through their routines. Deterministic; every state change is observable via
 //! the event log.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use crate::sim::clock::{WorldClock, TICKS_PER_DAY};
-use crate::sim::resident::{Resident, Status};
+use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::routine::Routine;
+use crate::sim::social::{self, Relationships};
 use crate::world::location::LocationId;
 use crate::world::navigation::NavGraph;
 use crate::world::{build_world, World};
@@ -22,8 +25,13 @@ pub struct Simulation {
     pub world: World,
     pub clock: WorldClock,
     pub residents: Vec<Resident>,
+    pub relationships: Relationships,
     pub log: Vec<Event>,
+    /// Structured record of every interaction (observability / tests / Oak).
+    pub interactions: Vec<social::Interaction>,
     last_day: u64,
+    /// Pairs that have already interacted today (once-per-day cap).
+    social_seen_today: BTreeSet<(&'static str, &'static str)>,
 }
 
 fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
@@ -40,8 +48,11 @@ impl Simulation {
             world: build_world(),
             clock: WorldClock::new(),
             residents,
+            relationships: Relationships::seeded(),
             log: Vec::new(),
+            interactions: Vec::new(),
             last_day: 0,
+            social_seen_today: BTreeSet::new(),
         }
     }
 
@@ -59,12 +70,15 @@ impl Simulation {
             for r in &mut self.residents {
                 r.done_today.clear();
             }
+            self.social_seen_today.clear();
             self.last_day = day;
         }
         let hour = self.clock.hour();
         let weekday = self.clock.weekday();
 
+        // --- movement + activity selection ---
         // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
+        {
         let Simulation { world, residents, log, clock, .. } = self;
         let nav: &NavGraph = &world.nav;
 
@@ -142,8 +156,133 @@ impl Simulation {
                 }
             }
         }
+        } // end movement borrow scope
 
-        clock.advance();
+        // --- social interactions among co-located residents ---
+        self.social_pass();
+
+        self.clock.advance();
+    }
+
+    /// Co-located residents at a public place during a compatible window may
+    /// interact. Deterministic; consequences applied through the owners
+    /// (relationships store + each resident's own memories).
+    fn social_pass(&mut self) {
+        let hour = self.clock.hour();
+        // Compatible window: daytime and evening only (not the small hours).
+        if !(7..=21).contains(&hour) {
+            return;
+        }
+        let day = self.clock.day();
+        let tick = self.clock.tick;
+
+        // Group present residents by public place (skip travellers & residences).
+        let mut by_place: BTreeMap<LocationId, Vec<usize>> = BTreeMap::new();
+        for (i, r) in self.residents.iter().enumerate() {
+            if !r.is_present() {
+                continue;
+            }
+            let residential = self
+                .world
+                .location(r.place)
+                .map(|l| l.is_residential())
+                .unwrap_or(false);
+            if residential {
+                continue;
+            }
+            by_place.entry(r.place).or_default().push(i);
+        }
+
+        // Phase 1 — decide (immutable reads only). Deterministic order.
+        struct Apply {
+            a: &'static str,
+            b: &'static str,
+            place: LocationId,
+            kind: social::InteractionKind,
+            reason: &'static str,
+        }
+        let mut applies: Vec<Apply> = Vec::new();
+        let mut busy = vec![false; self.residents.len()];
+        for (place, idxs) in &by_place {
+            for x in 0..idxs.len() {
+                for y in (x + 1)..idxs.len() {
+                    let (ia, ib) = (idxs[x], idxs[y]);
+                    if busy[ia] || busy[ib] {
+                        continue;
+                    }
+                    let (aid, bid) = (self.residents[ia].id, self.residents[ib].id);
+                    let pair = if aid <= bid { (aid, bid) } else { (bid, aid) };
+                    if self.social_seen_today.contains(&pair) {
+                        continue;
+                    }
+                    let rel = self.relationships.get(pair.0, pair.1);
+                    if let Some(outcome) = social::decide(pair.0, pair.1, place, tick, rel) {
+                        busy[ia] = true;
+                        busy[ib] = true;
+                        applies.push(Apply {
+                            a: pair.0,
+                            b: pair.1,
+                            place,
+                            kind: outcome.kind,
+                            reason: outcome.reason,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Phase 2 — apply consequences through the owners.
+        for ap in applies {
+            let (d_aff, d_trust) = ap.kind.deltas();
+            let (before, after) = self.relationships.adjust(ap.a, ap.b, d_aff, d_trust);
+            let a_name = self.name_of(ap.a);
+            let b_name = self.name_of(ap.b);
+            let place_name = self.world.location(ap.place).map(|l| l.name).unwrap_or(ap.place);
+            let verb = ap.kind.verb();
+
+            if let Some(ra) = self.residents.iter_mut().find(|r| r.id == ap.a) {
+                ra.memories.push(Memory {
+                    day,
+                    hour,
+                    note: format!("{verb} with {b_name} at the {place_name}"),
+                    other: Some(ap.b),
+                });
+            }
+            if let Some(rb) = self.residents.iter_mut().find(|r| r.id == ap.b) {
+                rb.memories.push(Memory {
+                    day,
+                    hour,
+                    note: format!("{verb} with {a_name} at the {place_name}"),
+                    other: Some(ap.a),
+                });
+            }
+            self.social_seen_today.insert((ap.a, ap.b));
+            self.interactions.push(social::Interaction {
+                tick,
+                day,
+                hour,
+                a: ap.a,
+                b: ap.b,
+                kind: ap.kind,
+                place: ap.place,
+            });
+            self.log.push(Event {
+                tick,
+                day,
+                hour,
+                resident: a_name,
+                message: format!(
+                    "{a_name} and {b_name} {verb} at the {place_name} — {reason} \
+                     (affinity {}→{}, trust {}→{})",
+                    before.affinity, after.affinity, before.trust, after.trust,
+                    reason = ap.reason,
+                ),
+            });
+        }
+    }
+
+    fn name_of(&self, id: &str) -> &'static str {
+        self.residents.iter().find(|r| r.id == id).map(|r| r.name).unwrap_or("someone")
     }
 
     pub fn resident(&self, id: &str) -> Option<&Resident> {

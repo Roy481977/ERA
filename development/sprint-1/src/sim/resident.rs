@@ -13,6 +13,17 @@ fn ignores_hours(affordance: &str) -> bool {
     affordance.starts_with("WORK") || affordance == "HOME" || affordance == "REST"
 }
 
+/// A small remembered event, owned by the resident it happened to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Memory {
+    pub day: u64,
+    pub hour: u64,
+    /// Short description, e.g. "shared a coffee with Victor at the Café".
+    pub note: String,
+    /// The other resident involved, if any (id).
+    pub other: Option<&'static str>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Status {
     /// Not doing anything; will select next tick.
@@ -47,6 +58,7 @@ pub struct Resident {
     pub place: LocationId,
     pub status: Status,
     pub done_today: Vec<&'static str>,
+    pub memories: Vec<Memory>,
 }
 
 impl Resident {
@@ -68,7 +80,13 @@ impl Resident {
             place: home,
             status: Status::Idle,
             done_today: Vec::new(),
+            memories: Vec::new(),
         }
+    }
+
+    /// Whether the resident is socially available (present and not travelling).
+    pub fn is_present(&self) -> bool {
+        !matches!(self.status, Status::Traveling { .. })
     }
 
     /// Choose the most appropriate eligible, not-yet-done activity for this hour.

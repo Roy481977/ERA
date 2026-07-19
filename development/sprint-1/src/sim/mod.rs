@@ -5,6 +5,8 @@ pub mod clock;
 pub mod resident;
 pub mod routine;
 pub mod simulation;
+pub mod social;
 
 pub use cast::cast;
 pub use simulation::{Event, Simulation};
+pub use social::{InteractionKind, Rel, Relationships};

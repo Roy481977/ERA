@@ -36,6 +36,11 @@ impl Location {
             None => true,
         }
     }
+
+    /// Whether this is a residential location (somewhere residents sleep).
+    pub fn is_residential(&self) -> bool {
+        self.affordances.contains(&"HOME")
+    }
 }
 
 /// The locations of the First Breath district (stable order).

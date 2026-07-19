@@ -18,6 +18,24 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Phase 4: first social life — PROPOSED
+
+Residents who share a public place at a compatible time may now interact. New
+`sim/social.rs`: a `Relationships` store (single owner of affinity/trust, seeded
+from DS-001 §2) and a deterministic interaction resolver. Each tick, co-located,
+present residents (travellers and sleepers excluded) are paired in deterministic
+order; a seeded FNV hash — no RNG — gates whether they interact, with likelihood
+and type shaped by their relationship and the place: close friends encourage or
+share coffee, acquaintances converse, strangers nod or greet, poor terms bicker.
+Consequences flow through the owners — affinity/trust adjust in the store, and
+**each resident records its own memory** — and every interaction is logged with
+its reason and the affinity/trust change. A once-per-pair-per-day cap and a
+~24 %-base chance mean co-location usually *doesn't* produce an interaction.
+
+Five new tests (interactions happen, are deterministic, strengthen bonds, cap at
+once per pair per day, and leave memories). **20 tests pass.** Observer prints a
+"Today's connections" summary and Tomas's memories.
+
 ## 2026-07-19 — Phase 3d: weekday routine variation — PROPOSED
 
 The `Condition` seam now does real work. The WorldClock gained `weekday()`

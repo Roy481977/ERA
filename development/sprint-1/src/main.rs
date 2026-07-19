@@ -69,6 +69,24 @@ fn main() {
             "\nSpotlight — Tomas (age 9) completed today: {}",
             tomas.done_today.join(", ")
         );
+        if !tomas.memories.is_empty() {
+            println!("  Tomas will remember:");
+            for m in &tomas.memories {
+                println!("    · {:02}:00 — {}", m.hour, m.note);
+            }
+        }
     }
-    println!("\nPhase 2 complete: residents complete believable routines through the world.");
+
+    // Social summary.
+    println!("\nToday's connections ({} interactions):", sim.interactions.len());
+    for it in &sim.interactions {
+        let a = sim.resident(it.a).map(|r| r.name).unwrap_or(it.a);
+        let b = sim.resident(it.b).map(|r| r.name).unwrap_or(it.b);
+        let rel = sim.relationships.get(it.a, it.b);
+        println!(
+            "  {:02}:00 {:<7} & {:<7} {:<28} (now affinity {}, trust {})",
+            it.hour, a, b, it.kind.verb(), rel.affinity, rel.trust
+        );
+    }
+    println!("\nPhase 4 complete: residents meet, acknowledge one another, and remember it.");
 }
