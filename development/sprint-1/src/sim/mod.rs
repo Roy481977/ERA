@@ -8,9 +8,11 @@ pub mod intention;
 pub mod matchday;
 pub mod oak;
 pub mod resident;
+pub mod rng;
 pub mod routine;
 pub mod simulation;
 pub mod social;
+pub mod wildlife;
 
 pub use ambient::{Ambient, AmbientKind};
 pub use cast::cast;
@@ -18,3 +20,4 @@ pub use dog::Dog;
 pub use oak::{OakEventKind, OldOak, Season};
 pub use simulation::{Event, Simulation};
 pub use social::{Bonds, InteractionKind, Rel, Relationships, SharedBond};
+pub use wildlife::{Animal, Species, Wildlife};

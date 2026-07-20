@@ -11,8 +11,10 @@ use crate::sim::intention;
 use crate::sim::matchday::{self, MatchResult};
 use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
 use crate::sim::resident::{Memory, Resident, Status};
+use crate::sim::rng::Rng;
 use crate::sim::routine::Routine;
 use crate::sim::social::{self, Bonds, Relationships};
+use crate::sim::wildlife::Wildlife;
 use crate::world::location::LocationId;
 use crate::world::navigation::NavGraph;
 use crate::world::{build_world, World};
@@ -34,6 +36,13 @@ pub struct Simulation {
     pub bonds: Bonds,
     pub oak: OldOak,
     pub dog: Dog,
+    /// The district's animals — persistent, living entities.
+    pub wildlife: Wildlife,
+    /// Seeded generator for the small, genuine unpredictability of wildlife. A
+    /// given seed always replays the same animal life; a different seed grows a
+    /// different one. Residents do not draw from it and stay deterministic.
+    pub rng: Rng,
+    pub world_seed: u64,
     pub log: Vec<Event>,
     /// Ambient life — the town's routines, micro-life, and residents' small
     /// moments. A layer over the behavioural log (Sprint 3 — density).
@@ -147,8 +156,18 @@ struct Coord {
     waiting: BTreeMap<usize, &'static str>,
 }
 
+/// The default world seed — so `Simulation::new` is fully reproducible. Pass a
+/// different seed (`with_seed`) to grow a different wildlife life.
+pub const DEFAULT_WORLD_SEED: u64 = 0x0E5A_1F00_D0_u64;
+
 impl Simulation {
     pub fn new(residents: Vec<Resident>) -> Self {
+        Self::with_seed(residents, DEFAULT_WORLD_SEED)
+    }
+
+    /// A simulation whose wildlife is grown from a specific seed. Everything else
+    /// (the residents, the town) is identical regardless of seed.
+    pub fn with_seed(residents: Vec<Resident>, seed: u64) -> Self {
         Simulation {
             world: build_world(),
             clock: WorldClock::new(),
@@ -157,6 +176,9 @@ impl Simulation {
             bonds: Bonds::default(),
             oak: OldOak::new(),
             dog: Dog::new(),
+            wildlife: Wildlife::new(),
+            rng: Rng::new(seed),
+            world_seed: seed,
             log: Vec::new(),
             ambient: Vec::new(),
             interactions: Vec::new(),
@@ -374,6 +396,9 @@ impl Simulation {
 
         // --- ambient life: the town's routines, micro-life, residents' moments ---
         self.density_pass(day, hour, weekday, minute);
+
+        // --- the animals: living entities keeping their own (day and night) rhythm ---
+        self.wildlife_pass(day, hour, minute);
 
         // Matchday's mark on the Old Oak — once, in the evening.
         if matchday::is_matchday(weekday) && hour == 18 && !self.oak_matchday_days.contains(&day) {
@@ -659,6 +684,32 @@ impl Simulation {
 
         for (minute_stamp, actor, text) in out {
             self.ambient.push(Ambient { tick, day, hour, minute: minute_stamp, kind: AmbientKind::Moment, actor, text });
+        }
+    }
+
+    /// The district's animals take their turn. Each is a persistent entity keeping
+    /// its own rhythm — several of them nocturnal, so the small hours have life.
+    /// Their choices draw from the seeded `rng`; their narration joins the ambient
+    /// stream (kind `Wild`). They read resident presence but never change it.
+    fn wildlife_pass(&mut self, day: u64, hour: u64, minute: u64) {
+        let mut occ: BTreeMap<LocationId, usize> = BTreeMap::new();
+        for r in &self.residents {
+            if r.is_present() {
+                *occ.entry(r.place).or_default() += 1;
+            }
+        }
+        let tick = self.clock.tick;
+        let lines = self.wildlife.tick(&mut self.rng, hour, &self.world.nav, &occ);
+        for (actor, text) in lines {
+            self.ambient.push(Ambient {
+                tick,
+                day,
+                hour,
+                minute: minute as u8,
+                kind: AmbientKind::Wild,
+                actor,
+                text,
+            });
         }
     }
 

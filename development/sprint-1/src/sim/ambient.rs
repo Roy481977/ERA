@@ -21,6 +21,8 @@ pub enum AmbientKind {
     Micro,
     /// A resident's small incidental moment.
     Moment,
+    /// A named animal — a persistent wildlife entity living its own life.
+    Wild,
 }
 
 impl AmbientKind {
@@ -29,6 +31,7 @@ impl AmbientKind {
             AmbientKind::Town => "town",
             AmbientKind::Micro => "micro",
             AmbientKind::Moment => "moment",
+            AmbientKind::Wild => "wild",
         }
     }
 }

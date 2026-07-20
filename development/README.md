@@ -15,6 +15,10 @@ redesigning it. Each sprint has a spec (`DS-###`) and code.
 - [`DS-006-live-engine.md`](DS-006-live-engine.md) — prototype → the beginning of
   the live engine: a continuously-ticking `Engine`, live inspectable snapshots, and
   a renderer driven from state.
+- [`DS-007-behaviour-layer.md`](DS-007-behaviour-layer.md) — making the simulation
+  observable: a Behaviour Layer (poses, headings, staged conversations) between
+  simulation and renderer; living animals; a seed of randomness. Eventual renderer:
+  native Rust + Bevy.
 - [`sprint-1/`](sprint-1/) — the code: a headless, deterministic core in **Rust**
   (per [`CD-007`](../creative-decisions/CD-007-core-language-rust.md)), plus the
   `Engine` and the live viewer.

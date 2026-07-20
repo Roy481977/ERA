@@ -10,8 +10,8 @@ fn a_fresh_engine_starts_at_the_first_breath() {
     assert_eq!(e.day(), 0);
     assert_eq!(e.hour(), 0);
     let snap = e.snapshot();
-    // Eleven persistent entities: ten residents and the old dog.
-    assert_eq!(snap.entities.len(), 11);
+    // Eighteen persistent entities: ten residents, the old dog, and seven animals.
+    assert_eq!(snap.entities.len(), 18);
     // At the first breath, nothing has happened yet.
     assert!(snap.events.is_empty(), "no events should have fired before the first tick");
 }
@@ -85,7 +85,7 @@ fn snapshots_carry_live_positions_and_occupancy() {
     let snap = e.snapshot();
     // Every entity has a screen position.
     for ent in &snap.entities {
-        assert!(ent.pos.x() > 0.0 && ent.pos.y() > 0.0, "{} has no position", ent.name);
+        assert!(ent.x > 0.0 && ent.y > 0.0, "{} has no position", ent.name);
     }
     // Someone is somewhere: occupancy is non-empty by midday.
     let total: u32 = snap.occupancy.values().sum();

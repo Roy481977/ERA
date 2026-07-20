@@ -1158,6 +1158,27 @@ pausing on the bridge). It is texture, not mechanics — it changes no world tru
 and it is deterministic. **Not yet:** most micro-life appears in the reading of the
 hour rather than as moving figures on the map; weather does not yet shape any of it.
 
+*The world is becoming observable, not just simulated (DS-007).* A **Behaviour
+Layer** now sits between the simulation and the renderer: the world produces
+*behaviours* — facing, walking, standing, working, talking, sitting, the dog lying
+down or sniffing, birds perched — and the renderer draws those rather than prose. A
+meeting is *staged* so it can be watched: two residents turn to face one another and
+talk, with small gestures and a laugh, then part. The event log is demoted to a
+debug side-channel. The viewer gained a follow-and-zoom camera so a conversation can
+be watched up close. This is the pivot to *observation as the design tool* — and the
+same behaviour stream is meant to drive a later native (Rust + Bevy) real-time
+district. **Not yet:** the top-down prototype is still the only renderer; the poses
+are read at a small scale until that engine exists.
+
+*The district has animals now (DS-007).* Seven live creatures — a riverside fox, two
+cats, a church owl, a grey heron, the museum crows, a hedgehog — each a persistent
+entity with a character, a home range and a den, and its own day-or-night rhythm.
+Several are nocturnal, so the small hours are no longer empty. Their life is grown
+from a **seed** (same seed → same life, a different seed → a different one) while the
+residents stay fully deterministic. **Not yet:** they express through the shared pose
+vocabulary but do not yet flock/scatter as a true group, and weather does not shape
+them.
+
 Still **not yet built and future work to serve this world**: the two moons and the
 sky; weather, fog and the long light; other animals / micro-life; aging, death and
 loss among residents; the river's double rhythm; the hidden/invisible layer

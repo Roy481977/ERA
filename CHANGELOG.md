@@ -8,6 +8,38 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — DS-007: the Behaviour Layer + living animals — PROPOSED
+
+Direction change (Roy): stop adding simulation *systems*; make the existing
+simulation **observable**. Every important event should have a visible expression;
+the simulation should produce **behaviours, not prose**, and the renderer should
+visualise them. New architecture: Simulation → **Behaviour Layer** → Renderer →
+Observer. Agreed with Roy: build the Behaviour Layer on the current top-down viewer
+first, and target native **Rust + Bevy** for the eventual real-time district (so
+the behaviour types are authored in Rust and reused there).
+
+- **`src/behaviour/`** — a stateful choreographer that, after each tick, emits one
+  `Behaviour` per entity: position, **heading** (facing), speed, **pose** (walk /
+  stand / work / talk / sit / lie / sniff / play / perch / forage / alert), a
+  momentary **gesture** (laugh / gesture / nod / glance …), and a **partner**.
+- **Conversations are staged** (the flagship): a decided interaction becomes a
+  ~20-minute window in which both residents face each other and talk with seeded
+  gesture/laugh beats, then part — something to watch, not read.
+- **Viewer rebuilt** to draw behaviour: facing, pose marks, gesture cues, staged
+  conversations, gatherings scattered into individuals, and a **follow camera**
+  (click to follow-and-zoom, double-click to release). The event ticker is demoted
+  to a secondary channel.
+- **Animals as living entities** (`src/sim/wildlife.rs`): a fox, two cats, an owl,
+  a heron, the museum crows, a hedgehog — each with character, a home range, a den,
+  and a diel rhythm; several nocturnal, so the small hours have life. They express
+  through the same poses the renderer knows.
+- **A seed of randomness** (`src/sim/rng.rs`, SplitMix64): the wildlife draws from
+  a world seed — same seed replays the same life, a different seed grows a
+  different one — while the residents stay fully deterministic.
+  `Simulation::with_seed` / `Engine::with_seed`; `new` uses a fixed default.
+
+80 tests pass. See `development/DS-007-behaviour-layer.md`.
+
 ## 2026-07-20 — Five-minute clock: real trip times, distributed events, a live "happening" — PROPOSED
 
 The world clock now ticks every **5 minutes** (288 ticks/day) instead of hourly.

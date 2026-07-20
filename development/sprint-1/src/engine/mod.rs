@@ -17,43 +17,44 @@
 
 use std::collections::BTreeMap;
 
+use crate::behaviour::{Behaviour, Choreographer};
 use crate::sim::clock::WEEKDAY_NAMES;
 use crate::sim::matchday;
 use crate::sim::resident::Status;
 use crate::sim::{cast, Simulation};
-use crate::view::layout::{self, Pos};
+use crate::view::layout;
 use crate::world::location::LocationId;
 
 mod snapshot_json;
 
-/// A single persistent entity as the world sees it right now.
+/// A single persistent entity as the world sees it right now — position *and*
+/// observable behaviour (heading, pose, gesture, who it attends to), so the
+/// renderer draws a living thing rather than a labelled dot.
 #[derive(Debug, Clone)]
 pub struct EntityView {
     pub id: &'static str,
     pub name: &'static str,
-    pub kind: EntityKind,
+    /// "resident" | "dog" | a species tag ("fox", "owl", …).
+    pub kind: &'static str,
     pub color: &'static str,
-    pub pos: Pos,
+    pub x: f64,
+    pub y: f64,
     pub place: LocationId,
     pub place_name: &'static str,
     /// What they are doing, in words (the current activity, or transit).
     pub doing: String,
     pub traveling: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EntityKind {
-    Resident,
-    Dog,
-}
-
-impl EntityKind {
-    pub fn tag(&self) -> &'static str {
-        match self {
-            EntityKind::Resident => "resident",
-            EntityKind::Dog => "dog",
-        }
-    }
+    // --- behaviour ---
+    /// Facing direction in radians.
+    pub heading: f64,
+    /// Movement this tick, 0..1.
+    pub speed: f64,
+    /// Body pose tag ("walk", "stand", "talk", "sit", "lie", …).
+    pub pose: &'static str,
+    /// Momentary gesture tag ("laugh", "gesture", "glance", …).
+    pub gesture: &'static str,
+    /// Who they are attending to, if anyone.
+    pub partner: Option<&'static str>,
 }
 
 /// The Old Oak, as a live reading.
@@ -108,6 +109,8 @@ pub struct Snapshot {
 /// The running world. Persistent; ticked forward; observed via snapshots.
 pub struct Engine {
     sim: Simulation,
+    /// The Behaviour Layer: translates simulation state into observable behaviour.
+    choreo: Choreographer,
 }
 
 impl Default for Engine {
@@ -120,7 +123,15 @@ impl Engine {
     /// A fresh First Breath district at the first breath (tick 0), before any
     /// time has passed.
     pub fn new() -> Self {
-        Engine { sim: Simulation::new(cast()) }
+        Self::with_seed(crate::sim::simulation::DEFAULT_WORLD_SEED)
+    }
+
+    /// A fresh district whose wildlife is grown from a specific seed.
+    pub fn with_seed(seed: u64) -> Self {
+        let sim = Simulation::with_seed(cast(), seed);
+        let mut choreo = Choreographer::new();
+        choreo.observe(&sim); // behaviour baseline at tick 0
+        Engine { sim, choreo }
     }
 
     /// Direct read access to the underlying simulation (for native consumers and
@@ -129,9 +140,11 @@ impl Engine {
         &self.sim
     }
 
-    /// Advance the world one hour.
+    /// Advance the world one tick (five minutes), then let the Behaviour Layer
+    /// observe the new state.
     pub fn tick(&mut self) {
         self.sim.step();
+        self.choreo.observe(&self.sim);
     }
 
     /// Advance the world `n` hours.
@@ -178,9 +191,44 @@ impl Engine {
         let minute = sim.clock.minute();
         let weekday = WEEKDAY_NAMES[(sim.clock.weekday()) as usize];
 
-        // ---- persistent entities: residents, then the old dog ----
-        let mut entities: Vec<EntityView> = Vec::with_capacity(sim.residents.len() + 1);
+        // ---- persistent entities, each with its observable behaviour ----
+        // The Behaviour Layer has already observed this tick; look each entity's
+        // behaviour up by id and attach it (position, heading, pose, gesture).
+        let bmap: BTreeMap<&str, &Behaviour> =
+            self.choreo.frame().iter().map(|b| (b.id, b)).collect();
+
+        let mut entities: Vec<EntityView> =
+            Vec::with_capacity(sim.residents.len() + 1 + sim.wildlife.animals.len());
         let mut occupancy: BTreeMap<LocationId, u32> = BTreeMap::new();
+
+        let make = |id: &'static str,
+                    name: &'static str,
+                    kind: &'static str,
+                    color: &'static str,
+                    place: LocationId,
+                    place_name: &'static str,
+                    doing: String|
+         -> EntityView {
+            let b = bmap.get(id).copied();
+            EntityView {
+                id,
+                name,
+                kind,
+                color,
+                x: b.map(|b| b.x).unwrap_or(0.0),
+                y: b.map(|b| b.y).unwrap_or(0.0),
+                place,
+                place_name,
+                doing,
+                traveling: b.map(|b| b.moving).unwrap_or(false),
+                heading: b.map(|b| b.heading).unwrap_or(0.0),
+                speed: b.map(|b| b.speed).unwrap_or(0.0),
+                pose: b.map(|b| b.pose.tag()).unwrap_or("stand"),
+                gesture: b.map(|b| b.gesture.tag()).unwrap_or("none"),
+                partner: b.and_then(|b| b.partner),
+            }
+        };
+
         for r in &sim.residents {
             let traveling = matches!(r.status, Status::Traveling { .. });
             let doing = match &r.status {
@@ -194,35 +242,21 @@ impl Engine {
                 }
             };
             let place_name = sim.world.location(r.place).map(|l| l.name).unwrap_or(r.place);
-            entities.push(EntityView {
-                id: r.id,
-                name: r.name,
-                kind: EntityKind::Resident,
-                color: layout::color_of(r.id),
-                pos: layout::entity_pos(&sim.world, r.place, &r.status),
-                place: r.place,
-                place_name,
-                doing,
-                traveling,
-            });
-            // Occupancy counts settled/idle residents at their node (not those
-            // mid-edge, who are between places).
+            entities.push(make(r.id, r.name, "resident", layout::color_of(r.id), r.place, place_name, doing));
+            // Occupancy counts settled/idle residents at their node.
             if !traveling {
                 *occupancy.entry(r.place).or_default() += 1;
             }
         }
         let dog_place_name = sim.world.location(sim.dog.place).map(|l| l.name).unwrap_or(sim.dog.place);
-        entities.push(EntityView {
-            id: "the_old_dog",
-            name: "the old dog",
-            kind: EntityKind::Dog,
-            color: layout::color_of("the_old_dog"),
-            pos: layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle),
-            place: sim.dog.place,
-            place_name: dog_place_name,
-            doing: "about the district".to_string(),
-            traveling: false,
-        });
+        entities.push(make(
+            "the_old_dog", "the old dog", "dog", layout::color_of("the_old_dog"),
+            sim.dog.place, dog_place_name, "about the district".to_string(),
+        ));
+        for a in &sim.wildlife.animals {
+            let place_name = sim.world.location(a.place).map(|l| l.name).unwrap_or(a.place);
+            entities.push(make(a.id, a.name, a.species.tag(), a.color, a.place, place_name, a.doing()));
+        }
 
         // ---- busiest place ----
         // A gathering is a *public* thing. A house full of sleepers is not the

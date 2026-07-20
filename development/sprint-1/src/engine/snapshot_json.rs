@@ -13,7 +13,7 @@
 use std::collections::BTreeSet;
 
 use crate::engine::{Engine, Snapshot};
-use crate::view::layout::{self, Pos, MAP};
+use crate::view::layout::{self, MAP};
 
 /// Minimal JSON string escaping.
 pub(crate) fn esc(s: &str) -> String {
@@ -27,10 +27,6 @@ pub(crate) fn esc(s: &str) -> String {
         }
     }
     o
-}
-
-fn xy(pos: &Pos) -> (f64, f64) {
-    (pos.x(), pos.y())
 }
 
 impl Engine {
@@ -78,7 +74,7 @@ impl Engine {
         }
         out.push(']');
 
-        // entities (residents + dog), roster only
+        // entities roster (residents, the dog, the animals): identity, kind, colour
         out.push_str(",\"entities\":[");
         for (i, r) in sim.residents.iter().enumerate() {
             if i > 0 {
@@ -95,6 +91,15 @@ impl Engine {
             ",{{\"id\":\"the_old_dog\",\"name\":\"the old dog\",\"kind\":\"dog\",\"color\":\"{}\"}}",
             layout::color_of("the_old_dog")
         ));
+        for a in &sim.wildlife.animals {
+            out.push_str(&format!(
+                ",{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"color\":\"{}\"}}",
+                a.id,
+                esc(a.name),
+                a.species.tag(),
+                a.color
+            ));
+        }
         out.push(']');
 
         out.push('}');
@@ -112,17 +117,29 @@ impl Snapshot {
             self.tick, self.day, self.hour, self.minute, self.weekday, esc(self.phase)
         ));
 
-        // live entities — lean: identity/colour live in the static roster, so a
-        // frame carries only what changes (position, place, activity, motion).
+        // live entities — position and *behaviour*: heading (facing), speed, pose,
+        // a momentary gesture, and who they attend to. This is what the renderer
+        // draws; identity/colour come from the static roster.
         out.push_str(",\"entities\":[");
         for (i, e) in self.entities.iter().enumerate() {
             if i > 0 {
                 out.push(',');
             }
-            let (x, y) = xy(&e.pos);
+            let partner = match e.partner {
+                Some(p) => format!("\"{p}\""),
+                None => "null".to_string(),
+            };
             out.push_str(&format!(
-                "{{\"id\":\"{}\",\"x\":{x:.1},\"y\":{y:.1},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
+                "{{\"id\":\"{}\",\"x\":{:.1},\"y\":{:.1},\"h\":{:.2},\"spd\":{:.2},\
+                 \"pose\":\"{}\",\"gest\":\"{}\",\"partner\":{},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
                 e.id,
+                e.x,
+                e.y,
+                e.heading,
+                e.speed,
+                e.pose,
+                e.gesture,
+                partner,
                 e.place,
                 esc(&e.doing),
                 e.traveling
