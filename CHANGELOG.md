@@ -8,6 +8,25 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — Behaviours as states that unfold (animated, continuous) — PROPOSED
+
+Design principle (Roy): behaviours are not events but **states that unfold over
+time** — a conversation has a beginning/middle/end; walking has slowing, looking,
+pausing; a child stays in a playful state; animals inhabit foraging/resting/
+exploring/grooming/observing rather than firing scripted actions. Guiding goal:
+*watch five minutes with no text and understand the town.*
+
+- The engine now emits each entity's ongoing state plus a conversation **phase**
+  (0..1) and a `groom` state for animals, with **longer-lived animal states** so
+  they inhabit a behaviour rather than flit between actions.
+- The renderer **animates each state every frame** from its own clock, turning the
+  five-minute data stream into continuous life: nobody is frozen. Standers sway and
+  glance; walkers stride and lean; workers rock at their work with a pulsing tool;
+  talkers lean in, gesture and laugh through a conversation that visibly begins,
+  warms and winds down; the child darts after a bouncing, kickable ball; animals
+  forage (head-down pecks), rest (breathing as they lie), explore and preen; birds
+  flutter on their perch. Verified: the scene keeps animating even while paused.
+
 ## 2026-07-20 — DS-007: the Behaviour Layer + living animals — PROPOSED
 
 Direction change (Roy): stop adding simulation *systems*; make the existing

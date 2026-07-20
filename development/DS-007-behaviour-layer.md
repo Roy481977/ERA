@@ -26,6 +26,32 @@ meantime. One authoritative world, two renderers over time.
 
 ---
 
+## Design principle: behaviours are states that unfold, not events
+
+*(Roy)* Behaviours are not events — they are **states that unfold over time**, with a
+beginning, a middle and an end. A conversation is not an instant. Walking is not
+just moving between two points — people slow, look around, pause, change pace. A
+child is not a sequence of isolated actions but stays in a *playful state* that
+produces chasing, stopping, laughing, kicking a ball. Animals should *inhabit*
+states — foraging, resting, exploring, following, grooming, observing — rather than
+run scripted actions. The Behaviour Layer therefore models **ongoing activities**;
+the renderer's job is to express those activities visually, continuously.
+
+The concrete goal that guides every decision:
+
+> **When I watch the simulation for five minutes without reading a single line of
+> text, I should be able to understand what is happening in the town.**
+
+How this is realised: the engine emits each entity's *ongoing state* (its pose,
+plus a `phase` 0..1 for bounded states like a conversation, and its partner). The
+renderer then **animates that state every frame** from its own real-time clock — so
+a five-minute-per-tick data stream becomes 60-fps life. Nobody is ever frozen:
+standers sway and glance about, walkers stride and lean, workers rock at their work,
+talkers lean in and gesture (with the occasional laugh) through a conversation that
+visibly begins, warms and winds down, the child darts after a bouncing ball, and
+animals forage, rest (breathing as they lie), explore and preen. The state is the
+truth; the animation is its visible expression.
+
 ## What the Behaviour Layer is
 
 `src/behaviour/` sits between the simulation and any renderer. The simulation

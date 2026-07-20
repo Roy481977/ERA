@@ -24,7 +24,6 @@ use crate::sim::wildlife::{Act, Animal};
 use crate::sim::resident::Status;
 use crate::sim::Simulation;
 use crate::view::layout;
-use crate::world::location::LocationId;
 
 /// What an entity's body is doing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,6 +38,7 @@ pub enum Pose {
     Play,
     Perch,
     Forage,
+    Groom,
     Alert,
 }
 
@@ -55,6 +55,7 @@ impl Pose {
             Pose::Play => "play",
             Pose::Perch => "perch",
             Pose::Forage => "forage",
+            Pose::Groom => "groom",
             Pose::Alert => "alert",
         }
     }
@@ -102,6 +103,9 @@ pub struct Behaviour {
     /// Who they are attending to (a conversation partner, the dog to the child).
     pub partner: Option<&'static str>,
     pub moving: bool,
+    /// Progress through a bounded state (a conversation), 0..1. 0 when not in one.
+    /// Lets the renderer play a beginning, a middle and an end.
+    pub phase: f64,
 }
 
 /// A running conversation between two residents — held for a short window so it
@@ -110,7 +114,6 @@ pub struct Behaviour {
 struct Convo {
     a: &'static str,
     b: &'static str,
-    place: LocationId,
     started: u64,
     ends: u64,
 }
@@ -167,7 +170,6 @@ impl Choreographer {
                 self.convos.push(Convo {
                     a: it.a,
                     b: it.b,
-                    place: it.place,
                     started: it.tick,
                     ends: it.tick + CONVO_TICKS,
                 });
@@ -197,13 +199,20 @@ impl Choreographer {
             }
             let speed = (dist / 40.0).clamp(0.0, 1.0);
 
-            // pose + gesture + partner
-            let (pose, gesture, partner, face) = self.pose_of(sim, id, &pos, tick, mv, convo_of(id));
+            // pose + gesture + partner, and progress through a bounded state
+            let cv = convo_of(id);
+            let (pose, gesture, partner, face) = self.pose_of(sim, id, &pos, tick, mv, cv);
+            let phase = cv
+                .map(|c| {
+                    let span = c.ends.saturating_sub(c.started).max(1) as f64;
+                    ((tick.saturating_sub(c.started)) as f64 / span).clamp(0.0, 1.0)
+                })
+                .unwrap_or(0.0);
             if let Some(h) = face {
                 heading = h;
             }
             self.heading.insert(id, heading);
-            frame.push(Behaviour { id, x, y, heading, speed, pose, gesture, partner, moving: mv });
+            frame.push(Behaviour { id, x, y, heading, speed, pose, gesture, partner, moving: mv, phase });
         }
 
         self.last_pos = pos;
@@ -284,6 +293,7 @@ impl Choreographer {
                 Act::Rest => Pose::Lie,
                 Act::Watch => Pose::Alert,
                 Act::Call => Pose::Alert,
+                Act::Groom => Pose::Groom,
                 Act::Play => Pose::Play,
             };
             return (pose, Gesture::None, None, None);

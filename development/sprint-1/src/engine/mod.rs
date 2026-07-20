@@ -55,6 +55,8 @@ pub struct EntityView {
     pub gesture: &'static str,
     /// Who they are attending to, if anyone.
     pub partner: Option<&'static str>,
+    /// Progress through a bounded state (a conversation), 0..1.
+    pub phase: f64,
 }
 
 /// The Old Oak, as a live reading.
@@ -226,6 +228,7 @@ impl Engine {
                 pose: b.map(|b| b.pose.tag()).unwrap_or("stand"),
                 gesture: b.map(|b| b.gesture.tag()).unwrap_or("none"),
                 partner: b.and_then(|b| b.partner),
+                phase: b.map(|b| b.phase).unwrap_or(0.0),
             }
         };
 

@@ -72,13 +72,14 @@ pub enum Act {
     Call,
     Flee,
     Play,
+    Groom,
 }
 
 impl Act {
     fn word(&self) -> &'static str {
         match self {
             Act::Rest => "resting",
-            Act::Roam => "on the move",
+            Act::Roam => "exploring",
             Act::Hunt => "hunting",
             Act::Forage => "foraging",
             Act::Perch => "perched, still",
@@ -86,6 +87,7 @@ impl Act {
             Act::Call => "calling",
             Act::Flee => "slipping away",
             Act::Play => "at play",
+            Act::Groom => "grooming",
         }
     }
 }
@@ -144,10 +146,10 @@ impl Animal {
     fn choose_act(&self, rng: &mut Rng) -> Act {
         let opts: &[Act] = match self.species {
             Species::Fox => &[Act::Hunt, Act::Hunt, Act::Watch, Act::Roam],
-            Species::Cat => &[Act::Watch, Act::Play, Act::Forage, Act::Watch],
-            Species::Owl => &[Act::Perch, Act::Call, Act::Watch, Act::Hunt],
-            Species::Heron => &[Act::Hunt, Act::Watch, Act::Watch],
-            Species::Crow => &[Act::Forage, Act::Call, Act::Watch],
+            Species::Cat => &[Act::Watch, Act::Play, Act::Forage, Act::Groom, Act::Watch],
+            Species::Owl => &[Act::Perch, Act::Perch, Act::Call, Act::Watch, Act::Groom],
+            Species::Heron => &[Act::Hunt, Act::Watch, Act::Watch, Act::Groom],
+            Species::Crow => &[Act::Forage, Act::Call, Act::Watch, Act::Groom],
             Species::Hedgehog => &[Act::Forage, Act::Forage, Act::Roam],
         };
         *rng.pick(opts).unwrap_or(&Act::Watch)
@@ -216,7 +218,7 @@ fn step_animal(
             a.place = t.to;
             a.trip = None;
             a.act = a.choose_act(rng);
-            a.dwell = rng.range(2, 7) as u32;
+            a.dwell = rng.range(4, 12) as u32;
             if rng.chance(35) {
                 return Some((a.name, narrate(a, rng)));
             }
@@ -247,7 +249,7 @@ fn step_animal(
             }
         }
         a.act = Act::Rest;
-        a.dwell = rng.range(6, 18) as u32;
+        a.dwell = rng.range(14, 40) as u32;
         if rng.chance(25) {
             return Some((a.name, narrate(a, rng)));
         }
@@ -280,7 +282,7 @@ fn step_animal(
         }
     }
     a.act = a.choose_act(rng);
-    a.dwell = rng.range(3, 9) as u32;
+    a.dwell = rng.range(6, 18) as u32;
     if rng.chance(45) {
         return Some((a.name, narrate(a, rng)));
     }
@@ -339,6 +341,8 @@ fn quietest_neighbor(
 fn narrate(a: &Animal, rng: &mut Rng) -> String {
     let opts: &[&str] = match (a.species, a.act) {
         (_, Act::Rest) => &["is curled somewhere out of sight", "sleeps, hidden away"],
+        (Species::Cat, Act::Groom) => &["washes a paw and draws it over an ear", "grooms, one leg raised"],
+        (_, Act::Groom) => &["preens, settling each feather", "runs its bill along a wing"],
 
         (Species::Fox, Act::Hunt) => &[
             "noses along the riverside, low and intent",

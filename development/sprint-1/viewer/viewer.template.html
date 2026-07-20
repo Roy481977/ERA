@@ -286,55 +286,87 @@ function draw(ents, fr) {
   });
 }
 
-// stable pseudo-angle from a string (for consistent scatter/pairing)
+// stable pseudo-angle / seed from a string
 function hashAngle(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h % 360) * Math.PI / 180; }
+function seedOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return ((h >>> 0) % 1000) / 1000; }
 
-function drawEntity(x, y, heading, e, meta, selected) {
+// A behaviour is a STATE that unfolds — animate it continuously so the town is
+// legible without a word of text. Returns a per-frame offset, heading nudge and
+// a little state for the figure.
+function animateState(e, T, sd) {
+  const s = e.pose; let dx = 0, dy = 0, dh = 0, breathe = 1;
+  const c = Math.cos(e.h), si = Math.sin(e.h);
+  if (s === 'walk') { const b = Math.sin(T * 9 + sd * 6) * (0.7 + (e.spd || 0.3) * 2.5); dy = -Math.abs(b) * 0.6; dx = b * 0.15; }
+  else if (s === 'stand' || s === 'alert') { dh = Math.sin(T * 0.5 + sd * 6) * 0.5; dx = Math.sin(T * 0.8 + sd) * 1.3; dy = Math.cos(T * 0.7 + sd) * 1.1; }
+  else if (s === 'work') { const w = Math.sin(T * 3 + sd * 6); dx = c * w * 2.2; dy = si * w * 2.2; }
+  else if (s === 'talk') { const lean = 1.5 + Math.sin(T * 2.2 + sd * 6) * 1.6; dx = c * lean; dy = si * lean; if (e.gest === 'laugh') dy -= Math.abs(Math.sin(T * 11)) * 2.4; }
+  else if (s === 'sit') { dx = Math.sin(T * 0.6 + sd) * 0.8; }
+  else if (s === 'sniff') { dh = Math.sin(T * 3 + sd) * 0.7; dy = Math.abs(Math.sin(T * 4.5)) * 1.6; }
+  else if (s === 'forage') { dy = Math.abs(Math.sin(T * 3.2 + sd * 6)) * 2.6; dx = Math.sin(T * 0.4 + sd) * 2.2; }
+  else if (s === 'groom') { dx = Math.sin(T * 4 + sd) * 1.3; dy = Math.cos(T * 4 + sd) * 1.3; }
+  else if (s === 'perch') { const cyc = (T * 0.4 + sd) % 4; dy = cyc < 0.28 ? -Math.sin(cyc / 0.28 * Math.PI) * 4 : 0; }
+  else if (s === 'lie') { breathe = 1 + Math.sin(T * 1.3 + sd * 6) * 0.09; }
+  else if (s === 'play') { dx = (Math.sin(T * 2.1 + sd * 6) + Math.sin(T * 3.7 + sd * 3)) * 7; dy = (Math.cos(T * 1.9 + sd * 4) + Math.sin(T * 3.1 + sd)) * 6; }
+  return { dx, dy, dh, breathe };
+}
+
+function drawEntity(x0, y0, heading0, e, meta, selected) {
   const kind = meta.kind, color = meta.color;
   const bird = kind === 'crow' || kind === 'owl' || kind === 'heron';
   const small = kind === 'fox' || kind === 'cat' || kind === 'hedgehog';
   const dog = kind === 'dog';
   const rad = bird ? 3.6 : small ? 4.5 : dog ? 5 : 6.5;
+  const T = _pn / 1000, sd = seedOf(e.id);
+  const a = animateState(e, T, sd);
+  const x = x0 + a.dx * (baseScale * cam.zoom) * 0.5, y = y0 + a.dy * (baseScale * cam.zoom) * 0.5;
+  const heading = heading0 + a.dh;
   const cos = Math.cos(heading), sin = Math.sin(heading);
 
   if (selected) { ctx.beginPath(); ctx.arc(x, y, rad + 7, 0, 7); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
 
-  ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(0,0,0,.55)';
   if (e.pose === 'perch') {
-    // a small chevron sitting on the spot
     ctx.beginPath(); ctx.moveTo(x - 5, y + 2); ctx.lineTo(x, y - 4); ctx.lineTo(x + 5, y + 2);
     ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.stroke();
+    if (kind === 'resident') label(x, y - 10, meta.name);
     return;
   }
   if (e.pose === 'lie') {
-    // a flattened oval, lying down along its facing
-    ctx.save(); ctx.translate(x, y); ctx.rotate(heading);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(heading); ctx.scale(1, a.breathe);
     ctx.beginPath(); ctx.ellipse(0, 0, rad + 3, rad - 1.5, 0, 0, 7);
-    ctx.fillStyle = color; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke(); ctx.restore();
+    ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke(); ctx.restore();
     return;
   }
+
+  // a ball for a child at play (bouncing, occasionally kicked)
+  if (e.pose === 'play') {
+    const bx = x + Math.sin(T * 1.3 + sd) * 15, by = y + 9 - Math.abs(Math.sin(T * 3.2)) * 9;
+    ctx.beginPath(); ctx.arc(bx, by, 2.6, 0, 7); ctx.fillStyle = '#eee'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+
   const sit = e.pose === 'sit';
-  // facing line (a little nose), except when sitting still low
+  // facing line
   ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + cos * (rad + 5), y + sin * (rad + 5));
-  ctx.strokeStyle = 'rgba(200,211,222,.55)'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,211,222,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
   // body
-  ctx.beginPath(); ctx.arc(x, y - (sit ? 0 : 0), sit ? rad - 1 : rad, 0, 7);
-  ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, sit ? rad - 1 : rad, 0, 7);
+  ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
 
-  // pose extras
-  if (e.pose === 'work') { ctx.fillStyle = 'rgba(230,184,0,.9)'; ctx.fillRect(x + cos * (rad + 3) - 1.5, y + sin * (rad + 3) - 1.5, 3, 3); }
-  if (e.pose === 'sniff') { ctx.beginPath(); ctx.arc(x + cos * (rad + 4), y + sin * (rad + 4) + 2, 1.6, 0, 7); ctx.fillStyle = '#cbb28c'; ctx.fill(); }
-  if (e.pose === 'forage') { ctx.beginPath(); ctx.arc(x + cos * (rad + 3), y + sin * (rad + 3), 1.4, 0, 7); ctx.fillStyle = '#9c8'; ctx.fill(); }
-  if (e.pose === 'play') { ctx.beginPath(); ctx.arc(x + 7, y + 5, 2.2, 0, 7); ctx.fillStyle = '#eee'; ctx.fill(); } // a ball
+  // continuous pose expression
+  if (e.pose === 'work') { const w = 0.5 + 0.5 * Math.sin(T * 3 + sd * 6); ctx.globalAlpha = w; ctx.fillStyle = 'rgba(230,184,0,.95)'; ctx.fillRect(x + cos * (rad + 3) - 1.5, y + sin * (rad + 3) - 1.5, 3, 3); ctx.globalAlpha = 1; }
+  if (e.pose === 'sniff') { ctx.beginPath(); ctx.arc(x + cos * (rad + 4), y + sin * (rad + 4) + 1, 1.6, 0, 7); ctx.fillStyle = '#cbb28c'; ctx.fill(); }
+  if (e.pose === 'forage') { ctx.beginPath(); ctx.arc(x + cos * (rad + 3), y + sin * (rad + 3), 1.5, 0, 7); ctx.fillStyle = '#9c8'; ctx.fill(); }
+  if (e.pose === 'talk') {
+    // an animated hand-gesture arc near the head + the odd laugh
+    const g = 3 + Math.sin(T * 4 + sd * 6) * 1.4;
+    ctx.beginPath(); ctx.arc(x, y - rad - 3, g, Math.PI * 0.1, Math.PI * 0.9); ctx.strokeStyle = 'rgba(230,214,180,.85)'; ctx.lineWidth = 1.3; ctx.stroke();
+    if (e.gest === 'laugh') sparkle(x, y - rad - 6);
+  } else if (e.pose === 'groom') { ctx.beginPath(); ctx.arc(x + Math.sin(T * 4 + sd) * 3, y - rad, 1.2, 0, 7); ctx.fillStyle = 'rgba(220,220,220,.8)'; ctx.fill(); }
+  else if (e.gest === 'glance') { ctx.beginPath(); ctx.arc(x + Math.sin(T * 2 + sd) * 4, y - rad - 3, 1.2, 0, 7); ctx.fillStyle = 'rgba(200,211,222,.9)'; ctx.fill(); }
 
-  // momentary gesture
-  if (e.gest === 'laugh') sparkle(x, y - rad - 5);
-  else if (e.gest === 'gesture') { ctx.beginPath(); ctx.arc(x, y - rad - 4, 3, Math.PI * 0.15, Math.PI * 0.85); ctx.strokeStyle = 'rgba(230,184,0,.9)'; ctx.lineWidth = 1.4; ctx.stroke(); }
-  else if (e.gest === 'glance') { ctx.beginPath(); ctx.arc(x + 4, y - rad - 3, 1.2, 0, 7); ctx.fillStyle = 'rgba(200,211,222,.9)'; ctx.fill(); }
-
-  // resident name (kept small; animals/dog named on selection only)
-  if (kind === 'resident') { ctx.fillStyle = 'rgba(200,211,222,.85)'; ctx.font = '10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(meta.name, x, y - rad - 6); }
+  if (kind === 'resident') label(x, y - rad - 6, meta.name);
 }
+
+function label(x, y, name) { ctx.fillStyle = 'rgba(200,211,222,.85)'; ctx.font = '10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(name, x, y); }
 
 function sparkle(x, y) {
   ctx.strokeStyle = 'rgba(255,220,120,.95)'; ctx.lineWidth = 1.2;
