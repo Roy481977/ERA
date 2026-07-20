@@ -5,9 +5,21 @@ edition = "2021"
 description = "ERA — First Breath (Sprint 1): headless deterministic simulation core."
 
 # Library (the core) + a binary observer share this crate.
+# `cdylib` is added so the engine can be compiled to WebAssembly (each visitor
+# runs their own copy of ERA in the browser); `rlib` keeps the native binary and
+# tests linking against it.
 [lib]
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "first_breath"
 path = "src/main.rs"
+
+[dependencies]
+# Only pulled in for the WebAssembly build (the `wasm` feature); the native build
+# and every test stay dependency-free and unchanged.
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+wasm = ["dep:wasm-bindgen"]

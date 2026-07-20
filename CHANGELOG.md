@@ -8,6 +8,25 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — ERA online: the engine in the browser (WASM) + auto-deploy — PROPOSED
+
+Direction (Roy): each visitor runs their own copy; set up a permanent, no-terminal
+way to run it that later becomes the online version unchanged.
+
+- The engine now compiles to **WebAssembly** (`src/web.rs`, `wasm` feature; the
+  lib is a `cdylib`). `WasmEngine` exposes `new(seed)`, `tick()`, `world_json()`,
+  `snapshot_json()` — the same wire format as native. The native build and all 76
+  tests are unchanged (the wasm dep is optional and off by default).
+- **`web/`** — a live web client: each visitor's browser runs its own deterministic
+  copy of ERA (the wasm engine ticks client-side) and the renderer reads its live
+  behaviour state each frame. Reuses the whole behaviour renderer (poses, staged
+  conversations, follow-and-zoom camera); adds a seed control for a different world.
+- **`.github/workflows/pages.yml`** — on every push to `main`, GitHub Actions builds
+  the wasm on GitHub's servers and publishes `web/` to **GitHub Pages**. Permanent
+  URL (`https://roy481977.github.io/ERA/`), no terminal, auto-updating; the same
+  static files deploy to any host later. This is the "mock production" that becomes
+  production unchanged.
+
 ## 2026-07-20 — Behaviours as states that unfold (animated, continuous) — PROPOSED
 
 Design principle (Roy): behaviours are not events but **states that unfold over

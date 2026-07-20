@@ -1,0 +1,3 @@
+# The WebAssembly module is built by CI (GitHub Actions) on every push — not
+# committed. See ../.github/workflows/pages.yml.
+pkg/

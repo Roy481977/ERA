@@ -9,3 +9,7 @@ pub mod engine;
 pub mod sim;
 pub mod view;
 pub mod world;
+
+/// WebAssembly bindings — only under the `wasm` feature (see `web/`).
+#[cfg(feature = "wasm")]
+pub mod web;
