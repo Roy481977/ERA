@@ -18,6 +18,23 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Sprint 2 Step 2: decide-then-act tick + companionship — PROPOSED
+
+Roy chose to evolve the core tick (the arc's first architectural change) so
+residents can coordinate. The tick is now **four phases**: *advance* (continue
+current activity), *decide* (every idle resident forms an intention without
+moving), *reconcile* (companionship), *act* (apply). All prior behaviour is
+preserved exactly — the 34→42 tests that predate this still pass — because
+cross-resident reads already used the start-of-tick snapshot.
+
+**Companionship** now emerges from world state: close friends (affinity ≥ 3)
+co-located and bound for the same place **leave together** ("Agnes sets off with
+Eva for the riverside"; "Luca sets off with Victor for home"), and a resident will
+**wait** a moment (bounded, ≤ 2/day) for a close friend just finishing up ("Elias
+waits for Agnes to finish up"). Deterministic; nobody is stranded. Decide-then-act
+is now the seam every future coordinated behaviour will use. The `chronicle` gains
+a "Who walks together" section. Four new tests. **42 tests pass.**
+
 ## 2026-07-19 — Sprint 2 Step 1: relationships visible through behaviour — PROPOSED
 
 First step under DEV-000, climbing the Ladder of Life (rungs 4–5). Relationships

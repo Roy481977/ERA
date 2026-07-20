@@ -105,6 +105,31 @@ fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
         .unwrap_or_else(|| nav.travel_time(a, b).unwrap_or(1))
 }
 
+const COMPANION_AFFINITY: i32 = 3;
+const WAIT_CAP: u32 = 2;
+
+/// A resident's intended next action, formed in the DECIDE phase before anyone
+/// moves — so friends can coordinate in RECONCILE before they ACT.
+struct Intent {
+    idx: usize,
+    aid: &'static str,
+    purpose: &'static str,
+    dur: u32,
+    dest: LocationId,
+    /// True if this intent is a spontaneous deviation (reason set).
+    deviation: bool,
+    reason: Option<String>,
+}
+
+/// The outcome of reconciliation: who leaves together, and who waits for whom.
+#[derive(Default)]
+struct Coord {
+    /// idx -> partner idx: they set off together (same place, same destination).
+    together: BTreeMap<usize, usize>,
+    /// idx -> friend name: this resident waits this tick to leave with them.
+    waiting: BTreeMap<usize, &'static str>,
+}
+
 impl Simulation {
     pub fn new(residents: Vec<Resident>) -> Self {
         Simulation {
@@ -136,6 +161,7 @@ impl Simulation {
                 r.done_today.clear();
                 r.deviations_today = 0;
                 r.lingered_today = 0;
+                r.waited_today = 0;
             }
             self.social_seen_today.clear();
             self.last_day = day;
@@ -170,144 +196,143 @@ impl Simulation {
             .map(|r| (r.id, r.name, r.place, r.is_present()))
             .collect();
 
-        // Oak visits are collected here and applied to the Oak after the
-        // movement borrow scope ends (the Oak is world truth, one owner).
+        // ======================= PHASE 1 — ADVANCE =======================
+        // Everyone continues what they are already doing: perform a tick (perhaps
+        // lingering with a friend), walk a leg, or arrive. Some fall Idle.
         let mut oak_events: Vec<OakEvent> = Vec::new();
-
-        // --- movement + activity selection ---
-        // Disjoint borrows: nav (read) + residents (write) + log (write) + clock.
         {
-        let Simulation { world, residents, log, clock, relationships, .. } = self;
-        let nav: &NavGraph = &world.nav;
-
-        for r in residents.iter_mut() {
-            // 1) advance the current status by one step.
-            let status = std::mem::replace(&mut r.status, Status::Idle);
-            match status {
-                Status::Performing { activity, left, start_day } => {
-                    if left > 1 {
-                        r.status = Status::Performing { activity, left: left - 1, start_day };
-                    } else if let Some(friend) = linger_with_friend(r, hour, &presence, relationships, world) {
-                        // A close friend is here — stay a little longer. Behaviour
-                        // changed by a relationship, shown as behaviour.
-                        r.lingered_today += 1;
-                        r.status = Status::Performing { activity, left: 1, start_day };
-                        log.push(Event {
-                            tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                            resident: r.name,
-                            message: format!("lingers a little longer, enjoying {friend}'s company"),
-                        });
-                    } else if start_day == clock.day() {
-                        // finished today -> Idle (selects below)
-                        r.done_today.push(activity);
-                    }
-                    // If this activity was begun on a previous day (it ran past
-                    // midnight), it belongs to that day; let it finish without
-                    // marking today's list, so the resident may still do it again.
-                }
-                Status::Traveling { activity, purpose, dest, dur, path, mut idx, leg_left } => {
-                    if leg_left > 1 {
-                        r.status = Status::Traveling {
-                            activity, purpose, dest, dur, path, idx, leg_left: leg_left - 1,
-                        };
-                    } else {
-                        idx += 1;
-                        r.place = path[idx];
-                        if r.place == dest {
-                            r.status = Status::Performing { activity, left: dur, start_day: clock.day() };
+            let Simulation { world, residents, log, clock, relationships, .. } = self;
+            let nav: &NavGraph = &world.nav;
+            for r in residents.iter_mut() {
+                let status = std::mem::replace(&mut r.status, Status::Idle);
+                match status {
+                    Status::Performing { activity, left, start_day } => {
+                        if left > 1 {
+                            r.status = Status::Performing { activity, left: left - 1, start_day };
+                        } else if let Some(friend) = linger_with_friend(r, hour, &presence, relationships, world) {
+                            r.lingered_today += 1;
+                            r.status = Status::Performing { activity, left: 1, start_day };
                             log.push(Event {
-                                tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                                resident: r.name,
-                                message: format!("{purpose} — at {}", r.place),
+                                tick: clock.tick, day, hour, resident: r.name,
+                                message: format!("lingers a little longer, enjoying {friend}'s company"),
                             });
-                            record_oak_visit(r, activity, clock, &mut oak_events);
-                        } else {
-                            let leg = edge_weight(nav, path[idx], path[idx + 1]);
-                            r.status = Status::Traveling {
-                                activity, purpose, dest, dur, path, idx, leg_left: leg,
-                            };
+                        } else if start_day == clock.day() {
+                            r.done_today.push(activity);
                         }
                     }
-                }
-                Status::Idle => {}
-            }
-
-            // 2) if idle, select the next activity and start it (this tick).
-            if let Status::Idle = r.status {
-                // Resolve to owned values so the immutable borrow of `r` ends
-                // before we mutate its status/place below.
-                // Matchday takes precedence during the match windows; otherwise
-                // the routine (with a possible social detour) runs as normal.
-                let matchday_plan = matchday::consider(r, weekday, hour, match_result)
-                    .map(|m| (m.id, m.purpose, m.duration, m.dest));
-
-                let plan = if let Some(mp) = matchday_plan {
-                    Some(mp)
-                } else {
-                    let choice = r
-                        .select(hour, weekday, world)
-                        .map(|a| (a.id, a.purpose, a.duration, Routine::target_location(a, r.home)));
-
-                    // Intention layer: a resident about to head home may instead
-                    // detour to join a nearby friend (Phase 5). The routine
-                    // remains the default; deviation only overrides going home.
-                    match choice {
-                        Some((aid, apurpose, adur, Some(dest))) => {
-                            let heading_home = dest == r.home;
-                            let deviation = if heading_home {
-                                intention::consider_social_detour(
-                                    r, hour, clock.tick, &presence, relationships, world, nav,
-                                )
+                    Status::Traveling { activity, purpose, dest, dur, path, mut idx, leg_left } => {
+                        if leg_left > 1 {
+                            r.status = Status::Traveling { activity, purpose, dest, dur, path, idx, leg_left: leg_left - 1 };
+                        } else {
+                            idx += 1;
+                            r.place = path[idx];
+                            if r.place == dest {
+                                r.status = Status::Performing { activity, left: dur, start_day: clock.day() };
+                                log.push(Event {
+                                    tick: clock.tick, day, hour, resident: r.name,
+                                    message: format!("{purpose} — at {}", r.place),
+                                });
+                                record_oak_visit(r, activity, clock, &mut oak_events);
                             } else {
-                                None
-                            };
-                            match deviation {
-                                Some(dev) => {
-                                    log.push(Event {
-                                        tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                                        resident: r.name, message: dev.reason,
-                                    });
-                                    r.deviations_today += 1;
-                                    Some((dev.activity_id, dev.purpose, dev.duration, dev.dest))
-                                }
-                                None => Some((aid, apurpose, adur, dest)),
+                                let leg = edge_weight(nav, path[idx], path[idx + 1]);
+                                r.status = Status::Traveling { activity, purpose, dest, dur, path, idx, leg_left: leg };
                             }
                         }
-                        _ => None,
                     }
-                };
-
-                if let Some((aid, apurpose, adur, dest)) = plan {
-                    {
-                        if dest == r.place {
-                            r.status = Status::Performing { activity: aid, left: adur, start_day: clock.day() };
-                            log.push(Event {
-                                tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                                resident: r.name,
-                                message: format!("{apurpose} — at {}", r.place),
-                            });
-                            record_oak_visit(r, aid, clock, &mut oak_events);
-                        } else if let Some(path) = nav.shortest_path(r.place, dest) {
-                            let leg = edge_weight(nav, path[0], path[1]);
-                            let route = path.join(" -> ");
-                            log.push(Event {
-                                tick: clock.tick, day: clock.day(), hour: clock.hour(),
-                                resident: r.name,
-                                message: format!("sets out for {dest} ({apurpose}) via {route}"),
-                            });
-                            r.status = Status::Traveling {
-                                activity: aid, purpose: apurpose, dest, dur: adur,
-                                path, idx: 0, leg_left: leg,
-                            };
-                        }
-                    }
+                    Status::Idle => {}
                 }
             }
         }
-        } // end movement borrow scope
+        for ev in oak_events.drain(..) {
+            self.oak.record(ev);
+        }
 
-        // Apply Oak visits to world truth (the Oak owns its history).
-        for ev in oak_events {
+        // ======================= PHASE 2 — DECIDE =======================
+        // Every idle resident forms an intention without moving. Seeing where all
+        // of them *mean* to go is what makes coordination possible.
+        let mut intents: Vec<Intent> = Vec::new();
+        for (i, r) in self.residents.iter().enumerate() {
+            if !matches!(r.status, Status::Idle) {
+                continue;
+            }
+            if let Some(m) = matchday::consider(r, weekday, hour, match_result) {
+                intents.push(Intent { idx: i, aid: m.id, purpose: m.purpose, dur: m.duration, dest: m.dest, deviation: false, reason: None });
+                continue;
+            }
+            let Some(act) = r.select(hour, weekday, &self.world) else { continue };
+            let Some(dest) = Routine::target_location(act, r.home) else { continue };
+            if dest == r.home {
+                if let Some(dev) = intention::consider_social_detour(
+                    r, hour, self.clock.tick, &presence, &self.relationships, &self.world, &self.world.nav,
+                ) {
+                    intents.push(Intent { idx: i, aid: dev.activity_id, purpose: dev.purpose, dur: dev.duration, dest: dev.dest, deviation: true, reason: Some(dev.reason) });
+                    continue;
+                }
+            }
+            intents.push(Intent { idx: i, aid: act.id, purpose: act.purpose, dur: act.duration, dest, deviation: false, reason: None });
+        }
+
+        // ===================== PHASE 3 — RECONCILE ======================
+        // Friends together, bound the same way, leave together; and a resident
+        // briefly waits for a close friend who is just finishing up.
+        let coord = self.reconcile_companionship(&intents);
+
+        // ======================== PHASE 4 — ACT =========================
+        let mut oak_events2: Vec<OakEvent> = Vec::new();
+        for intent in &intents {
+            let i = intent.idx;
+            // Wait: hold off this tick to leave with a friend.
+            if let Some(friend) = coord.waiting.get(&i) {
+                self.residents[i].waited_today += 1;
+                let name = self.residents[i].name;
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: name,
+                    message: format!("waits for {friend} to finish up"),
+                });
+                continue;
+            }
+            if intent.deviation {
+                if let Some(reason) = &intent.reason {
+                    let name = self.residents[i].name;
+                    self.log.push(Event { tick: self.clock.tick, day, hour, resident: name, message: reason.clone() });
+                }
+                self.residents[i].deviations_today += 1;
+            }
+            let place = self.residents[i].place;
+            let name = self.residents[i].name;
+            if intent.dest == place {
+                self.residents[i].status = Status::Performing { activity: intent.aid, left: intent.dur, start_day: day };
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: name,
+                    message: format!("{} — at {}", intent.purpose, place),
+                });
+                record_oak_visit(&mut self.residents[i], intent.aid, &self.clock, &mut oak_events2);
+            } else if let Some(path) = self.world.nav.shortest_path(place, intent.dest) {
+                let leg = edge_weight(&self.world.nav, path[0], path[1]);
+                let route = path.join(" -> ");
+                match coord.together.get(&i) {
+                    Some(&partner) if i < partner => {
+                        let pname = self.residents[partner].name;
+                        self.log.push(Event {
+                            tick: self.clock.tick, day, hour, resident: name,
+                            message: format!("sets off with {pname} for {} ({}) via {route}", intent.dest, intent.purpose),
+                        });
+                    }
+                    Some(_) => { /* the earlier partner already logged the joint departure */ }
+                    None => {
+                        self.log.push(Event {
+                            tick: self.clock.tick, day, hour, resident: name,
+                            message: format!("sets out for {} ({}) via {route}", intent.dest, intent.purpose),
+                        });
+                    }
+                }
+                self.residents[i].status = Status::Traveling {
+                    activity: intent.aid, purpose: intent.purpose, dest: intent.dest, dur: intent.dur,
+                    path, idx: 0, leg_left: leg,
+                };
+            }
+        }
+        for ev in oak_events2 {
             self.oak.record(ev);
         }
 
@@ -466,6 +491,63 @@ impl Simulation {
 
     fn name_of(&self, id: &str) -> &'static str {
         self.residents.iter().find(|r| r.id == id).map(|r| r.name).unwrap_or("someone")
+    }
+
+    /// Companionship: from everyone's intentions, decide who leaves together and
+    /// who waits. Deterministic (residents and intents in stable order); reads
+    /// only positions, statuses, and relationships.
+    fn reconcile_companionship(&self, intents: &[Intent]) -> Coord {
+        let mut coord = Coord::default();
+
+        // Leave together: two close friends at the same place, bound for the same
+        // destination this tick, set off as a pair.
+        for a in 0..intents.len() {
+            let ia = intents[a].idx;
+            let ra = &self.residents[ia];
+            if intents[a].dest == ra.place || coord.together.contains_key(&ia) {
+                continue; // performing in place, or already paired
+            }
+            for b in intents.iter().skip(a + 1) {
+                let ib = b.idx;
+                let rb = &self.residents[ib];
+                if b.dest == rb.place || coord.together.contains_key(&ib) {
+                    continue;
+                }
+                if ra.place == rb.place
+                    && intents[a].dest == b.dest
+                    && self.relationships.get(ra.id, rb.id).affinity >= COMPANION_AFFINITY
+                {
+                    coord.together.insert(ia, ib);
+                    coord.together.insert(ib, ia);
+                    break;
+                }
+            }
+        }
+
+        // Wait: a resident about to travel waits a moment for a close friend who
+        // is co-located and just finishing up (Performing with one tick left), so
+        // they can leave together next tick.
+        for it in intents {
+            let i = it.idx;
+            let ri = &self.residents[i];
+            if it.dest == ri.place || coord.together.contains_key(&i) || ri.waited_today >= WAIT_CAP {
+                continue;
+            }
+            for (j, rj) in self.residents.iter().enumerate() {
+                if j == i || rj.place != ri.place {
+                    continue;
+                }
+                if self.relationships.get(ri.id, rj.id).affinity < COMPANION_AFFINITY {
+                    continue;
+                }
+                if matches!(rj.status, Status::Performing { left: 1, .. }) {
+                    coord.waiting.insert(i, rj.name);
+                    break;
+                }
+            }
+        }
+
+        coord
     }
 
     pub fn resident(&self, id: &str) -> Option<&Resident> {

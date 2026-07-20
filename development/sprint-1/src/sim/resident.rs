@@ -66,6 +66,8 @@ pub struct Resident {
     pub deviations_today: u32,
     /// Extra ticks spent lingering with friends today (bounded).
     pub lingered_today: u32,
+    /// Ticks spent waiting for a friend before setting out today (bounded).
+    pub waited_today: u32,
 }
 
 impl Resident {
@@ -90,6 +92,7 @@ impl Resident {
             memories: Vec::new(),
             deviations_today: 0,
             lingered_today: 0,
+            waited_today: 0,
         }
     }
 

@@ -180,6 +180,25 @@ fn chronicle(weeks: u64) {
         println!("  · {an} and {bn} keep meeting at the {pn} ({n}×)");
     }
 
+    // -- Companions: who moves through the town together --
+    let mut companions: BTreeMap<(&str, &str), u32> = BTreeMap::new();
+    for e in &sim.log {
+        if let Some(rest) = e.message.strip_prefix("sets off with ") {
+            if let Some((partner, _)) = rest.split_once(" for ") {
+                let (x, y) = if e.resident <= partner { (e.resident, partner) } else { (partner, e.resident) };
+                *companions.entry((x, y)).or_default() += 1;
+            }
+        }
+    }
+    if !companions.is_empty() {
+        let mut cs: Vec<_> = companions.into_iter().collect();
+        cs.sort_by(|a, b| b.1.cmp(&a.1));
+        println!("\nWho walks together:");
+        for ((a, b), n) in cs.into_iter().take(4) {
+            println!("  · {a} and {b} set off together {n}×");
+        }
+    }
+
     // -- Places and their identity --
     let mut place_meetings: BTreeMap<&str, u32> = BTreeMap::new();
     for it in &sim.interactions {

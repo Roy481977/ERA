@@ -56,11 +56,51 @@ built silently.
 
 ---
 
+## Step 2 — Decide-then-act tick + companionship ✅
+
+**Decision:** Roy chose to evolve the tick (over staying single-pass) so residents
+can coordinate. This was the arc's first *architectural* change.
+
+**What became more alive:** friends now move through the town *together*. Agnes and
+Eva leave for the riverside side by side; Luca and Victor walk home together after
+the café; Elias waits a moment for Agnes, Hana for Sofia. "Victor waited for
+Elias" is real — and it emerges from world state (who's here, who's close, where
+they're bound), not a script.
+
+**Implemented:** the core tick became **four phases** — *advance* (continue what
+you're doing), *decide* (every idle resident forms an intention without moving),
+*reconcile* (companionship: close friends co-located and bound the same way leave
+together; a resident waits, bounded, for a close friend just finishing up), *act*
+(apply intentions). All prior behaviour (routines, deviations, matchday, lingering,
+Oak, social) is preserved exactly — verified by the unchanged tests — because
+cross-resident reads already used the start-of-tick snapshot.
+
+**Files changed:** `sim/simulation.rs` (four-phase `step`, `Intent`/`Coord`,
+`reconcile_companionship`), `sim/resident.rs` (`waited_today`), `main.rs` (chronicle
+"who walks together"), `tests/companionship.rs` (+4).
+
+**Architectural choices:** decide-then-act is now the tick's shape — the seam every
+future coordinated behaviour (meeting up, group traditions, saving a seat) will use.
+Companionship thresholds: affinity ≥ 3; wait only for a friend with one tick left;
+≤ 2 waits/resident/day. Deterministic (stable order throughout).
+
+**Tests added (4):** friends set off together; residents wait for a friend; waiting
+bounded per day; companionship deterministic. **42 tests total.**
+
+**Known limitations:** waiting is a short, hopeful pause (the friend may still go
+elsewhere — read as "waited a moment for them"); companionship is pairwise, not yet
+group-sized; no "save a seat"/greeting-across-the-square yet.
+
+**Commands:** `cargo run` (watch the timeline) · `cargo run -- chronicle` (see
+"Who walks together") · `cargo test`
+
+---
+
 ## Next candidates (climbing the ladder)
 
-- **Decide-then-act tick** → true companionship (wait for / leave with a friend),
-  the first clearly *architectural* step; surfaced for Roy's decision.
 - **Needs/mood** feeding selection, so routines and deviations flex for reasons the
-  world can see (DEV-000: Explainability, Emergence).
-- **Emergent traditions** (rung 7): detect a repeated behaviour and let it harden
-  into a named tradition the town keeps.
+  world can see (DEV-000: Explainability, Emergence) — now that decide-then-act
+  gives a clean place to compute intentions.
+- **Emergent traditions** (rung 7): detect a repeated behaviour (the Friday oak
+  gathering, the post-match café) and let it harden into a named tradition.
+- **Group companionship & greetings** ("Emma crossed the square to greet Karim").
