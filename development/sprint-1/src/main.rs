@@ -455,6 +455,7 @@ fn trace_json(days: u64) -> String {
     out.push_str(",\"ticks\":[");
     let total = days * 24;
     let mut log_cursor = 0usize;
+    let mut amb_cursor = 0usize;
     for t in 0..total {
         sim.step();
         let day = t / 24;
@@ -475,7 +476,7 @@ fn trace_json(days: u64) -> String {
         }
         out.push_str(&format!(",\"the_old_dog\":{{\"at\":\"{}\"}}", sim.dog.place));
         out.push_str("},\"ev\":[");
-        // events logged during this tick
+        // behavioural events, then the ambient life, all logged during this tick
         let mut ev_first = true;
         while log_cursor < sim.log.len() && sim.log[log_cursor].tick == t {
             let e = &sim.log[log_cursor];
@@ -483,8 +484,17 @@ fn trace_json(days: u64) -> String {
                 out.push(',');
             }
             ev_first = false;
-            out.push_str(&format!("[\"{}\",\"{}\"]", esc(e.resident), esc(&e.message)));
+            out.push_str(&format!("[\"{}\",\"{}\",\"b\"]", esc(e.resident), esc(&e.message)));
             log_cursor += 1;
+        }
+        while amb_cursor < sim.ambient.len() && sim.ambient[amb_cursor].tick == t {
+            let a = &sim.ambient[amb_cursor];
+            if !ev_first {
+                out.push(',');
+            }
+            ev_first = false;
+            out.push_str(&format!("[\"{}\",\"{}\",\"{}\"]", esc(a.actor), esc(&a.text), a.kind.tag()));
+            amb_cursor += 1;
         }
         out.push_str("]}");
     }
@@ -528,14 +538,48 @@ fn print_district(world: &World) {
     }
 }
 
-fn print_day_timeline(sim: &Simulation, day: u64) {
-    let mut last_hour = u64::MAX;
-    for e in sim.log.iter().filter(|e| e.day == day) {
-        if e.hour != last_hour {
-            println!("\n-- {:02}:00 --", e.hour);
-            last_hour = e.hour;
+/// One line of a woven hour: (minute, kind, who, text).
+struct HourLine { minute: u8, kind: &'static str, who: String, text: String }
+
+/// Weave the behavioural log and the ambient layer for one hour, ordered within
+/// the hour, and lightly curated so it reads like a town rather than a firehose:
+/// every behavioural line and every town/micro line, plus a handful of moments.
+fn hour_lines(sim: &Simulation, day: u64, hour: u64) -> Vec<HourLine> {
+    let mut lines: Vec<HourLine> = Vec::new();
+    for e in sim.log.iter().filter(|e| e.day == day && e.hour == hour) {
+        lines.push(HourLine { minute: 0, kind: "b", who: e.resident.to_string(), text: e.message.clone() });
+    }
+    let mut moments = 0;
+    for a in sim.ambient.iter().filter(|a| a.day == day && a.hour == hour) {
+        if a.kind.tag() == "moment" {
+            moments += 1;
+            if moments > 6 {
+                continue; // keep it rich, not noisy
+            }
         }
-        println!("  {:<8} {}", e.resident, e.message);
+        lines.push(HourLine { minute: a.minute, kind: a.kind.tag(), who: a.actor.to_string(), text: a.text.clone() });
+    }
+    lines.sort_by_key(|l| (l.minute, l.kind != "b"));
+    lines
+}
+
+fn print_day_timeline(sim: &Simulation, day: u64) {
+    for hour in 0..24 {
+        let lines = hour_lines(sim, day, hour);
+        if lines.is_empty() {
+            continue;
+        }
+        println!("\n-- {:02}:00 --", hour);
+        for l in lines {
+            let who = if l.kind == "b" { format!("{:<8}", l.who) } else { format!("{:<8}", "·") };
+            let body = if l.kind == "b" { format!("{} {}", l.who, l.text) } else { format!("{} — {}", l.who, l.text) };
+            let _ = who;
+            match l.kind {
+                "b" => println!("  {}", body),
+                "moment" => println!("      · {}", body),
+                _ => println!("    ~ {}", body),
+            }
+        }
     }
 }
 

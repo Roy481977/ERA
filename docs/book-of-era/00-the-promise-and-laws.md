@@ -1141,6 +1141,16 @@ renders — presentation stays independent from the engine, per *The Engine's Pl
 The two moons there are a quiet *rendered backdrop*, not a simulated system. From
 here, the plan is to iterate from watching the world rather than from imagining it.
 
+*The district is becoming continuously alive (density).* A layer of ambient life now
+fills the hours: the town's own routines (the ovens before dawn, the trains, the
+school bell, the museum, church bells, the lamps), micro-life that moves whether or
+not anyone watches (sparrows, pigeons, a cat, crows at dusk, a fox after midnight, a
+cyclist over the bridge), and the residents' own small moments (a word with someone
+they know, a pause at a shop window, watching the children, scratching the old dog,
+pausing on the bridge). It is texture, not mechanics — it changes no world truth —
+and it is deterministic. **Not yet:** most micro-life appears in the reading of the
+hour rather than as moving figures on the map; weather does not yet shape any of it.
+
 Still **not yet built and future work to serve this world**: the two moons and the
 sky; weather, fog and the long light; other animals / micro-life; aging, death and
 loss among residents; the river's double rhythm; the hidden/invisible layer

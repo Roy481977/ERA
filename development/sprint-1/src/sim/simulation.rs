@@ -4,6 +4,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::sim::ambient::{self, Ambient, AmbientKind};
 use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, TICKS_PER_DAY};
 use crate::sim::dog::Dog;
 use crate::sim::intention;
@@ -34,6 +35,9 @@ pub struct Simulation {
     pub oak: OldOak,
     pub dog: Dog,
     pub log: Vec<Event>,
+    /// Ambient life — the town's routines, micro-life, and residents' small
+    /// moments. A layer over the behavioural log (Sprint 3 — density).
+    pub ambient: Vec<Ambient>,
     /// Structured record of every interaction (observability / tests / Oak).
     pub interactions: Vec<social::Interaction>,
     last_day: u64,
@@ -144,6 +148,7 @@ impl Simulation {
             oak: OldOak::new(),
             dog: Dog::new(),
             log: Vec::new(),
+            ambient: Vec::new(),
             interactions: Vec::new(),
             last_day: 0,
             social_seen_today: BTreeSet::new(),
@@ -355,6 +360,9 @@ impl Simulation {
         // --- social interactions among co-located residents ---
         self.social_pass();
 
+        // --- ambient life: the town's routines, micro-life, residents' moments ---
+        self.density_pass(day, hour, weekday);
+
         // Matchday's mark on the Old Oak — once, in the evening.
         if matchday::is_matchday(weekday) && hour == 18 && !self.oak_matchday_days.contains(&day) {
             let mark = match match_result {
@@ -510,6 +518,118 @@ impl Simulation {
 
     fn name_of(&self, id: &str) -> &'static str {
         self.residents.iter().find(|r| r.id == id).map(|r| r.name).unwrap_or("someone")
+    }
+
+    fn push_ambient(&mut self, day: u64, hour: u64, l: ambient::Line) {
+        self.ambient.push(Ambient {
+            tick: self.clock.tick,
+            day,
+            hour,
+            minute: l.minute,
+            kind: l.kind,
+            actor: l.actor,
+            text: l.text.to_string(),
+        });
+    }
+
+    /// The density layer: the town's own routines, the micro-life moving through
+    /// the district, and the residents' small incidental moments. All ambient,
+    /// all deterministic — the life that fills an hour.
+    fn density_pass(&mut self, day: u64, hour: u64, weekday: u64) {
+        for l in ambient::background(day, hour, weekday) {
+            self.push_ambient(day, hour, l);
+        }
+        for l in ambient::microlife(day, hour, weekday) {
+            self.push_ambient(day, hour, l);
+        }
+        self.moments_pass(day, hour);
+    }
+
+    /// Residents' small incidental moments. Each hour, a present resident evaluates
+    /// what is around them — who else is here, the children, an open shop window,
+    /// the old dog — and may have a small moment; a traveller may pause on the
+    /// bridge or take a shortcut. Emergent from co-presence and place, bounded,
+    /// deterministic, and pure texture (it changes no world truth).
+    fn moments_pass(&mut self, day: u64, hour: u64) {
+        let tick = self.clock.tick;
+        let dog_place = self.dog.place;
+
+        // Who is present (not travelling, not at home) and where.
+        let mut present_here: std::collections::BTreeMap<LocationId, Vec<usize>> = BTreeMap::new();
+        for (i, r) in self.residents.iter().enumerate() {
+            let public = self.world.location(r.place).map(|l| !l.is_residential()).unwrap_or(false);
+            if public && !matches!(r.status, Status::Traveling { .. }) {
+                present_here.entry(r.place).or_default().push(i);
+            }
+        }
+
+        let mut out: Vec<(u8, &'static str, String)> = Vec::new();
+        for (i, r) in self.residents.iter().enumerate() {
+            let seed = social::seed_hash(&[r.id, "moment"], tick);
+            let travelling = matches!(r.status, Status::Traveling { .. });
+            let public = self.world.location(r.place).map(|l| !l.is_residential()).unwrap_or(false);
+            if !travelling && !public {
+                continue; // asleep or at home — no public moment
+            }
+            // Quieter deep at night.
+            let chance = if (0..=4).contains(&hour) || hour == 23 { 30 } else { 72 };
+            if (seed % 100) as u32 >= chance {
+                continue;
+            }
+            let minute = (seed / 7 % 60) as u8;
+
+            let text = if travelling {
+                let opts = [
+                    "pauses on the old bridge a moment, watching the water",
+                    "takes the familiar shortcut behind the bakery",
+                    "steps aside to let a cyclist by",
+                    "nods to a passing face without slowing",
+                    "stops to read a notice pinned to a post",
+                ];
+                opts[(seed / 100 % opts.len() as u64) as usize].to_string()
+            } else {
+                let place_name = self.world.location(r.place).map(|l| l.name).unwrap_or(r.place);
+                // Build applicable, context-aware candidates.
+                let mut cands: Vec<String> = Vec::new();
+                if dog_place == r.place {
+                    cands.push("stops to scratch the old dog behind the ears".to_string());
+                }
+                // children present (other than self)
+                if self.residents.iter().enumerate().any(|(j, o)| j != i && o.place == r.place && o.is_child() && !matches!(o.status, Status::Traveling { .. })) {
+                    cands.push("watches the children chase a ball across the square".to_string());
+                }
+                // a co-present other they know a little
+                if let Some(&j) = present_here.get(r.place).and_then(|v| v.iter().find(|&&j| j != i && self.relationships.get(r.id, self.residents[j].id).affinity >= 1)) {
+                    let other = self.residents[j].name;
+                    let opts = [
+                        format!("shares a brief word with {other}"),
+                        format!("catches {other}'s eye and nods"),
+                        format!("waits a moment while {other} finishes up"),
+                    ];
+                    cands.push(opts[(seed / 13 % 3) as usize].clone());
+                }
+                // an open shop window
+                let open_shop = self.world.location(r.place).map(|l| l.hours.map(|h| h.is_open(hour)).unwrap_or(false)).unwrap_or(false);
+                if open_shop {
+                    cands.push(format!("pauses at the {place_name} window"));
+                }
+                // fallbacks — always available
+                cands.push(format!("lingers a moment at the {place_name}"));
+                cands.push("glances up at the sky, reading the light".to_string());
+                cands[(seed / 100 % cands.len() as u64) as usize].clone()
+            };
+            out.push((minute, r.name, text));
+
+            // occasionally a second, lighter beat
+            if (seed / 1_000 % 100) < 22 {
+                let opts = ["checks the time", "shifts in the light", "watches a moment longer"];
+                out.push(((minute + 12) % 60, r.name, opts[(seed / 97 % 3) as usize].to_string()));
+            }
+        }
+
+        for (minute, actor, text) in out {
+            self.ambient.push(Ambient { tick, day, hour, minute, kind: AmbientKind::Moment, actor, text });
+        }
     }
 
     /// The old dog ambles slowly toward the place he'd rather be, settling for a

@@ -110,7 +110,8 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): district (now 8 locations), 10 residents, Old Oak, roadmap |
 | development/DS-002-living-world.md | PROPOSED | Sprint 1 Phases 3–8 progress tracker (per-phase: what/files/choices/tests/limits) |
 | development/DS-003-sprint-1-report.md | PROPOSED | Sprint 1 final report: commits, systems, tests, run commands, samples, next steps |
-| development/DS-004-sprint-2.md | PROPOSED | Sprint 2 progress (under DEV-000): Step 1 — relationships change behaviour (lingering) + the `chronicle` observer |
+| development/DS-004-sprint-2.md | PROPOSED | Sprint 2 progress: relationships→behaviour (lingering), decide-then-act tick + companionship, social memory & continuity, the old dog, the visual viewer |
+| development/DS-005-sprint-3-density.md | PROPOSED | Sprint 3 progress: a continuously living district — ambient density (the town's routines, micro-life, residents' moments) |
 | development/sprint-1/ (code) | in progress | **Rust** headless core, Phases 1–8: believable routines, residences + opening hours + weekday variation, social life (relationships/interactions/memories), small deviations, the living Old Oak, matchday, and a terminal observer. Deterministic; everyone home every day incl. matchday; **34 tests pass**. Lives in GitHub. |
 
 ---

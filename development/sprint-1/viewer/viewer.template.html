@@ -22,8 +22,12 @@
   #events { flex:1; overflow-y:auto; padding:10px 16px; }
   #events .e { padding:3px 0; border-bottom:1px solid #1d2029; font-size:12.5px; }
   #events .who { color:#b7b0a2; }
-  #events .match { color:#f2cc8f; }
+  #events .match { color:#f2cc8f; font-weight:600; }
   #events .dog { color:#c79a6b; font-style:italic; }
+  #events .town { color:#8fb0c9; }
+  #events .micro { color:#86bd86; font-style:italic; }
+  #events .moment { color:#a9a396; }
+  #events .b { color:#e8e4da; }
   #legend { padding:10px 16px; border-top:1px solid #2a2d38; max-height:150px; overflow-y:auto; }
   #legend .row { display:inline-flex; align-items:center; gap:6px; margin:2px 8px 2px 0; font-size:12px; }
   #legend .sw { width:10px; height:10px; border-radius:50%; display:inline-block; }
@@ -203,14 +207,21 @@ const TRACE = __TRACE__;
     document.getElementById('coak').textContent = `The Old Oak — ${fr.sc} scarf${fr.sc===1?'':'s'}, ${fr.bq} bouquet${fr.bq===1?'':'s'}`;
     if(fi===lastFrame) return; lastFrame=fi;
     const box=document.getElementById('events');
-    // show events from the last few frames
+    // show the current hour and the one before — behavioural first, then the
+    // ambient life of the town, so an hour reads like a place, not a log.
     let html='';
-    for(let k=Math.max(0,fi-3);k<=fi;k++){
-      ticks[k].ev.forEach(([who,msg])=>{
-        let cls='e';
+    for(let k=Math.max(0,fi-1);k<=fi;k++){
+      const evs = ticks[k].ev.slice();
+      // behavioural lines first, then town/micro/moment
+      const order = {b:0, match:0, town:1, micro:2, moment:3};
+      evs.sort((a,b)=>(order[a[2]]||0)-(order[b[2]]||0));
+      let moments=0;
+      evs.forEach(([who,msg,kind])=>{
+        if(kind==='moment'){ moments++; if(moments>6) return; }
+        let cls='e '+(kind||'b');
         if(who==='Matchday') cls='e match';
         else if(who==='the old dog') cls='e dog';
-        const w = who==='Matchday'?'':`<span class="who">${who}</span> `;
+        const w = (who==='Matchday')?'' : (kind==='b'?`<span class="who">${who}</span> ` : `<span class="who">${who}</span> — `);
         html += `<div class="${cls}">${w}${msg}</div>`;
       });
     }

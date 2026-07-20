@@ -36,7 +36,7 @@ cargo run -- chronicle     # a month watched from afar: habits, bonds, tradition
 cargo run -- dog           # the old dog: his day, his places, the child who knows him
 cargo run -- trace 7       # emit a JSON trace of a week (feeds the visual viewer)
 cargo run -- district      # just the world (locations, hours, nav graph)
-cargo test                 # the full test suite (52 tests)
+cargo test                 # the full test suite (57 tests)
 ```
 
 ## Watch it — the visual viewer

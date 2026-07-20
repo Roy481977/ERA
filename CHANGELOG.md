@@ -18,6 +18,33 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Sprint 3: a continuously living district (density) — PROPOSED
+
+Direction (Roy): before weather, **deepen the simulator** — the town is too sparse;
+residents move between major activities rather than continuously living. Not new
+systems — dramatically more life inside the existing ones. A **density layer** added
+*over* the behavioural log (a separate `ambient` stream, so nothing existing changed
+and all prior tests pass unchanged):
+
+- **The town's own routines** (`sim/ambient.rs` `background`): ovens lit before dawn,
+  shutters, café deliveries, the morning/midday/evening trains, the school bell,
+  the museum, church bells (Sunday), the lamps, closing — weekday-aware, deterministic.
+- **Micro-life** (`microlife`): sparrows, gulls, pigeons at the fountain, a cat
+  between sills, crows to the museum chimney at dusk, a fox along the river after
+  midnight, a cyclist over the bridge — scheduled + seeded so it varies yet replays
+  identically.
+- **Residents' moments** (`moments_pass`): each hour a present resident evaluates
+  their surroundings (who's here, the children, an open window, the old dog) and may
+  have a small moment; a traveller pauses on the bridge or takes a shortcut. Emergent,
+  bounded, pure texture (changes no world truth).
+
+A day went from ~116 to **~276 events**, small moments far outnumbering major ones.
+The observer now weaves it into a curated "living hour"; the viewer's ticker carries
+and styles the ambient life. Five new tests (rich hour; town+micro+moments occur;
+town routines; deterministic; ambient doesn't disturb behaviour). **57 tests pass.**
+Book status note updated honestly. Viewer regenerated and the persisted artifact
+updated.
+
 ## 2026-07-19 — The world made observable: a live visual viewer — PROPOSED
 
 A transition (per Roy): from contemplating the world to being able to *watch* it, so
