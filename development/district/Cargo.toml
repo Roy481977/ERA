@@ -27,6 +27,8 @@ console_error_panic_hook = "0.1"
 # feature; 0.3 uses `wasm_js` (plus the cfg flag in .cargo/config.toml).
 getrandom = { version = "0.2", features = ["js"] }
 getrandom_v3 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+# Read the URL (test-lab switch) and drive the on-page label overlay.
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "Location"] }
 
 # Smaller, faster wasm.
 [profile.release]

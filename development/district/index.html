@@ -11,6 +11,10 @@
   canvas { display: block; width: 100vw; height: 100vh; outline: none; }
   #hint { position: fixed; left: 12px; bottom: 12px; z-index: 2; pointer-events: none;
     color: #8b98a5; font: 13px/1.5 -apple-system, system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
+  #label { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 2;
+    pointer-events: none; text-align: center; color: #e6edf3; font: 15px/1.4 -apple-system, system-ui, sans-serif;
+    text-shadow: 0 1px 4px #000; max-width: 80%; }
+  #label .step { color: #9aa7b4; font-size: 13px; font-style: italic; }
   #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
     color: #6b7683; font: 15px system-ui; background: #04050a; z-index: 3; }
 </style>
@@ -18,7 +22,8 @@
 <body>
 <div id="loading">Building the district…</div>
 <canvas id="era-canvas"></canvas>
-<div id="hint">drag to look · scroll to zoom · WASD / arrows to move · Tab to follow a resident · Esc to release</div>
+<div id="label"></div>
+<div id="hint">drag to look · scroll to zoom · WASD / arrows to move · Tab to follow (district) · in the lab: N/P browse · R restart · add <b>?test</b> to the URL for the behaviour lab</div>
 <script>
   // Hide the loading veil once the canvas has drawn a frame.
   const iv = setInterval(() => {
