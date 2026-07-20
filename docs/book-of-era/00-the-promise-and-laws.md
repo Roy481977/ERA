@@ -1132,6 +1132,15 @@ that remains, the child still looking, the Oak feeling emptier), and the shaping
 his route by weather and noise (pending weather). His ageing cadence is currently
 compressed for observability and is a tuning decision, not canon.
 
+*The world can now be watched.* Beside the terminal observer there is a **live
+visual viewer** — a map on which the residents and the dog move between places, the
+day's light shifts and two moons hang quietly in the night sky, the Old Oak gathers
+scarves and flowers on matchday, and an event ticker reads the hour. It replays a
+deterministic trace emitted by the core (the engine holds the logic; the viewer only
+renders — presentation stays independent from the engine, per *The Engine's Place*).
+The two moons there are a quiet *rendered backdrop*, not a simulated system. From
+here, the plan is to iterate from watching the world rather than from imagining it.
+
 Still **not yet built and future work to serve this world**: the two moons and the
 sky; weather, fog and the long light; other animals / micro-life; aging, death and
 loss among residents; the river's double rhythm; the hidden/invisible layer

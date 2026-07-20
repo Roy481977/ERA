@@ -18,6 +18,27 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — The world made observable: a live visual viewer — PROPOSED
+
+A transition (per Roy): from contemplating the world to being able to *watch* it, so
+we iterate from observation. Two parts:
+
+- **Trace emitter** in the core (`cargo run -- trace [days]`): steps the deterministic
+  simulation and emits a compact JSON trace — per hour, every entity's position (a
+  node, or a fraction along an edge for along-road motion), the Oak's scarf/flower
+  tallies, and that hour's events.
+- **Self-contained HTML/Canvas viewer** (`development/sprint-1/viewer/`): a live map
+  that replays the trace — residents and the old dog moving along the roads, the
+  day's light shifting from dawn to the long golden evening to night, two moons in
+  the night sky (a quiet rendered backdrop, not a simulated system), shops lit while
+  open, the Old Oak gathering scarves/flowers on matchday, and an event ticker.
+  Play/pause, speed, scrub. It holds **no game logic** — the engine is the single
+  source of truth; the viewer only renders (Book — *The Engine's Place*).
+
+Delivered to Roy and persisted as a Cowork artifact. The Book's implementation-status
+note updated (observability now real; two-moons-in-viewer flagged as backdrop, not a
+system). **52 tests pass** (same seed → same trace).
+
 ## 2026-07-19 — The old dog: a persistent presence in the district — PROPOSED
 
 First feature under the Book of ERA, chosen (per Roy) to most increase the feeling

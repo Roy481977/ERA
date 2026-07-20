@@ -10,6 +10,7 @@
 //!   cargo run -- explain Tomas    # one resident's day, with the reason for every move
 //!   cargo run -- chronicle    # a month watched from afar: habits, bonds, traditions
 //!   cargo run -- dog          # the old dog: his day, his places, the child who knows him
+//!   cargo run -- trace [days] # emit a JSON trace for the visual viewer (see viewer/)
 //!   cargo run -- district     # just the world (locations, hours, nav graph)
 
 use std::collections::BTreeMap;
@@ -35,6 +36,7 @@ fn main() {
         "explain" => explain(args.get(1).cloned().unwrap_or_else(|| "Tomas".to_string())),
         "chronicle" => chronicle(args.get(1).and_then(|s| s.parse().ok()).unwrap_or(4)),
         "dog" => dog_view(),
+        "trace" => print!("{}", trace_json(args.get(1).and_then(|s| s.parse().ok()).unwrap_or(7))),
         "district" => print_district(&build_world()),
         _ => {
             eprintln!("unknown mode '{mode}'. try: normal | matchday | week | days N | explain NAME | chronicle | district");
@@ -325,6 +327,169 @@ fn dog_view() {
         println!("  {:02}:00  {}", e.hour, e.message);
     }
     println!("\n(He is not a quest, a helper or a mechanic. He is simply here.)");
+}
+
+// ---------------------------------------------------------------- trace (for the visual viewer)
+
+/// Hand-laid 2D coordinates for the district map (viewer space ~ 1000 x 760).
+const MAP: &[(&str, f64, f64)] = &[
+    ("loc_stadium", 500.0, 130.0),
+    ("loc_bakery", 320.0, 300.0),
+    ("loc_main_square", 500.0, 360.0),
+    ("loc_cafe", 680.0, 300.0),
+    ("loc_riverside", 500.0, 585.0),
+    ("loc_millers_row", 285.0, 455.0),
+    ("loc_high_street", 715.0, 455.0),
+    ("loc_oakside", 500.0, 700.0),
+];
+
+/// A distinct colour per resident, plus the dog.
+const COLORS: &[(&str, &str)] = &[
+    ("res_hana", "#d1495b"),
+    ("res_sofia", "#e07a5f"),
+    ("res_luca", "#e6b800"),
+    ("res_victor", "#81b29a"),
+    ("res_elias", "#3d84a8"),
+    ("res_eva", "#c05299"),
+    ("res_karim", "#6a4c93"),
+    ("res_agnes", "#8d99ae"),
+    ("res_milo", "#ef8354"),
+    ("res_tomas", "#4f9d69"),
+    ("the_old_dog", "#8b5a2b"),
+];
+
+fn esc(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            '\n' => o.push_str("\\n"),
+            _ => o.push(c),
+        }
+    }
+    o
+}
+
+fn edge_w(world: &World, a: &'static str, b: &'static str) -> u32 {
+    world.nav.neighbors(a).into_iter().find(|(n, _)| *n == b).map(|(_, w)| w).unwrap_or(1)
+}
+
+/// A resident's position this tick: at a node, or a fraction `t` along an edge.
+fn pos_json(world: &World, place: &'static str, status: &Status) -> String {
+    match status {
+        Status::Traveling { path, idx, leg_left, .. } => {
+            let from = path[*idx];
+            let to = path.get(idx + 1).copied().unwrap_or(from);
+            let w = edge_w(world, from, to).max(1);
+            let done = w.saturating_sub((*leg_left).min(w));
+            let t = done as f64 / w as f64;
+            format!("{{\"e\":[\"{from}\",\"{to}\"],\"t\":{t:.3}}}")
+        }
+        _ => format!("{{\"at\":\"{place}\"}}"),
+    }
+}
+
+/// Emit a deterministic JSON trace of `days` for the visual viewer to replay.
+fn trace_json(days: u64) -> String {
+    let mut sim = Simulation::new(cast());
+    let mut out = String::new();
+    out.push('{');
+
+    // locations
+    out.push_str("\"locations\":[");
+    for (i, (id, x, y)) in MAP.iter().enumerate() {
+        let loc = sim.world.location(id).unwrap();
+        let hours = match loc.hours {
+            Some(h) => format!("[{},{}]", h.open, h.close),
+            None => "null".to_string(),
+        };
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!(
+            "{{\"id\":\"{id}\",\"name\":\"{}\",\"x\":{x},\"y\":{y},\"home\":{},\"hours\":{hours}}}",
+            esc(loc.name),
+            loc.is_residential()
+        ));
+    }
+    out.push(']');
+
+    // edges (unique)
+    out.push_str(",\"edges\":[");
+    let mut seen = std::collections::BTreeSet::new();
+    let mut first = true;
+    for node in sim.world.nav.nodes() {
+        for (other, _w) in sim.world.nav.neighbors(node) {
+            let key = if node < other { (node, other) } else { (other, node) };
+            if seen.insert(key) {
+                if !first {
+                    out.push(',');
+                }
+                first = false;
+                out.push_str(&format!("[\"{}\",\"{}\"]", key.0, key.1));
+            }
+        }
+    }
+    out.push(']');
+
+    // entities (residents + dog)
+    out.push_str(",\"entities\":[");
+    for (i, r) in sim.residents.iter().enumerate() {
+        let color = COLORS.iter().find(|(id, _)| *id == r.id).map(|(_, c)| *c).unwrap_or("#888");
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!(
+            "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"resident\",\"color\":\"{color}\"}}",
+            r.id, esc(r.name)
+        ));
+    }
+    let dog_color = COLORS.iter().find(|(id, _)| *id == "the_old_dog").map(|(_, c)| *c).unwrap_or("#8b5a2b");
+    out.push_str(&format!(
+        ",{{\"id\":\"the_old_dog\",\"name\":\"the old dog\",\"kind\":\"dog\",\"color\":\"{dog_color}\"}}"
+    ));
+    out.push(']');
+
+    // ticks
+    out.push_str(",\"ticks\":[");
+    let total = days * 24;
+    let mut log_cursor = 0usize;
+    for t in 0..total {
+        sim.step();
+        let day = t / 24;
+        let hour = t % 24;
+        let wd = WEEKDAY_NAMES[(day % 7) as usize];
+        if t > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!(
+            "{{\"d\":{day},\"wd\":\"{wd}\",\"h\":{hour},\"sc\":{},\"bq\":{},\"p\":{{",
+            sim.oak.scarves, sim.oak.bouquets
+        ));
+        for (i, r) in sim.residents.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!("\"{}\":{}", r.id, pos_json(&sim.world, r.place, &r.status)));
+        }
+        out.push_str(&format!(",\"the_old_dog\":{{\"at\":\"{}\"}}", sim.dog.place));
+        out.push_str("},\"ev\":[");
+        // events logged during this tick
+        let mut ev_first = true;
+        while log_cursor < sim.log.len() && sim.log[log_cursor].tick == t {
+            let e = &sim.log[log_cursor];
+            if !ev_first {
+                out.push(',');
+            }
+            ev_first = false;
+            out.push_str(&format!("[\"{}\",\"{}\"]", esc(e.resident), esc(&e.message)));
+            log_cursor += 1;
+        }
+        out.push_str("]}");
+    }
+    out.push_str("]}");
+    out
 }
 
 // ---------------------------------------------------------------- sections

@@ -189,11 +189,57 @@ observability.
 
 ---
 
+## Step 5 — Make the world observable: a visual viewer ✅
+
+**Direction (Roy):** an important transition — the emotional identity is defined
+enough; spend less time contemplating and more time building the systems that let
+us *experience* the district. "Optimize for making the world observable"; implementation
+becomes a design tool; we iterate from watching, not imagining.
+
+**What became more alive:** you can now *watch* the district. A live map replays a
+deterministic week — the residents and the old dog moving between places along the
+roads, the day's light shifting from dawn through the long golden evening to night,
+two moons hanging quietly in the night sky, shops lit while open and homes glowing
+after dark, the Old Oak gathering scarves after a win and flowers after a loss on
+Saturday, and an event ticker reading the hour. Play/pause, speed, timeline scrub.
+
+**Implemented:**
+
+- **Trace emitter in the core** (`src/main.rs`, `cargo run -- trace [days]`): steps
+  the deterministic simulation and emits a compact JSON trace — per tick (= 1 hour):
+  every entity's position (a node, or a fraction along an edge for true along-road
+  motion), the Oak's scarf/flower tallies, and that hour's events.
+- **Self-contained HTML/Canvas viewer** (`viewer/viewer.template.html` +
+  `viewer/build.sh`): replays the trace. It holds **no game logic** — the engine is
+  the single source of truth and the viewer only renders, keeping presentation
+  independent from the engine (Book — *The Engine's Place*).
+
+**Files changed:** `src/main.rs` (trace mode), `viewer/` (template, `build.sh`,
+README), Sprint-1 README, the Book's implementation-status note.
+
+**Architectural choices:** data-only rendering (engine-independent); positions carry
+edge-fractions so movement follows the roads; the two moons in the viewer are a quiet
+*rendered backdrop*, explicitly not a simulated system (honesty about what exists).
+
+**Tests:** the trace is exercised by the existing deterministic suite (same seed →
+same trace); no new unit tests for the viewer (a rendering surface). **52 tests
+total.**
+
+**Known limitations:** the trace is a fixed-length replay (not yet live/streaming);
+no interaction *into* the world yet (watch-only); atmosphere is time-of-day light +
+moons, with real weather still to come; one district.
+
+**Commands:** `./viewer/build.sh 7 era-first-breath-viewer.html` then open it ·
+`cargo run -- trace 7`
+
+---
+
 ## Next candidates (climbing the ladder)
 
-Per Roy's ordering (deepen the district): **weather & atmosphere** (rain, changing
-light, fog, seasonal feeling, and their effect on routines and appearance) → then
-**micro-life** (birds, cats, foxes) → then **physical continuity** (scarves
-remaining, flowers, matchday litter, muddy paths, lit windows — signs of yesterday).
-Also still open from earlier: meaningful-event memory weighting; plans/expectations;
-and emergent (described, never minted) traditions.
+Now that we can watch the world, iterate from observation. Per Roy's ordering
+(deepen the district): **weather & atmosphere** (rain, changing light, fog, seasonal
+feeling, and their effect on routines and the district's look — and the viewer can
+now *show* it) → then **micro-life** (birds, cats, foxes) → then **physical
+continuity** (scarves remaining, flowers, matchday litter, muddy paths, lit windows —
+signs of yesterday). Also open: meaningful-event memory weighting; plans/expectations;
+emergent (described, never minted) traditions; and persistence (save/load).

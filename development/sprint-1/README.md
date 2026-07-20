@@ -34,8 +34,20 @@ cargo run -- days 14       # an N-day summary
 cargo run -- explain Tomas # one resident's six days, with the reason for every move
 cargo run -- chronicle     # a month watched from afar: habits, bonds, traditions
 cargo run -- dog           # the old dog: his day, his places, the child who knows him
+cargo run -- trace 7       # emit a JSON trace of a week (feeds the visual viewer)
 cargo run -- district      # just the world (locations, hours, nav graph)
 cargo test                 # the full test suite (52 tests)
+```
+
+## Watch it — the visual viewer
+
+Beyond the terminal, there is a **live visual viewer**: a map of the district with
+the residents and the old dog moving between places, the day's light and two moons
+in the sky, the Old Oak gathering scarves/flowers on matchday, and an event ticker.
+
+```bash
+cd development/sprint-1
+./viewer/build.sh 7 era-first-breath-viewer.html   # then open the file in a browser
 ```
 
 Everything is deterministic: the same command always prints the same world.
