@@ -1,3 +1,11 @@
+<!-- REPOSITORY STATUS BANNER (not part of the canonical text below) -->
+> **SUPERSEDED (2026-07-19).** This document has been superseded by the canonical
+> opening of **The Book of ERA** —
+> [`docs/book-of-era/00-the-promise-and-laws.md`](docs/book-of-era/00-the-promise-and-laws.md),
+> which restores and consolidates the full world vision (its North Star line lives
+> on there in spirit). Retained in place per the classification law. Read the Book
+> of ERA for current canon.
+
 # Vision
 
 > "Build worlds that people believe existed before they arrived and will continue after they leave."
@@ -229,10 +237,10 @@ No matter how technically impressive the feature may be.
 
 ## — Repository metadata (not part of the canonical Vision) —
 
-**Status: CANONICAL.** The ERA Vision is canonical philosophy, a companion to
-[`BIBLE.md`](BIBLE.md): the Bible describes *what ERA is and the principles that
-govern it*; the Vision states *where it is going and the North Star every decision
-answers to*. Authored by Roy. Ratified 2026-07-19.
+**Status: SUPERSEDED** by [`docs/book-of-era/00-the-promise-and-laws.md`](docs/book-of-era/00-the-promise-and-laws.md)
+(2026-07-19). The ERA Vision was the earlier statement of where the world is going;
+the Book of ERA restores and consolidates it as canon. Authored by Roy. Retained in
+place; not deleted.
 
 **Amendment rule.** Like the Bible, this document is not modified directly. Any
 proposed change is recorded under "Proposed amendments" below for Roy (+ ChatGPT)

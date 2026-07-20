@@ -70,7 +70,34 @@ New `tests/companionship.rs` (4). **38 tests pass.** Deeper companionship (waiti
 for / leaving with a friend) needs a decide-then-act tick — flagged as the next
 *architectural* decision (DS-004), not built silently.
 
-## 2026-07-19 — ERA Bible + Vision ratified as apex canon — CANONICAL
+## 2026-07-19 — The Book of ERA ratified as apex canon — CANONICAL
+
+Roy delivered **The Book of ERA** (a 25-page world document) and directed it be saved
+as the **canonical opening** at `docs/book-of-era/00-the-promise-and-laws.md`,
+replacing the recent Preface / Vision / Core Principles drafts. Preserved **verbatim**
+in the Book's own voice (Books I–XI + *The Engine's Place*): the promise ("a world
+that feels like home"), the nature of the world (somewhere just beside the real; the
+world never performs; ~20–30% always beyond view), the quiet mysteries (two moons,
+the river, the Old Oak, the long light — *seen, never said*), the living district
+(no NPCs; the old dog; one shared time; interwoven lives; memory changes the future;
+habits create recognition), the Club, time and continuity, traditions (never minted
+by threshold), the invisible, moments, the central laws, what ERA must never become,
+and the engine's subordinate place (the world is upstream; the engine must learn to
+carry it).
+
+It **restores and consolidates the world vision** rather than introducing a new
+direction, and must not be reduced to engine principles. Accordingly the earlier
+leaner drafts **`BIBLE.md`** and **`VISION.md`** are marked **SUPERSEDED** by the
+Book and retained in place with pointers (classification law: nothing deleted).
+Per Roy, the Book is **not modified silently** — needed changes are proposed under a
+separate "Proposed amendments" section for Roy + ChatGPT to author. Updated order of
+authority: **The Book of ERA → GOVERNANCE → DEV-000 → architecture → specs → code.**
+An honest implementation-status note (in the Book's metadata) records what current
+code already serves and the large amount of the world — two moons, the old dog,
+aging/loss, weather, the invisible layer, emotional geography — still to be built to
+serve it. Recorded in INDEX.
+
+## 2026-07-19 — ERA Bible + Vision ratified as apex canon — CANONICAL (now superseded)
 
 Roy delivered two canonical, implementation-independent documents, now the highest
 authority in the repository:

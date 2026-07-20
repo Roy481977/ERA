@@ -1,3 +1,11 @@
+<!-- REPOSITORY STATUS BANNER (not part of the canonical text below) -->
+> **SUPERSEDED (2026-07-19).** This document has been superseded by the canonical
+> opening of **The Book of ERA** —
+> [`docs/book-of-era/00-the-promise-and-laws.md`](docs/book-of-era/00-the-promise-and-laws.md),
+> which restores and consolidates the full world vision. This file is retained in
+> place (per the classification law, superseded material is never deleted). Read
+> the Book of ERA for current canon.
+
 # ERA Bible
 
 Version: 1.0 (Living Document)
@@ -211,9 +219,10 @@ Instead, search for a simpler implementation that preserves the vision.
 
 ## — Repository metadata (not part of the canonical Bible) —
 
-**Status: CANONICAL.** The ERA Bible is the apex governing document of the
-repository. Authored by **Roy + ChatGPT**. Ratified and made canonical by Roy on
-2026-07-19.
+**Status: SUPERSEDED** by [`docs/book-of-era/00-the-promise-and-laws.md`](docs/book-of-era/00-the-promise-and-laws.md)
+(2026-07-19). The ERA Bible was the earlier, leaner statement of the world vision;
+the Book of ERA restores and consolidates it as canon. Authored by **Roy + ChatGPT**.
+Retained in place; not deleted.
 
 **Amendment rule (per Roy).** The Bible must **not** be modified directly. If a
 change is warranted, it is proposed as an *amendment* under "Proposed amendments"
