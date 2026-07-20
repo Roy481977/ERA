@@ -1,5 +1,9 @@
 name: Deploy ERA to GitHub Pages
 
+# Builds two things and publishes both:
+#   /ERA/           -> the top-down client (engine compiled to wasm) — the debug view
+#   /ERA/district/  -> the Bevy district (Bevy compiled to wasm) — the new experience
+
 on:
   push:
     branches: [main]
@@ -19,24 +23,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Add the WebAssembly target
         run: rustup target add wasm32-unknown-unknown
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Build the engine to WebAssembly
-        run: >
-          wasm-pack build development/sprint-1
-          --release --target web
-          --out-dir ../../web/pkg
-          --features wasm
+
+      - name: Install wasm-pack and trunk
+        run: |
+          cargo install --locked wasm-pack
+          cargo install --locked trunk
+
+      - name: Build the top-down client (engine to wasm)
+        run: wasm-pack build development/sprint-1 --release --target web --out-dir ../../web/pkg --features wasm
+
+      - name: Build the district (Bevy to wasm)
+        working-directory: development/district
+        run: trunk build --release --public-url /ERA/district/
+
+      - name: Assemble the site
+        run: |
+          rm -rf _site
+          mkdir -p _site/district
+          cp web/index.html web/era.js _site/
+          cp -r web/pkg _site/pkg
+          cp -r development/district/dist/. _site/district/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Upload the web client
+
+      - name: Upload the site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web
+          path: _site
 
   deploy:
     needs: build
