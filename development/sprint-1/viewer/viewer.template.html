@@ -153,7 +153,7 @@ const S = (x, y) => [ox + x * scale, oy + y * scale];
 let frame = 0;              // fractional index into FRAMES
 let playing = true;
 let speed = 1;             // multiplier on the baseline ticks-per-second
-const BASE_TPS = 7;        // ~7 five-minute ticks/sec → a day plays in ~40s
+const BASE_TPS = 7 / 6;    // gentle: ~1.17 five-minute ticks/sec (6× slower)
 const scrub = document.getElementById('scrub');
 scrub.max = FRAMES.length - 1;
 let selected = null;
