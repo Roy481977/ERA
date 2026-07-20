@@ -1,9 +1,5 @@
 name: Deploy ERA to GitHub Pages
 
-# Builds two things and publishes both:
-#   /ERA/           -> the top-down client (engine compiled to wasm) — the debug view
-#   /ERA/district/  -> the Bevy district (Bevy compiled to wasm) — the new experience
-
 on:
   push:
     branches: [main]
@@ -37,6 +33,8 @@ jobs:
 
       - name: Build the district (Bevy to wasm)
         working-directory: development/district
+        env:
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
         run: trunk build --release --public-url /ERA/district/
 
       - name: Assemble the site
