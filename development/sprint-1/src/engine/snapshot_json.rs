@@ -29,15 +29,8 @@ pub(crate) fn esc(s: &str) -> String {
     o
 }
 
-fn pos_json(pos: &Pos) -> String {
-    match pos {
-        Pos::At { node, x, y } => {
-            format!("{{\"at\":\"{node}\",\"x\":{x:.1},\"y\":{y:.1}}}")
-        }
-        Pos::OnEdge { from, to, t, x, y } => {
-            format!("{{\"e\":[\"{from}\",\"{to}\"],\"t\":{t:.3},\"x\":{x:.1},\"y\":{y:.1}}}")
-        }
-    }
+fn xy(pos: &Pos) -> (f64, f64) {
+    (pos.x(), pos.y())
 }
 
 impl Engine {
@@ -115,26 +108,22 @@ impl Snapshot {
         let mut out = String::new();
         out.push('{');
         out.push_str(&format!(
-            "\"tick\":{},\"day\":{},\"hour\":{},\"weekday\":\"{}\",\"phase\":\"{}\"",
-            self.tick, self.day, self.hour, self.weekday, esc(self.phase)
+            "\"tick\":{},\"day\":{},\"hour\":{},\"minute\":{},\"weekday\":\"{}\",\"phase\":\"{}\"",
+            self.tick, self.day, self.hour, self.minute, self.weekday, esc(self.phase)
         ));
 
-        // live entities: position + what they're doing
+        // live entities — lean: identity/colour live in the static roster, so a
+        // frame carries only what changes (position, place, activity, motion).
         out.push_str(",\"entities\":[");
         for (i, e) in self.entities.iter().enumerate() {
             if i > 0 {
                 out.push(',');
             }
+            let (x, y) = xy(&e.pos);
             out.push_str(&format!(
-                "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"color\":\"{}\",\"pos\":{},\
-                 \"place\":\"{}\",\"placeName\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
+                "{{\"id\":\"{}\",\"x\":{x:.1},\"y\":{y:.1},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
                 e.id,
-                esc(e.name),
-                e.kind.tag(),
-                e.color,
-                pos_json(&e.pos),
                 e.place,
-                esc(e.place_name),
                 esc(&e.doing),
                 e.traveling
             ));

@@ -17,13 +17,15 @@ fn a_fresh_engine_starts_at_the_first_breath() {
 }
 
 #[test]
-fn ticking_advances_the_world_one_hour() {
+fn ticking_advances_the_world_five_minutes() {
+    use era_first_breath::sim::clock::{TICKS_PER_DAY, TICKS_PER_HOUR};
     let mut e = Engine::new();
     e.tick();
     assert_eq!(e.tick_count(), 1);
-    assert_eq!(e.hour(), 1);
-    e.tick_n(24);
-    assert_eq!(e.tick_count(), 25);
+    assert_eq!(e.hour(), 0); // five minutes past midnight, still hour 0
+    e.tick_n(TICKS_PER_HOUR - 1);
+    assert_eq!(e.hour(), 1); // a full hour has now passed
+    e.tick_n(TICKS_PER_DAY);
     assert_eq!(e.day(), 1);
     assert_eq!(e.hour(), 1);
 }

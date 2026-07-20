@@ -91,6 +91,7 @@ pub struct Snapshot {
     pub tick: u64,
     pub day: u64,
     pub hour: u64,
+    pub minute: u64,
     pub weekday: &'static str,
     pub phase: &'static str,
     pub entities: Vec<EntityView>,
@@ -174,6 +175,7 @@ impl Engine {
         let sim = &self.sim;
         let day = sim.clock.day();
         let hour = sim.clock.hour();
+        let minute = sim.clock.minute();
         let weekday = WEEKDAY_NAMES[(sim.clock.weekday()) as usize];
 
         // ---- persistent entities: residents, then the old dog ----
@@ -311,6 +313,7 @@ impl Engine {
             tick: sim.clock.tick,
             day,
             hour,
+            minute,
             weekday,
             phase: Self::phase_of_day(hour),
             entities,

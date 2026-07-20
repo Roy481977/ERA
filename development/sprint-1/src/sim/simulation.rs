@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::sim::ambient::{self, Ambient, AmbientKind};
-use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, TICKS_PER_DAY};
+use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, MINUTES_PER_TICK, TICKS_PER_DAY, TICKS_PER_HOUR, TRAVEL_TICKS_PER_WEIGHT};
 use crate::sim::dog::Dog;
 use crate::sim::intention;
 use crate::sim::matchday::{self, MatchResult};
@@ -48,6 +48,13 @@ pub struct Simulation {
 }
 
 const LINGER_CAP: u32 = 2;
+/// How many ticks a linger adds each time (a short "little longer").
+const LINGER_TICKS: u32 = 2;
+
+/// Convert a whole-hour duration (as routines are authored) into ticks.
+fn hours_to_ticks(hours: u32) -> u32 {
+    hours * TICKS_PER_HOUR as u32
+}
 
 /// Whether a resident whose activity is ending should linger — a close friend is
 /// present at the same public place, it isn't yet night, and they haven't lingered
@@ -113,7 +120,10 @@ fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
 }
 
 const COMPANION_AFFINITY: i32 = 3;
-const WAIT_CAP: u32 = 2;
+const WAIT_CAP: u32 = 3;
+/// A friend is "finishing up" during the last stretch of their activity — a
+/// short window (not a single five-minute tick), so a companion can catch them.
+const FINISHING_TICKS: u32 = 3;
 
 /// A resident's intended next action, formed in the DECIDE phase before anyone
 /// moves — so friends can coordinate in RECONCILE before they ACT.
@@ -177,11 +187,13 @@ impl Simulation {
             self.last_day = day;
         }
         let hour = self.clock.hour();
+        let minute = self.clock.minute();
         let weekday = self.clock.weekday();
         let match_result = MatchResult::for_week(day / DAYS_PER_WEEK);
 
-        // Matchday buildup: district-wide announcements as the day unfolds.
-        if matchday::is_matchday(weekday) {
+        // Matchday buildup: district-wide announcements as the day unfolds. Once
+        // per hour (on the hour), not every five-minute tick.
+        if matchday::is_matchday(weekday) && self.clock.on_the_hour() {
             let note = match hour {
                 8 => Some("Matchday. The Bakery opens early and scarves come out along the High Street.".to_string()),
                 14 => Some("Supporters are making their way to the Stadium.".to_string()),
@@ -221,7 +233,7 @@ impl Simulation {
                             r.status = Status::Performing { activity, left: left - 1, start_day };
                         } else if let Some(friend) = linger_with_friend(r, hour, &presence, relationships, world) {
                             r.lingered_today += 1;
-                            r.status = Status::Performing { activity, left: 1, start_day };
+                            r.status = Status::Performing { activity, left: LINGER_TICKS, start_day };
                             log.push(Event {
                                 tick: clock.tick, day, hour, resident: r.name,
                                 message: format!("lingers a little longer, enjoying {friend}'s company"),
@@ -244,7 +256,7 @@ impl Simulation {
                                 });
                                 record_oak_visit(r, activity, clock, &mut oak_events);
                             } else {
-                                let leg = edge_weight(nav, path[idx], path[idx + 1]);
+                                let leg = edge_weight(nav, path[idx], path[idx + 1]) * TRAVEL_TICKS_PER_WEIGHT;
                                 r.status = Status::Traveling { activity, purpose, dest, dur, path, idx, leg_left: leg };
                             }
                         }
@@ -266,7 +278,7 @@ impl Simulation {
                 continue;
             }
             if let Some(m) = matchday::consider(r, weekday, hour, match_result) {
-                intents.push(Intent { idx: i, aid: m.id, purpose: m.purpose, dur: m.duration, dest: m.dest, deviation: false, reason: None });
+                intents.push(Intent { idx: i, aid: m.id, purpose: m.purpose, dur: hours_to_ticks(m.duration), dest: m.dest, deviation: false, reason: None });
                 continue;
             }
             let Some(act) = r.select(hour, weekday, &self.world) else { continue };
@@ -283,11 +295,11 @@ impl Simulation {
                     )
                 });
                 if let Some(dev) = dev {
-                    intents.push(Intent { idx: i, aid: dev.activity_id, purpose: dev.purpose, dur: dev.duration, dest: dev.dest, deviation: true, reason: Some(dev.reason) });
+                    intents.push(Intent { idx: i, aid: dev.activity_id, purpose: dev.purpose, dur: hours_to_ticks(dev.duration), dest: dev.dest, deviation: true, reason: Some(dev.reason) });
                     continue;
                 }
             }
-            intents.push(Intent { idx: i, aid: act.id, purpose: act.purpose, dur: act.duration, dest, deviation: false, reason: None });
+            intents.push(Intent { idx: i, aid: act.id, purpose: act.purpose, dur: hours_to_ticks(act.duration), dest, deviation: false, reason: None });
         }
 
         // ===================== PHASE 3 — RECONCILE ======================
@@ -326,7 +338,7 @@ impl Simulation {
                 });
                 record_oak_visit(&mut self.residents[i], intent.aid, &self.clock, &mut oak_events2);
             } else if let Some(path) = self.world.nav.shortest_path(place, intent.dest) {
-                let leg = edge_weight(&self.world.nav, path[0], path[1]);
+                let leg = edge_weight(&self.world.nav, path[0], path[1]) * TRAVEL_TICKS_PER_WEIGHT;
                 let route = path.join(" -> ");
                 match coord.together.get(&i) {
                     Some(&partner) if i < partner => {
@@ -361,7 +373,7 @@ impl Simulation {
         self.social_pass();
 
         // --- ambient life: the town's routines, micro-life, residents' moments ---
-        self.density_pass(day, hour, weekday);
+        self.density_pass(day, hour, weekday, minute);
 
         // Matchday's mark on the Old Oak — once, in the evening.
         if matchday::is_matchday(weekday) && hour == 18 && !self.oak_matchday_days.contains(&day) {
@@ -535,14 +547,22 @@ impl Simulation {
     /// The density layer: the town's own routines, the micro-life moving through
     /// the district, and the residents' small incidental moments. All ambient,
     /// all deterministic — the life that fills an hour.
-    fn density_pass(&mut self, day: u64, hour: u64, weekday: u64) {
+    fn density_pass(&mut self, day: u64, hour: u64, weekday: u64, minute: u64) {
+        // The town's routines and micro-life are authored with a minute within the
+        // hour; emit each on the five-minute tick its minute falls into, so the
+        // hour's life is spread across it rather than dumped on the hour.
+        let in_slot = |m: u8| (m as u64) >= minute && (m as u64) < minute + MINUTES_PER_TICK;
         for l in ambient::background(day, hour, weekday) {
-            self.push_ambient(day, hour, l);
+            if in_slot(l.minute) {
+                self.push_ambient(day, hour, l);
+            }
         }
         for l in ambient::microlife(day, hour, weekday) {
-            self.push_ambient(day, hour, l);
+            if in_slot(l.minute) {
+                self.push_ambient(day, hour, l);
+            }
         }
-        self.moments_pass(day, hour);
+        self.moments_pass(day, hour, minute);
     }
 
     /// Residents' small incidental moments. Each hour, a present resident evaluates
@@ -550,7 +570,7 @@ impl Simulation {
     /// the old dog — and may have a small moment; a traveller may pause on the
     /// bridge or take a shortcut. Emergent from co-presence and place, bounded,
     /// deterministic, and pure texture (it changes no world truth).
-    fn moments_pass(&mut self, day: u64, hour: u64) {
+    fn moments_pass(&mut self, day: u64, hour: u64, minute: u64) {
         let tick = self.clock.tick;
         let dog_place = self.dog.place;
 
@@ -565,7 +585,10 @@ impl Simulation {
 
         let mut out: Vec<(u8, &'static str, String)> = Vec::new();
         for (i, r) in self.residents.iter().enumerate() {
-            let seed = social::seed_hash(&[r.id, "moment"], tick);
+            // Seed once per resident *per hour* so each has at most a couple of
+            // moments in the hour, each pinned to a fixed five-minute slot — the
+            // moments spread across the hour instead of all landing at once.
+            let seed = social::seed_hash(&[r.id, "moment"], day * 24 + hour);
             let travelling = matches!(r.status, Status::Traveling { .. });
             let public = self.world.location(r.place).map(|l| !l.is_residential()).unwrap_or(false);
             if !travelling && !public {
@@ -576,7 +599,20 @@ impl Simulation {
             if (seed % 100) as u32 >= chance {
                 continue;
             }
-            let minute = (seed / 7 % 60) as u8;
+            let primary_slot = (seed / 7 % TICKS_PER_HOUR) * MINUTES_PER_TICK; // 0,5,…,55
+            let has_second = (seed / 1_000 % 100) < 30;
+            let second_slot = (seed / 11 % TICKS_PER_HOUR) * MINUTES_PER_TICK;
+            let is_primary = minute == primary_slot;
+            let is_second = has_second && minute == second_slot && second_slot != primary_slot;
+            if !is_primary && !is_second {
+                continue;
+            }
+
+            if is_second {
+                let opts = ["checks the time", "shifts in the light", "watches a moment longer"];
+                out.push((minute as u8, r.name, opts[(seed / 97 % 3) as usize].to_string()));
+                continue;
+            }
 
             let text = if travelling {
                 let opts = [
@@ -618,17 +654,11 @@ impl Simulation {
                 cands.push("glances up at the sky, reading the light".to_string());
                 cands[(seed / 100 % cands.len() as u64) as usize].clone()
             };
-            out.push((minute, r.name, text));
-
-            // occasionally a second, lighter beat
-            if (seed / 1_000 % 100) < 22 {
-                let opts = ["checks the time", "shifts in the light", "watches a moment longer"];
-                out.push(((minute + 12) % 60, r.name, opts[(seed / 97 % 3) as usize].to_string()));
-            }
+            out.push((minute as u8, r.name, text));
         }
 
-        for (minute, actor, text) in out {
-            self.ambient.push(Ambient { tick, day, hour, minute, kind: AmbientKind::Moment, actor, text });
+        for (minute_stamp, actor, text) in out {
+            self.ambient.push(Ambient { tick, day, hour, minute: minute_stamp, kind: AmbientKind::Moment, actor, text });
         }
     }
 
@@ -662,10 +692,12 @@ impl Simulation {
 
         // The child sometimes finds him — they don't always meet.
         if !self.dog.met_child_today() && self.world.location(self.dog.place).map(|l| !l.is_residential()).unwrap_or(false) {
+            // The child need only be *at* the dog's place — settled there, or just
+            // crossing it. A boy passing a dog stops to say hello.
             let child_here = self
                 .residents
                 .iter()
-                .any(|r| r.id == CHILD_ID && r.place == self.dog.place && r.is_present());
+                .any(|r| r.id == CHILD_ID && r.place == self.dog.place);
             if child_here && social::seed_hash(&["dog-child", self.dog.place], day) % 100 < 60 {
                 let child = self.name_of(CHILD_ID);
                 self.dog.meet_child();
@@ -728,7 +760,7 @@ impl Simulation {
                 if self.relationships.get(ri.id, rj.id).affinity < COMPANION_AFFINITY {
                     continue;
                 }
-                if matches!(rj.status, Status::Performing { left: 1, .. }) {
+                if matches!(rj.status, Status::Performing { left, .. } if left <= FINISHING_TICKS) {
                     coord.waiting.insert(i, rj.name);
                     break;
                 }

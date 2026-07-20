@@ -1,5 +1,6 @@
 //! Sprint 2 Step 3 tests: social memory & continuity between residents.
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::{cast, Simulation};
 
 #[test]
@@ -55,9 +56,9 @@ fn continuity_never_strands_anyone() {
     // Reunions and detours may run late, but no one drifts indefinitely: over a
     // fortnight everyone is home asleep in the small hours, every day.
     let mut sim = Simulation::new(cast());
-    for _ in 0..(14 * 24) {
+    for _ in 0..(14 * TICKS_PER_DAY) {
         sim.step();
-        if sim.clock.hour() == 3 {
+        if sim.clock.hour() == 3 && sim.clock.minute() == 0 {
             for r in &sim.residents {
                 assert_eq!(r.place, r.home, "{} stranded (day {})", r.name, sim.clock.day());
             }

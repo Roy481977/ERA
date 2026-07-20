@@ -23,7 +23,20 @@
   header .season { color:#81b29a; margin-left:auto; }
   #stagewrap { grid-area:stage; position:relative; overflow:hidden; }
   canvas { display:block; width:100%; height:100%; }
-  #callouts { position:absolute; left:14px; top:12px; right:14px; display:flex; flex-direction:column;
+  /* the live "happening" bubble — a speech bubble of the current moment */
+  #happening { position:absolute; left:50%; top:16px; transform:translateX(-50%);
+    max-width:70%; background:#f5efe0; color:#20160c; padding:10px 16px; border-radius:14px;
+    font-size:14px; line-height:1.35; box-shadow:0 6px 22px rgba(0,0,0,.45); pointer-events:none;
+    text-align:center; transition:opacity .3s; }
+  #happening:after { content:""; position:absolute; left:50%; bottom:-9px; transform:translateX(-50%);
+    border:9px solid transparent; border-top-color:#f5efe0; border-bottom:0; }
+  #happening .who { font-weight:700; }
+  #happening.match { background:#ffe3d6; } #happening.match:after { border-top-color:#ffe3d6; }
+  #happening.oak { background:#e2efe0; } #happening.oak:after { border-top-color:#e2efe0; }
+  #happening.social { background:#f3e2ef; } #happening.social:after { border-top-color:#f3e2ef; }
+  #happening.quiet { background:rgba(30,38,48,.82); color:#c8d3de; }
+  #happening.quiet:after { border-top-color:rgba(30,38,48,.82); }
+  #callouts { position:absolute; left:14px; top:70px; right:14px; display:flex; flex-direction:column;
     gap:6px; pointer-events:none; }
   .callout { align-self:flex-start; background:rgba(20,26,34,.86); border:1px solid var(--line);
     border-left:3px solid var(--accent); padding:5px 11px; border-radius:5px; font-size:13px;
@@ -80,6 +93,7 @@
 
   <div id="stagewrap">
     <canvas id="c"></canvas>
+    <div id="happening" class="quiet">The district wakes.</div>
     <div id="callouts"></div>
   </div>
 
@@ -114,6 +128,11 @@
 const DATA = __STREAM__;
 const WORLD = DATA.world, FRAMES = DATA.frames;
 const NODES = {}; WORLD.locations.forEach(l => NODES[l.id] = l);
+// static roster: identity/colour/kind live here, not in every frame.
+const ROSTER = {}; WORLD.entities.forEach(e => ROSTER[e.id] = e);
+const placeName = id => (NODES[id] && NODES[id].name) || id;
+// behavioural log lines carry raw place ids; show their names instead.
+const humanize = t => t.replace(/loc_[a-z_]+/g, m => placeName(m));
 
 const c = document.getElementById('c'), ctx = c.getContext('2d');
 const VW = 1000, VH = 760;               // world (viewer) space
@@ -133,8 +152,8 @@ const S = (x, y) => [ox + x * scale, oy + y * scale];
 // ---- playback clock ----
 let frame = 0;              // fractional index into FRAMES
 let playing = true;
-let speed = 1;             // multiplier on the baseline hours-per-second
-const BASE_HPS = 1.4;
+let speed = 1;             // multiplier on the baseline ticks-per-second
+const BASE_TPS = 7;        // ~7 five-minute ticks/sec → a day plays in ~40s
 const scrub = document.getElementById('scrub');
 scrub.max = FRAMES.length - 1;
 let selected = null;
@@ -154,7 +173,7 @@ c.addEventListener('click', ev => {
   const fr = FRAMES[Math.round(frame)];
   let best = null, bd = 22;
   fr.entities.forEach(e => {
-    const [sx, sy] = S(e.pos.x, e.pos.y);
+    const [sx, sy] = S(e.x, e.y);
     const d = Math.hypot(sx - mx, sy - my);
     if (d < bd) { bd = d; best = e.id; }
   });
@@ -168,11 +187,12 @@ function lerpEntities(i0, i1, f) {
   const bmap = {}; b.entities.forEach(e => bmap[e.id] = e);
   return a.entities.map(e => {
     const e2 = bmap[e.id] || e;
-    return { ...e, x: e.pos.x + (e2.pos.x - e.pos.x) * f, y: e.pos.y + (e2.pos.y - e.pos.y) * f };
+    return { ...e, x: e.x + (e2.x - e.x) * f, y: e.y + (e2.y - e.y) * f };
   });
 }
 
-function hoursLabel(h) { return String(h).padStart(2, '0') + ':00'; }
+const pad = n => String(n).padStart(2, '0');
+function clockLabel(fr) { return pad(fr.hour) + ':' + pad(fr.minute); }
 
 function draw(ents, fr) {
   const w = c.clientWidth, h = c.clientHeight;
@@ -212,29 +232,48 @@ function draw(ents, fr) {
     }
   });
 
-  // entities
+  // entities (identity/colour from the static roster)
   ents.forEach(e => {
+    const meta = ROSTER[e.id] || { color: '#888', kind: 'resident', name: e.id };
     const [x, y] = S(e.x, e.y);
-    const dog = e.kind === 'dog';
+    const dog = meta.kind === 'dog';
     if (e.id === selected) {
       ctx.beginPath(); ctx.arc(x, y, 13, 0, 7); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
     }
     ctx.beginPath(); ctx.arc(x, y, dog ? 5 : 6.5, 0, 7);
-    ctx.fillStyle = e.color; ctx.fill();
+    ctx.fillStyle = meta.color; ctx.fill();
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke();
     if (!dog) {
       ctx.fillStyle = '#c8d3de'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(e.name, x, y - 11);
+      ctx.fillText(meta.name, x, y - 11);
     }
   });
+}
+
+// The current "happening": the most salient thing going on right now — a notable
+// behavioural beat if one just fired, else the busiest gathering, else quiet.
+function currentHappening(fr) {
+  const notable = fr.events.find(([, , k]) => k === 'match' || k === 'oak' || k === 'social' || k === 'b');
+  if (notable) return { who: notable[0], text: notable[1], kind: notable[2] === 'b' ? '' : notable[2] };
+  if (fr.busiest && fr.busiest.count >= 3) return { who: '', text: fr.busiest.name + ' is the heart of the district just now', kind: '' };
+  const soft = fr.events.find(([, , k]) => k === 'town' || k === 'micro' || k === 'moment');
+  if (soft) return { who: soft[0], text: soft[1], kind: 'quiet' };
+  return { who: '', text: 'A quiet moment in the district — ' + fr.phase + '.', kind: 'quiet' };
 }
 
 function renderPanels(fr) {
   document.getElementById('wd').textContent = fr.weekday;
   document.getElementById('day').textContent = fr.day;
-  document.getElementById('hh').textContent = hoursLabel(fr.hour);
+  document.getElementById('hh').textContent = clockLabel(fr);
   document.getElementById('phase').textContent = fr.phase;
   document.getElementById('season').textContent = fr.oak.appearance + ' · ' + fr.oak.season;
+
+  // the live happening bubble
+  const h = currentHappening(fr), hb = document.getElementById('happening');
+  hb.className = h.kind || '';
+  // humanise place ids and drop the verbose "via <route>" tail for the bubble
+  const body = humanize(h.text).replace(/\s+via\s+.*$/, '');
+  hb.innerHTML = h.who ? `<span class="who">${h.who}</span> ${body.startsWith(h.who) ? body.slice(h.who.length).trim() : body}` : body;
 
   // callouts
   const co = document.getElementById('callouts'); co.innerHTML = '';
@@ -247,9 +286,10 @@ function renderPanels(fr) {
   const sel = document.getElementById('sel');
   if (selected) {
     const e = fr.entities.find(x => x.id === selected);
+    const meta = ROSTER[selected] || {};
     if (e) sel.innerHTML =
-      `<div class="name"><span class="dot" style="background:${e.color}"></span>${e.name}</div>`
-      + `<div class="meta">${e.placeName}${e.moving ? ' · on the move' : ''}</div>`
+      `<div class="name"><span class="dot" style="background:${meta.color}"></span>${meta.name}</div>`
+      + `<div class="meta">${placeName(e.place)}${e.moving ? ' · on the move' : ''}</div>`
       + `<div class="doing">${e.doing}</div>`;
   } else {
     sel.innerHTML = '<span class="hint">Click anyone on the map to follow them.</span>';
@@ -273,7 +313,8 @@ function renderPanels(fr) {
 
   // ticker
   const t = document.getElementById('ticker'); t.innerHTML = '';
-  fr.events.forEach(([who, text, kind]) => {
+  fr.events.forEach(([who, text0, kind]) => {
+    const text = humanize(text0);
     const li = document.createElement('li'); li.className = kind;
     li.innerHTML = kind === 'b' ? `<span class="who">${who}</span> ${(text.startsWith(who) ? text.slice(who.length).trim() : text)}`
                                  : `<span class="who">${who}</span> — ${text}`;
@@ -286,7 +327,7 @@ function tick(ts) {
   if (last === null) last = ts;
   const dt = (ts - last) / 1000; last = ts;
   if (playing) {
-    frame += dt * BASE_HPS * speed;
+    frame += dt * BASE_TPS * speed;
     if (frame >= FRAMES.length - 1) { frame = FRAMES.length - 1; playing = false;
       document.getElementById('play').textContent = 'Play'; }
   }

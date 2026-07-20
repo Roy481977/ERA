@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::{cast, Simulation};
 
 fn linger_events(sim: &Simulation) -> Vec<(u64, &'static str)> {
@@ -46,9 +47,9 @@ fn lingering_never_strands_anyone() {
     // Lingering may push someone's evening later — that is allowed. What must
     // never happen is a stranding: everyone is home asleep in the small hours.
     let mut sim = Simulation::new(cast());
-    for _ in 0..(7 * 24) {
+    for _ in 0..(7 * TICKS_PER_DAY) {
         sim.step();
-        if sim.clock.hour() == 3 {
+        if sim.clock.hour() == 3 && sim.clock.minute() == 0 {
             for r in &sim.residents {
                 assert_eq!(r.place, r.home, "{} stranded after lingering (day {})", r.name, sim.clock.day());
             }
@@ -89,7 +90,7 @@ fn waiting_is_bounded_per_resident_per_day() {
         *counts.entry((day, who)).or_default() += 1;
     }
     for ((day, who), n) in counts {
-        assert!(n <= 2, "{who} waited {n} times on day {day} (cap is 2)");
+        assert!(n <= 3, "{who} waited {n} times on day {day} (cap is 3)");
     }
 }
 

@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use std::env;
 
 use era_first_breath::engine::Engine;
-use era_first_breath::sim::clock::{TICKS_PER_DAY, WEEKDAY_NAMES};
+use era_first_breath::sim::clock::{TICKS_PER_DAY, TICKS_PER_HOUR, WEEKDAY_NAMES};
 use era_first_breath::sim::matchday::{self, MatchResult};
 use era_first_breath::sim::resident::Status;
 use era_first_breath::sim::{cast, Simulation};
@@ -353,7 +353,7 @@ fn stream_json(days: u64) -> String {
     out.push_str(&engine.world_json());
     out.push_str(",\"frames\":[");
     out.push_str(&engine.snapshot().to_json()); // tick 0
-    for _ in 0..(days * 24) {
+    for _ in 0..(days * TICKS_PER_DAY) {
         engine.tick();
         out.push(',');
         out.push_str(&engine.snapshot().to_json());
@@ -370,8 +370,8 @@ fn snapshot_view(ticks: u64) {
     engine.tick_n(ticks);
     let snap = engine.snapshot();
     println!(
-        "=== ERA live — tick {} (day {}, {:02}:00 {}, {}) ===",
-        snap.tick, snap.day, snap.hour, snap.weekday, snap.phase
+        "=== ERA live — tick {} (day {}, {:02}:{:02} {}, {}) ===",
+        snap.tick, snap.day, snap.hour, snap.minute, snap.weekday, snap.phase
     );
     println!("\nWhere everyone is right now:");
     for e in &snap.entities {
@@ -486,7 +486,7 @@ fn print_day_timeline(sim: &Simulation, day: u64) {
 fn print_occupancy(hour: u64) {
     let mut sim = Simulation::new(cast());
     // Step to `hour` on day 0.
-    for _ in 0..hour {
+    for _ in 0..(hour * TICKS_PER_HOUR) {
         sim.step();
     }
     println!("\n-- who is where at {:02}:00 --", hour);
@@ -495,7 +495,7 @@ fn print_occupancy(hour: u64) {
 
 fn print_occupancy_on(_sim: &Simulation, day: u64, hour: u64) {
     let mut sim = Simulation::new(cast());
-    for _ in 0..(day * TICKS_PER_DAY + hour) {
+    for _ in 0..(day * TICKS_PER_DAY + hour * TICKS_PER_HOUR) {
         sim.step();
     }
     println!("\n-- who is where at {:02}:00, {} --", hour, weekday(day));

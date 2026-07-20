@@ -5,13 +5,14 @@
 
 use std::collections::BTreeSet;
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::{cast, Simulation};
 
 /// Every location any resident occupies across a full week.
 fn occupied_places(days: u64) -> BTreeSet<&'static str> {
     let mut sim = Simulation::new(cast());
     let mut seen: BTreeSet<&'static str> = BTreeSet::new();
-    for _ in 0..(days * 24) {
+    for _ in 0..(days * TICKS_PER_DAY) {
         for r in &sim.residents {
             seen.insert(r.place);
         }

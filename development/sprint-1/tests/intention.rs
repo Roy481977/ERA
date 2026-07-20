@@ -2,6 +2,7 @@
 
 use std::collections::BTreeSet;
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::{cast, Simulation};
 
 fn deviation_events(sim: &Simulation) -> Vec<(u64, &'static str)> {
@@ -49,9 +50,9 @@ fn deviations_never_strand_a_resident() {
     // A detour may make someone's evening run late, but never strands them:
     // everyone is home asleep in the small hours of every day.
     let mut sim = Simulation::new(cast());
-    for _ in 0..(5 * 24) {
+    for _ in 0..(5 * TICKS_PER_DAY) {
         sim.step();
-        if sim.clock.hour() == 3 {
+        if sim.clock.hour() == 3 && sim.clock.minute() == 0 {
             for r in &sim.residents {
                 assert_eq!(r.place, r.home, "{} stranded away from home (day {})", r.name, sim.clock.day());
             }

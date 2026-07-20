@@ -7,6 +7,7 @@
 //! map authoritative and identical across every consumer (live snapshot, batch
 //! trace, tests).
 
+use crate::sim::clock::TRAVEL_TICKS_PER_WEIGHT;
 use crate::sim::resident::Status;
 use crate::world::location::LocationId;
 use crate::world::World;
@@ -83,7 +84,9 @@ pub fn entity_pos(world: &World, place: LocationId, status: &Status) -> Pos {
     if let Status::Traveling { path, idx, leg_left, .. } = status {
         let from = path[*idx];
         let to = path.get(idx + 1).copied().unwrap_or(from);
-        let w = edge_weight(world, from, to).max(1);
+        // Total ticks for this leg = edge weight scaled to the travel pace; the
+        // fraction done drives the on-map interpolation.
+        let w = (edge_weight(world, from, to) * TRAVEL_TICKS_PER_WEIGHT).max(1);
         let done = w.saturating_sub((*leg_left).min(w));
         let t = done as f64 / w as f64;
         if let (Some((fx, fy)), Some((tx, ty))) = (node_xy(from), node_xy(to)) {

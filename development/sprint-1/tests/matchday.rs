@@ -2,6 +2,7 @@
 
 use std::collections::BTreeSet;
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::{cast, Simulation};
 
 fn attenders(sim: &Simulation, day: u64) -> BTreeSet<&'static str> {
@@ -59,9 +60,9 @@ fn everyone_still_gets_home_on_matchday() {
     // A win can keep supporters in the square late, but the night still ends the
     // same way for everyone: home asleep in the small hours.
     let mut sim = Simulation::new(cast());
-    for _ in 0..(7 * 24) {
+    for _ in 0..(7 * TICKS_PER_DAY) {
         sim.step();
-        if sim.clock.hour() == 3 {
+        if sim.clock.hour() == 3 && sim.clock.minute() == 0 {
             for r in &sim.residents {
                 assert_eq!(r.place, r.home, "{} stranded on day {}", r.name, sim.clock.day());
             }

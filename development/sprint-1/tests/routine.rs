@@ -1,5 +1,6 @@
 //! Phase 2 tests: residents complete believable routines through the world.
 
+use era_first_breath::sim::clock::TICKS_PER_DAY;
 use era_first_breath::sim::resident::Resident;
 use era_first_breath::sim::routine::{Activity, Condition};
 use era_first_breath::sim::{cast, Simulation};
@@ -52,9 +53,9 @@ fn everyone_is_home_asleep_in_the_small_hours() {
     // runaway drift and no impossible schedule, i.e. everyone is home asleep in
     // the small hours. Checked at 03:00 each day across a week.
     let mut sim = Simulation::new(cast());
-    for _ in 0..(7 * 24) {
+    for _ in 0..(7 * TICKS_PER_DAY) {
         sim.step();
-        if sim.clock.hour() == 3 {
+        if sim.clock.hour() == 3 && sim.clock.minute() == 0 {
             for r in &sim.residents {
                 assert_eq!(
                     r.place, r.home,
@@ -105,7 +106,7 @@ fn nobody_teleports() {
     let world = build_world();
     let mut sim = Simulation::new(cast());
     let mut prev = sim.resident("res_tomas").unwrap().place;
-    for _ in 0..(2 * 24) {
+    for _ in 0..(2 * TICKS_PER_DAY) {
         sim.step();
         let now = sim.resident("res_tomas").unwrap().place;
         if now != prev {

@@ -8,6 +8,32 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — Five-minute clock: real trip times, distributed events, a live "happening" — PROPOSED
+
+The world clock now ticks every **5 minutes** (288 ticks/day) instead of hourly.
+Routines are still authored in whole hours (human-meaningful arrival windows);
+durations and travel are converted to the finer scale where they are used.
+
+- **Trips take real time.** Edge weights scale to a walking pace (~10 min per
+  weight unit via `TRAVEL_TICKS_PER_WEIGHT`), so residents are visibly *en route*
+  and arrive a believable while after setting out — with the tolerant scheduling
+  from the previous change, small late arrivals just stand.
+- **Events distributed across the hour.** The town's routines and micro-life are
+  emitted on the five-minute tick their minute falls into, and each resident's
+  incidental moments are pinned to seeded minute-slots (≤2/hour) — so life spreads
+  through the hour instead of clumping on the hour. Matchday announcements fire
+  once, on the hour.
+- **A live "happening" bubble.** The viewer now shows a speech-bubble of the
+  current moment (a notable beat, else the busiest gathering, else a quiet line),
+  and an HH:MM clock. Place ids are humanised to names in the bubble and ticker.
+
+Rebalanced for the finer grain: companionship "waiting for a friend" now keys on a
+short finishing window rather than a single five-minute tick; the old dog ambles
+(and dwells once he reaches his spot) and now greets the child in passing, so their
+bond deepens naturally (≈8 meetings in two weeks, growing). Snapshot frames slimmed
+(identity/colour from the static roster; positions carry only x/y) so a full week
+streams in ~4 MB. Strand invariant checked at 03:00 sharp. **68 tests pass.**
+
 ## 2026-07-20 — DS-006: prototype → the beginning of the live engine — PROPOSED
 
 The architecture turned over from *run N days → export a flat trace → replay the

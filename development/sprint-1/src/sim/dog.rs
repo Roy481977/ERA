@@ -74,7 +74,9 @@ impl Dog {
         }
     }
 
-    /// How many ticks he rests between ambles — he slows as he ages.
+    /// How long he rests between amble-steps — a gentle ~10 minutes per step, a
+    /// little longer as he ages. Short enough that he actually reaches the spot he
+    /// wants and then dwells there (once at his spot he simply stays).
     fn move_interval(&self) -> u32 {
         2 + (self.age_days / SLOW_EVERY) as u32
     }

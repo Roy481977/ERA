@@ -26,18 +26,27 @@ terminal (proof the world can be observed at any instant without replaying anyth
 
 ## Snapshot contract
 
+The clock ticks every **5 minutes** (288 ticks/day), so a frame is one five-minute
+instant.
+
 ```
-{ world:  { locations, edges, entities },          // the static stage (sent once)
-  frames: [ { tick, day, hour, weekday, phase,      // one live frame per hour
-              entities:[{id,name,kind,color,pos:{at|e,t,x,y},place,placeName,doing,moving}],
+{ world:  { locations, edges, entities:[{id,name,kind,color}] },   // static stage, sent once
+  frames: [ { tick, day, hour, minute, weekday, phase,             // one live frame per tick
+              entities:[{id, x, y, place, doing, moving}],         // lean: identity is in the roster
               occupancy:{place:count}, busiest, callouts,
               oak, events:[[who,text,kind]], bonds } ] }
 ```
 
-Positions carry ready screen coordinates (`x,y`) plus the semantic form (`at` a
-node, or fraction `t` along an `edge`), so the renderer needs no geometry of its
-own and can interpolate smooth motion between hours. Deterministic: same engine →
-same snapshots → same week.
+Frames are deliberately lean: an entity's name/colour/kind live once in the static
+`entities` roster, and each frame carries only what moves — screen coordinates
+(`x,y`), current place, what they're doing, and whether they're in transit. The
+renderer interpolates `x,y` between frames for smooth walking. Deterministic: same
+engine → same snapshots → same week.
+
+The viewer draws a live **"happening" bubble** (the most salient current beat, else
+the busiest gathering, else a quiet line), an HH:MM clock, occupancy badges, the
+busiest-place highlight, activity callouts, forming bonds, and a click-to-follow
+panel — all from frame state.
 
 ## Note on "live"
 
