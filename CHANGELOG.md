@@ -8,6 +8,36 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — Visual direction, the asset design model, and a Pixi prove-it slice — PROPOSED
+
+Direction (Roy): find a strong visual engine for high-end designs (movement,
+residents) and a strict, elaborate model for generating assets — mostly with AI.
+Decisions taken with him: browser-based, polished top-down/**isometric**; keep the
+Rust sim authoritative and make the renderer the variable; north star a **bright,
+filmed-miniature diorama** (tilt-shift, painterly, semi-real materials); **true 2:1
+isometric — locked**; per-resident **mini-palette**; **one generation workflow
+through one style guide, but model-agnostic** (the style guide and canonical asset
+library are canonical, not the model); **PixiJS + Spine/Rive** with a hybrid/phased
+AI-consistency plan.
+
+- **`research/visual-engine-and-design-strategy.md`** — the engine decision: Rust
+  sim (WASM) → behaviour stream → **PixiJS v8** renderer, **Rive/Spine** residents;
+  Bevy kept as a reference build. Comparison, rubric, prove-it milestone.
+- **`design/asset-design-model.md`** — a strict, layered spec: invariants (locked
+  2:1 iso, tilt-shift, materials, bright palette), art bible, machine schemas
+  (character, an elaborate motion/body-language model wired to the sim's
+  sociability/mood/energy, props, light/fx), the model-agnostic AI generation
+  protocol, and acceptance tests.
+- **Disposition in the behaviour stream** (`engine/mod.rs`, `snapshot_json.rs`):
+  residents now emit `soc`/`mood`/`energy`, so any renderer can make temperament
+  visible. Additive; 85 tests still green.
+- **`web/slice.{html,js}`** — the **prove-it slice**: a PixiJS renderer over the
+  same live WASM behaviour stream, drawing the town in the locked 2:1 isometric and
+  bright palette, with residents whose temperament shows in posture, head and gait.
+  Placeholder figures on purpose (behaviour over art) — it proves the pipeline, the
+  iso, and that temperament reads. Deploys alongside the top-down client (reuses
+  `/pkg`); needs one workflow line generalised to copy `web/*.html web/*.js`.
+
 ## 2026-07-20 — Social realism I: disposition + chosen togetherness — PROPOSED
 
 Direction (Roy): make relationships feel real — "close people will generally start
