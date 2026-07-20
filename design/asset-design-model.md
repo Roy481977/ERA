@@ -37,11 +37,12 @@ Layer 0 wins.
 These are fixed once and rarely changed. Every asset, AI-generated or hand-made,
 obeys all of them.
 
-**0.1 Projection & angle.** True **2:1 isometric**, camera pitch **≈30°** (the
-"crafted diorama" read; see the board). No perspective convergence — parallel
+**0.1 Projection & angle. — LOCKED.** True **2:1 isometric**, camera pitch **≈30°**
+(the "crafted diorama" read; see the board). No perspective convergence — parallel
 projection only. Every asset is authored and rendered at this single angle. *One
-angle, forever.* (If we ever add a second camera, it is a new asset set, not a
-re-projection.)
+angle, forever.* This is a locked invariant (Roy, decision): a change would obsolete
+every asset, so it changes only by a formal amendment. (If we ever add a second
+camera, it is a new asset set, not a re-projection.)
 
 **0.2 Scale & grid.** The world is a **miniature**. One iso tile = **1×1 world
 unit**; base tile footprint **128×64 px** at 1× (authored at 2× / 256×128 for
@@ -131,8 +132,12 @@ canonical brightness reference (1.1). Anchors:
 | Night glow | lamp `#f6b74f` | lit windows in the small hours |
 
 Saturation runs **high** (fresh, sunny); values run **light** (high-key). Each
-character adds **one signature accent** drawn from or harmonizing with this palette
-(Layer 2.1). No neon, no pure black, no muddy/greyed-out mixes.
+character carries a **mini-palette** (Layer 2.1): a small curated colour identity of
+4–6 swatches harmonized to this master palette, with one or two signature accents
+that may sit just outside it for individuality. Rules for a mini-palette: it must
+read cleanly *together* and *against the town* (no resident dressed head-to-toe in a
+town role-hue like roof-terracotta); at most two accents; no neon, no pure black, no
+muddy/greyed-out mixes. No neon, no pure black, no muddy mixes anywhere.
 
 **1.4 Do / don't.**
 - **Do:** rounded forms, soft contact shadows, hand-painted micro-texture, generous
@@ -160,12 +165,13 @@ character:
   build: wiry                      # petite | wiry | average | sturdy | stooped
   height_tiles: 2.6                # per Layer 0.2 (children ~1.9)
   silhouette_tags: [slouch_easy, hands_expressive, instrument_case]
-  palette:
+  mini_palette:                    # 4–6 swatches: the character's colour identity
     skin: "#c9926b"
     hair: "#3a2a22"
-    garment_primary: "#5a7d86"     # must sit in/near master palette (1.3)
+    garment_primary: "#5a7d86"     # harmonized to the master palette (1.3)
     garment_secondary: "#d9bd8f"
-    signature_accent: "#e0a24a"    # ONE per character; his is warm brass
+    accent_warm: "#e0a24a"         # 1–2 signature accents; may sit just outside
+    accent_cool: "#3f7d86"         # the master palette for individuality
   materials: [woven_cloth, worn_leather, brass]
   wardrobe_states: [default, matchday_scarf]   # optional swappable skins
   # --- the link to the simulation ---
@@ -337,6 +343,24 @@ so a living town of many small effects stays within frame.
 Assets are mostly AI-generated. Consistency across hundreds of them is engineered,
 not hoped for. Strategy (your pick): **hybrid, phased.**
 
+**3.0 What is canonical — and what is swappable (Roy, decision).** Two things are
+canonical: the **ERA style guide** (this document) and the **canonical asset
+library** (the approved, provenance-tracked assets). The generation *model* is not
+canonical — it is a swappable part. Concretely:
+
+- **One primary generation workflow.** Standardize on a single funnel now; *every*
+  asset passes through it and through this style guide. One road in, one gate
+  (Layer 4), one library out. No parallel ad-hoc pipelines.
+- **But vendor-agnostic by design.** That funnel is a **model-agnostic adapter**:
+  its inputs (master prompt, reference sheets, pose/angle control) and its
+  acceptance gate are stable; the model *behind* them is replaceable. When a better
+  model appears, we swap the adapter's backend and re-validate against the same
+  style guide and library — no change to either. Loyalty is to ERA's look and its
+  asset library, **never to a particular model or vendor.**
+- **The library outlives the model.** If we change base models, we re-derive any
+  style adapter (3.4) from the **canonical library**, so the look is reproduced from
+  our own approved assets rather than relearned from scratch.
+
 **3.1 Master style prompt (the constant preamble).** Every generation begins with a
 locked block, edited only through change control:
 
@@ -369,11 +393,13 @@ tilt-shift blur, drop shadow, busy background.*
   stray hues are pulled into line before review.
 
 **3.4 Consistency locking (Phase 2 — once the look is proven).** Train a **style
-model (LoRA / fine-tune)** on the *approved* Phase-1 set, baking ERA's diorama look
-into the model itself. Then generation is master-prompt-light and far more
-consistent, and new residents/props inherit the style automatically. Trigger for
-Phase 2: ~30–50 approved assets that unmistakably share a look. Keep Phase-1
-reference/pose control on top for angle and identity.
+adapter (LoRA / fine-tune)** on the *approved* canonical library, baking ERA's
+diorama look into the model of the day. Then generation is master-prompt-light and
+far more consistent, and new residents/props inherit the style automatically.
+Trigger for Phase 2: ~30–50 approved assets that unmistakably share a look. Keep
+Phase-1 reference/pose control on top for angle and identity. Because the adapter is
+trained from the **canonical library** (3.0), it is **re-derivable on any future
+base model** — the style survives a model swap.
 
 **3.5 Rig-prep requirements (AI output → animatable).** A generated resident is not
 finished art — it is raw material for a rig. Generations for rigged characters must
@@ -481,14 +507,19 @@ recorded here and in the CHANGELOG, exactly as code changes are. Layers 2–5 gr
 
 ---
 
-## Open questions for you
+## Decisions taken (Roy) — locked into this model
 
-1. **Confirm the 2:1 iso angle** (board Option A) as locked, or do you want to see
-   the gentler tilt mocked as a full scene before we commit?
-2. **Signature-accent policy:** one accent colour per resident (my default), or a
-   small per-character mini-palette?
-3. **Which AI image/style toolchain** do you want to standardize on for Phase 1 — or
-   shall I recommend one and draft the exact master-prompt + control setup for it?
-4. **Shall I turn this into the first working slice** — pick one resident (Milo is
-   the natural test, most expressive), write his schema record, and build the
-   prove-it Pixi + Rive scene to exercise Layers 2–4 end to end?
+1. **Isometric angle: LOCKED** to true 2:1 iso (~30°). Layer 0.1.
+2. **Colour identity: mini-palette** per resident (4–6 swatches, ≤2 accents), not a
+   single accent. Layers 1.3 and 2.1.
+3. **Generation: one primary workflow, one style guide — but model-agnostic.** A
+   single funnel every asset passes through, built as a swappable adapter so better
+   models drop in without touching the style guide or the canonical library. The
+   style guide and the asset library are canonical; the model is not. Layer 3.0.
+4. **Prove-it slice: yes, broadened.** Not one resident in isolation — a small
+   *scene*: two or three residents of visibly different temperament, at least one
+   interaction (an approach → greet → converse), on a true-2:1 iso ground in the
+   bright palette, **driven entirely by the live behaviour stream**. It exercises
+   Layers 0/2/4 end to end (angle, motion/body-language, temperament made visible,
+   acceptance) while staying a slice, not the town. Placeholder expressive figures
+   first (behaviour over art); real rigged assets follow once the look is proven.
