@@ -70,6 +70,28 @@ New `tests/companionship.rs` (4). **38 tests pass.** Deeper companionship (waiti
 for / leaving with a friend) needs a decide-then-act tick — flagged as the next
 *architectural* decision (DS-004), not built silently.
 
+## 2026-07-19 — ERA Bible + Vision ratified as apex canon — CANONICAL
+
+Roy delivered two canonical, implementation-independent documents, now the highest
+authority in the repository:
+
+- **`BIBLE.md`** (v1.0, Living Document) — the canonical description of ERA: what it
+  is, its two equal goals (a world-class deterministic engine + living worlds), and
+  the governing principles (stories emerge not scripted, explainability, observation,
+  living-before-large, and the canonical rule *philosophy wins over implementation*).
+- **`VISION.md`** — the long-term vision and **North Star**: "build worlds that
+  people believe existed before they arrived and will continue after they leave";
+  a town that breathes, visible passage of time, football as social heartbeat,
+  human scale, emergent identity, emotional success ("I missed Victor").
+
+Both preserved **verbatim**; authored by Roy (+ ChatGPT). Per Roy's rule, the CKO
+**must not edit them directly** — proposed changes go in a clearly-separated
+"Proposed amendments" section for Roy + ChatGPT to author. Order of authority
+established (Bible → Vision → GOVERNANCE → DEV-000 → architecture → specs → code).
+A consistency check recorded in each doc's metadata found current implementation
+(Sprint 1 + Sprint 2 Steps 1–3) already consistent with both — no adaptation
+required. Recorded in INDEX.
+
 ## 2026-07-19 — DEV-000 Development Constitution ratified — ACTIVE
 
 Roy delivered the **ERA Development Constitution** (DEV-000, v1.0), now the

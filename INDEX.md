@@ -1,8 +1,16 @@
 # ERA — Master Index
 
-The single map of the ERA knowledge repository. Start here. Governance and the
-rules that bind this repository live in [GOVERNANCE.md](GOVERNANCE.md); the full
-history of changes lives in [CHANGELOG.md](CHANGELOG.md).
+The single map of the ERA knowledge repository. Start here. The apex canonical
+philosophy lives in [BIBLE.md](BIBLE.md) (what ERA is) and [VISION.md](VISION.md)
+(where it is going — the North Star); both are **CANONICAL**, authored by Roy
+(+ ChatGPT), and must not be edited directly. Governance and the rules that bind
+this repository live in [GOVERNANCE.md](GOVERNANCE.md); the full history of changes
+lives in [CHANGELOG.md](CHANGELOG.md).
+
+**Order of authority:** BIBLE.md → VISION.md → GOVERNANCE.md →
+development/DEV-000 (development constitution) → architecture → specs → code. When
+philosophy and implementation conflict, philosophy wins and the implementation
+adapts.
 
 **Status:** 2026-07-19. GitHub mirror live. Two Import Packages captured, both
 **PROPOSED**: **IP-001 (Worldview Foundation)** and **IP-002 (Human Attachment
