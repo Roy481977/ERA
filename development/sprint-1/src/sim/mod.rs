@@ -13,4 +13,4 @@ pub mod social;
 pub use cast::cast;
 pub use oak::{OakEventKind, OldOak, Season};
 pub use simulation::{Event, Simulation};
-pub use social::{InteractionKind, Rel, Relationships};
+pub use social::{Bonds, InteractionKind, Rel, Relationships, SharedBond};

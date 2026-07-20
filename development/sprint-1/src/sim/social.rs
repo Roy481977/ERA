@@ -151,39 +151,100 @@ pub fn decide(
     place: &str,
     tick: u64,
     rel: Rel,
+    familiarity: u32,
 ) -> Option<Outcome> {
-    // Likelihood rises with affinity: acquaintances greet sometimes, close
-    // friends usually stop, strangers rarely.
+    // Shared history warms an encounter: every few past meetings is a point of
+    // warmth on top of raw affinity (capped), and it makes people a little more
+    // likely to stop at all. This is memory changing behaviour.
+    let fam_bonus = (familiarity / 4).min(3) as i32;
+
     let roll = (seed_hash(&[a, b, place], tick) % 100) as i32;
-    let chance = (24 + rel.affinity * 8).clamp(6, 92);
+    let chance = (24 + rel.affinity * 8 + fam_bonus * 4).clamp(6, 95);
     if roll >= chance {
         return None;
     }
 
     let flavor = seed_hash(&[b, a, place, "kind"], tick) % 100;
+    let warmth = rel.affinity + fam_bonus;
     let kind = if rel.affinity <= -2 {
         InteractionKind::Disagreement
-    } else if place == "loc_cafe" && rel.affinity >= 1 {
+    } else if place == "loc_cafe" && warmth >= 2 {
         InteractionKind::SharedCoffee
-    } else if rel.affinity >= 3 {
+    } else if warmth >= 4 {
         InteractionKind::Encouragement
-    } else if rel.affinity >= 1 {
+    } else if warmth >= 2 {
         InteractionKind::Conversation
+    } else if warmth >= 1 {
+        InteractionKind::Greeting
     } else if flavor < 55 {
         InteractionKind::Recognition
     } else {
         InteractionKind::Greeting
     };
 
-    let reason = if rel.affinity >= 3 {
-        "close friends"
-    } else if rel.affinity >= 1 {
-        "friendly acquaintances"
-    } else if rel.affinity <= -2 {
+    // The reason names *why* it was warm — including the weight of shared history.
+    let reason = if rel.affinity <= -2 {
         "on poor terms"
+    } else if fam_bonus >= 2 {
+        "old friends, and it shows"
+    } else if warmth >= 3 {
+        "close friends"
+    } else if warmth >= 1 {
+        "familiar faces"
     } else {
         "barely acquainted"
     };
 
     Some(Outcome { kind, reason })
+}
+
+// ---------------------------------------------------------------- shared bonds
+
+/// What two residents remember of their shared experiences: how often they've
+/// met, where, and when last. This is the raw material of social continuity —
+/// distinct from the affinity/trust summary in `Relationships`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SharedBond {
+    pub meetings: u32,
+    pub last_day: u64,
+    /// Where they have met, tallied — the argmax is "their place".
+    pub place_counts: std::collections::BTreeMap<ResId, u32>,
+}
+
+impl SharedBond {
+    /// The place they most often share, if they have one.
+    pub fn usual_place(&self) -> Option<ResId> {
+        self.place_counts
+            .iter()
+            .max_by_key(|(place, n)| (**n, **place))
+            .map(|(place, _)| *place)
+    }
+}
+
+/// The store of shared histories (one owner). Keyed by unordered pair.
+#[derive(Debug, Clone, Default)]
+pub struct Bonds {
+    map: BTreeMap<(ResId, ResId), SharedBond>,
+}
+
+impl Bonds {
+    /// Record that `a` and `b` met at `place` on `day`.
+    pub fn record(&mut self, a: ResId, b: ResId, place: ResId, day: u64) {
+        let e = self.map.entry(key(a, b)).or_default();
+        e.meetings += 1;
+        e.last_day = day;
+        *e.place_counts.entry(place).or_default() += 1;
+    }
+
+    pub fn get(&self, a: ResId, b: ResId) -> Option<&SharedBond> {
+        self.map.get(&key(a, b))
+    }
+
+    pub fn meetings(&self, a: ResId, b: ResId) -> u32 {
+        self.get(a, b).map(|s| s.meetings).unwrap_or(0)
+    }
+
+    pub fn usual_place(&self, a: ResId, b: ResId) -> Option<ResId> {
+        self.get(a, b).and_then(|s| s.usual_place())
+    }
 }

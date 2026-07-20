@@ -216,6 +216,37 @@ fn chronicle(weeks: u64) {
         sim.oak.visit_count, sim.oak.scarves, sim.oak.bouquets
     );
 
+    // -- Continuity: shared history changing behaviour --
+    let warm = sim.log.iter().filter(|e| e.message.contains("old friends, and it shows")).count();
+    let reunions: Vec<&str> = sim
+        .log
+        .iter()
+        .filter(|e| e.message.contains("half-expecting to find"))
+        .map(|e| e.resident)
+        .collect();
+    println!("\nSigns of continuity:");
+    println!("  · {warm} encounters warmed into old friendship");
+    println!("  · {} times someone went to a shared place hoping to meet a friend", reunions.len());
+    // Name the strongest "their place" bonds from remembered history.
+    let mut theirs: Vec<(&str, &str, u32, &str)> = Vec::new();
+    for i in 0..sim.residents.len() {
+        for j in (i + 1)..sim.residents.len() {
+            let (a, b) = (sim.residents[i].id, sim.residents[j].id);
+            if let Some(bond) = sim.bonds.get(a, b) {
+                if let Some(place) = bond.usual_place() {
+                    if bond.meetings >= 6 {
+                        theirs.push((sim.residents[i].name, sim.residents[j].name, bond.meetings, place));
+                    }
+                }
+            }
+        }
+    }
+    theirs.sort_by(|x, y| y.2.cmp(&x.2));
+    for (a, b, n, place) in theirs.into_iter().take(3) {
+        let pn = sim.world.location(place).map(|l| l.name).unwrap_or(place);
+        println!("  · the {pn} has become {a} and {b}'s place ({n} meetings)");
+    }
+
     // -- Traditions: the matchday rhythm --
     let results: Vec<_> = (0..weeks).map(|w| MatchResult::for_week(w).verb()).collect();
     println!("\nThe weekly rhythm:");

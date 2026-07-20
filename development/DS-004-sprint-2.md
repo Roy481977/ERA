@@ -96,11 +96,64 @@ group-sized; no "save a seat"/greeting-across-the-square yet.
 
 ---
 
+## Step 3 — Social memory & continuity between residents ✅
+
+**Direction (Roy):** postpone formal traditions; first give residents *social
+continuity* — remembering shared experiences with specific others and letting that
+history change future behaviour. Traditions should later *emerge* from this, not be
+minted when a counter crosses a threshold.
+
+**What became more alive:** the town now has a past between people. Encounters that
+began as cool nods **warm up** as history accumulates — Karim and Milo, once
+strangers on the square, now "share a word of encouragement — old friends, and it
+shows." And residents act on memory: someone will **drift to a shared place**,
+"half-expecting to find" a friend, because it's where they always meet. Places take
+on meaning from what happened there ("the Main Square has become Eva and Karim's
+place").
+
+**Implemented:**
+
+- **Shared bonds store** (`social::Bonds` / `SharedBond`): per pair, how often
+  they've met, *where* (tallied → their "usual place"), and when last. One owner;
+  recorded on every interaction. Distinct from the affinity/trust summary.
+- **Familiarity warms encounters.** `decide` now takes the pair's meeting count;
+  past meetings add warmth (capped) on top of affinity, raising both the chance of
+  stopping and the warmth of what passes — and the reason names it ("old friends,
+  and it shows"). Memory changing behaviour, shown as behaviour.
+- **Reunion at a usual place** (`intention::consider_reunion`): when winding down,
+  a resident with a strong shared place (≥ 6 remembered meetings) may head there on
+  the memory of it, expecting — not knowing — a friend might be there. Bounded
+  (shares the one-deviation-a-day cap), deterministic, never strands anyone.
+
+**Files changed:** `sim/social.rs` (`Bonds`/`SharedBond`, familiarity in `decide`),
+`sim/intention.rs` (`consider_reunion`), `sim/simulation.rs` (bonds field, record
+meetings, familiarity + reunion wiring), `sim/mod.rs`, `main.rs` (chronicle "Signs
+of continuity"), `tests/social_memory.rs` (new).
+
+**Architectural choices:** affinity/trust remains the fast summary; the bond store
+holds the *texture* (where, how often) the summary can't. Behaviour reads the
+texture. No thresholds mint traditions — the engine only records and lets patterns
+show; hardening them into named traditions stays future work, on purpose.
+
+**Tests added (5):** shared history accumulates; familiarity warms encounters;
+residents return to a shared place; deterministic; never stranded. **47 tests
+total.**
+
+**Known limitations:** "warmth" is derived from meeting count (not yet from the
+*quality* of specific remembered events); reunion expects but can't yet *arrange*
+to meet (no promises/plans); memory doesn't fade.
+
+**Commands:** `cargo run -- chronicle` (see "Signs of continuity") · `cargo test`
+
+---
+
 ## Next candidates (climbing the ladder)
 
-- **Needs/mood** feeding selection, so routines and deviations flex for reasons the
-  world can see (DEV-000: Explainability, Emergence) — now that decide-then-act
-  gives a clean place to compute intentions.
-- **Emergent traditions** (rung 7): detect a repeated behaviour (the Friday oak
-  gathering, the post-match café) and let it harden into a named tradition.
-- **Group companionship & greetings** ("Emma crossed the square to greet Karim").
+- **Meaningful-event memory:** weight continuity by the *quality* of what happened
+  (a shared coffee, an encouragement) not just the count; let a standout moment
+  matter more than many nods.
+- **Plans/expectations:** two friends who often meet begin to *expect* each other
+  and adjust — the step from "half-expecting" to "we'll meet at the café at six".
+- **Emergent traditions** (rung 7), once continuity is rich enough that the engine
+  can *describe* a tradition it observes rather than invent one.
+- **Needs/mood** feeding selection (DEV-000: Explainability, Emergence).

@@ -18,6 +18,24 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Sprint 2 Step 3: social memory & continuity — PROPOSED
+
+Per Roy: before formal traditions, give residents *social continuity* — remembering
+shared experiences with specific others and letting that history change behaviour.
+
+- **Shared bonds store** (`social::Bonds`/`SharedBond`): per pair, meeting count,
+  their tallied "usual place", and last meeting — recorded on every interaction.
+- **Familiarity warms encounters:** `decide` now folds in the pair's meeting count;
+  shared history adds warmth on top of affinity, so cool nods between near-strangers
+  grow into warm greetings and "old friends, and it shows".
+- **Reunion at a usual place** (`intention::consider_reunion`): a resident winding
+  down may drift to a place they've made *theirs* (≥ 6 remembered meetings),
+  half-expecting to find a friend. Bounded, deterministic, never strands anyone.
+
+Traditions are deliberately *not* minted by threshold — the engine records and lets
+patterns show. New `tests/social_memory.rs` (5). Chronicle gains "Signs of
+continuity" ("the Main Square has become Eva and Karim's place"). **47 tests pass.**
+
 ## 2026-07-19 — Sprint 2 Step 2: decide-then-act tick + companionship — PROPOSED
 
 Roy chose to evolve the core tick (the arc's first architectural change) so

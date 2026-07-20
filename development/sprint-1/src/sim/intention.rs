@@ -11,7 +11,7 @@
 //! it only triggers when there is provably time to visit and still get home.
 
 use crate::sim::resident::Resident;
-use crate::sim::social::{seed_hash, Relationships};
+use crate::sim::social::{seed_hash, Bonds, Relationships};
 use crate::world::navigation::NavGraph;
 use crate::world::World;
 
@@ -31,6 +31,9 @@ pub struct Deviation {
 const AFFINITY_TO_VISIT: i32 = 2;
 const VISIT_TICKS: u32 = 2;
 const END_OF_DAY: u64 = 23;
+/// How many shared meetings make a place *theirs* — worth going to on the
+/// chance of meeting again.
+const REUNION_MIN_MEETINGS: u32 = 6;
 
 fn is_social_place(place: &str) -> bool {
     place == "loc_cafe" || place == "loc_main_square"
@@ -106,6 +109,70 @@ pub fn consider_social_detour(
         dest: fplace,
         purpose: "a spur-of-the-moment visit",
         activity_id: "dev_social_visit",
+        duration: VISIT_TICKS,
+        reason,
+    })
+}
+
+/// Consider going to a place two residents have made *theirs* — heading there on
+/// the memory of past meetings, expecting (not knowing) a friend might be there.
+/// This is remembered shared experience shaping where someone goes.
+#[allow(clippy::too_many_arguments)]
+pub fn consider_reunion(
+    me: &Resident,
+    hour: u64,
+    tick: u64,
+    presence: &[Presence],
+    bonds: &Bonds,
+    rels: &Relationships,
+    world: &World,
+    nav: &NavGraph,
+) -> Option<Deviation> {
+    if me.deviations_today > 0 {
+        return None;
+    }
+    if !(15..=19).contains(&hour) {
+        return None;
+    }
+    // The friend with the strongest shared place worth going to.
+    let mut best: Option<(&'static str, &'static str, &'static str, u32)> = None; // fid, fname, place, meetings
+    for &(fid, fname, _fplace, _present) in presence {
+        if fid == me.id || rels.get(me.id, fid).affinity < AFFINITY_TO_VISIT {
+            continue;
+        }
+        let meetings = bonds.meetings(me.id, fid);
+        if meetings < REUNION_MIN_MEETINGS {
+            continue;
+        }
+        let Some(place) = bonds.usual_place(me.id, fid) else { continue };
+        if place == me.place || !is_social_place(place) || !world.is_open(place, hour) {
+            continue;
+        }
+        let (Some(to), Some(home)) = (nav.travel_time(me.place, place), nav.travel_time(place, me.home)) else {
+            continue;
+        };
+        if hour + to as u64 + VISIT_TICKS as u64 + home as u64 > END_OF_DAY {
+            continue;
+        }
+        let better = best.map(|(_, _, _, m)| meetings > m).unwrap_or(true);
+        if better {
+            best = Some((fid, fname, place, meetings));
+        }
+    }
+
+    let (fid, fname, place, _m) = best?;
+    if seed_hash(&[me.id, fid, place, "reunion"], tick) % 100 >= 45 {
+        return None;
+    }
+    let place_name = world.location(place).map(|l| l.name).unwrap_or(place);
+    let reason = format!(
+        "{} drifts to the {}, half-expecting to find {} — it's where they always meet",
+        me.name, place_name, fname
+    );
+    Some(Deviation {
+        dest: place,
+        purpose: "their usual corner",
+        activity_id: "dev_reunion",
         duration: VISIT_TICKS,
         reason,
     })

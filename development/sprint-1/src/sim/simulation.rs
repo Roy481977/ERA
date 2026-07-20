@@ -10,7 +10,7 @@ use crate::sim::matchday::{self, MatchResult};
 use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
 use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::routine::Routine;
-use crate::sim::social::{self, Relationships};
+use crate::sim::social::{self, Bonds, Relationships};
 use crate::world::location::LocationId;
 use crate::world::navigation::NavGraph;
 use crate::world::{build_world, World};
@@ -29,6 +29,7 @@ pub struct Simulation {
     pub clock: WorldClock,
     pub residents: Vec<Resident>,
     pub relationships: Relationships,
+    pub bonds: Bonds,
     pub oak: OldOak,
     pub log: Vec<Event>,
     /// Structured record of every interaction (observability / tests / Oak).
@@ -137,6 +138,7 @@ impl Simulation {
             clock: WorldClock::new(),
             residents,
             relationships: Relationships::seeded(),
+            bonds: Bonds::default(),
             oak: OldOak::new(),
             log: Vec::new(),
             interactions: Vec::new(),
@@ -262,9 +264,17 @@ impl Simulation {
             let Some(act) = r.select(hour, weekday, &self.world) else { continue };
             let Some(dest) = Routine::target_location(act, r.home) else { continue };
             if dest == r.home {
-                if let Some(dev) = intention::consider_social_detour(
+                // First: a friend is here now (join them). Else: our usual place
+                // (go there on the memory of past meetings, expecting them).
+                let dev = intention::consider_social_detour(
                     r, hour, self.clock.tick, &presence, &self.relationships, &self.world, &self.world.nav,
-                ) {
+                )
+                .or_else(|| {
+                    intention::consider_reunion(
+                        r, hour, self.clock.tick, &presence, &self.bonds, &self.relationships, &self.world, &self.world.nav,
+                    )
+                });
+                if let Some(dev) = dev {
                     intents.push(Intent { idx: i, aid: dev.activity_id, purpose: dev.purpose, dur: dev.duration, dest: dev.dest, deviation: true, reason: Some(dev.reason) });
                     continue;
                 }
@@ -414,7 +424,8 @@ impl Simulation {
                         continue;
                     }
                     let rel = self.relationships.get(pair.0, pair.1);
-                    if let Some(outcome) = social::decide(pair.0, pair.1, place, tick, rel) {
+                    let familiarity = self.bonds.meetings(pair.0, pair.1);
+                    if let Some(outcome) = social::decide(pair.0, pair.1, place, tick, rel, familiarity) {
                         busy[ia] = true;
                         busy[ib] = true;
                         applies.push(Apply {
@@ -464,6 +475,8 @@ impl Simulation {
                     with: Some(ap.b),
                 });
             }
+            // Remember the shared experience: this meeting, and where it was.
+            self.bonds.record(ap.a, ap.b, ap.place, day);
             self.social_seen_today.insert((ap.a, ap.b));
             self.interactions.push(social::Interaction {
                 tick,
