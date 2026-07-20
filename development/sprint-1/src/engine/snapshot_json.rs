@@ -1,0 +1,214 @@
+//! JSON serialization for the engine's live state — the stable wire contract
+//! between the world and any renderer. Two shapes:
+//!
+//!   * `Engine::world_json()`  — the static stage: locations, edges, entities.
+//!     Sent once; it never changes during a run.
+//!   * `Snapshot::to_json()`   — one live frame: positions, occupancy, callouts,
+//!     the Oak, events this tick, inspectable bonds. Sent every tick.
+//!
+//! Hand-rolled (no serde dependency), matching the codebase's existing style.
+//! Whatever produces these snapshots — a native loop here, or the same engine
+//! compiled to WebAssembly in a browser — a renderer consumes them identically.
+
+use std::collections::BTreeSet;
+
+use crate::engine::{Engine, Snapshot};
+use crate::view::layout::{self, Pos, MAP};
+
+/// Minimal JSON string escaping.
+pub(crate) fn esc(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => o.push_str("\\\""),
+            '\\' => o.push_str("\\\\"),
+            '\n' => o.push_str("\\n"),
+            _ => o.push(c),
+        }
+    }
+    o
+}
+
+fn pos_json(pos: &Pos) -> String {
+    match pos {
+        Pos::At { node, x, y } => {
+            format!("{{\"at\":\"{node}\",\"x\":{x:.1},\"y\":{y:.1}}}")
+        }
+        Pos::OnEdge { from, to, t, x, y } => {
+            format!("{{\"e\":[\"{from}\",\"{to}\"],\"t\":{t:.3},\"x\":{x:.1},\"y\":{y:.1}}}")
+        }
+    }
+}
+
+impl Engine {
+    /// The static stage the renderer needs once: locations (with coordinates and
+    /// hours), the navigation edges, and the entity roster (id, name, colour).
+    pub fn world_json(&self) -> String {
+        let sim = self.sim();
+        let mut out = String::new();
+        out.push('{');
+
+        // locations
+        out.push_str("\"locations\":[");
+        for (i, (id, x, y)) in MAP.iter().enumerate() {
+            let loc = sim.world.location(id).unwrap();
+            let hours = match loc.hours {
+                Some(h) => format!("[{},{}]", h.open, h.close),
+                None => "null".to_string(),
+            };
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!(
+                "{{\"id\":\"{id}\",\"name\":\"{}\",\"x\":{x},\"y\":{y},\"home\":{},\"hours\":{hours}}}",
+                esc(loc.name),
+                loc.is_residential()
+            ));
+        }
+        out.push(']');
+
+        // edges (unique, undirected)
+        out.push_str(",\"edges\":[");
+        let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
+        let mut first = true;
+        for node in sim.world.nav.nodes() {
+            for (other, _w) in sim.world.nav.neighbors(node) {
+                let key = if node < other { (node, other) } else { (other, node) };
+                if seen.insert(key) {
+                    if !first {
+                        out.push(',');
+                    }
+                    first = false;
+                    out.push_str(&format!("[\"{}\",\"{}\"]", key.0, key.1));
+                }
+            }
+        }
+        out.push(']');
+
+        // entities (residents + dog), roster only
+        out.push_str(",\"entities\":[");
+        for (i, r) in sim.residents.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!(
+                "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"resident\",\"color\":\"{}\"}}",
+                r.id,
+                esc(r.name),
+                layout::color_of(r.id)
+            ));
+        }
+        out.push_str(&format!(
+            ",{{\"id\":\"the_old_dog\",\"name\":\"the old dog\",\"kind\":\"dog\",\"color\":\"{}\"}}",
+            layout::color_of("the_old_dog")
+        ));
+        out.push(']');
+
+        out.push('}');
+        out
+    }
+}
+
+impl Snapshot {
+    /// One live frame as JSON — everything a renderer draws this tick.
+    pub fn to_json(&self) -> String {
+        let mut out = String::new();
+        out.push('{');
+        out.push_str(&format!(
+            "\"tick\":{},\"day\":{},\"hour\":{},\"weekday\":\"{}\",\"phase\":\"{}\"",
+            self.tick, self.day, self.hour, self.weekday, esc(self.phase)
+        ));
+
+        // live entities: position + what they're doing
+        out.push_str(",\"entities\":[");
+        for (i, e) in self.entities.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!(
+                "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"color\":\"{}\",\"pos\":{},\
+                 \"place\":\"{}\",\"placeName\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
+                e.id,
+                esc(e.name),
+                e.kind.tag(),
+                e.color,
+                pos_json(&e.pos),
+                e.place,
+                esc(e.place_name),
+                esc(&e.doing),
+                e.traveling
+            ));
+        }
+        out.push(']');
+
+        // occupancy per place
+        out.push_str(",\"occupancy\":{");
+        for (i, (place, n)) in self.occupancy.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!("\"{place}\":{n}"));
+        }
+        out.push('}');
+
+        // busiest place
+        match &self.busiest {
+            Some((place, name, n)) => out.push_str(&format!(
+                ",\"busiest\":{{\"place\":\"{place}\",\"name\":\"{}\",\"count\":{n}}}",
+                esc(name)
+            )),
+            None => out.push_str(",\"busiest\":null"),
+        }
+
+        // callouts
+        out.push_str(",\"callouts\":[");
+        for (i, c) in self.callouts.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!("{{\"kind\":\"{}\",\"text\":\"{}\"}}", c.kind, esc(&c.text)));
+        }
+        out.push(']');
+
+        // oak
+        out.push_str(&format!(
+            ",\"oak\":{{\"ageYears\":{},\"season\":\"{}\",\"appearance\":\"{}\",\"visits\":{},\"scarves\":{},\"bouquets\":{}}}",
+            self.oak.age_years,
+            esc(self.oak.season),
+            esc(self.oak.appearance),
+            self.oak.visits,
+            self.oak.scarves,
+            self.oak.bouquets
+        ));
+
+        // events this tick
+        out.push_str(",\"events\":[");
+        for (i, (actor, text, tag)) in self.events.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!("[\"{}\",\"{}\",\"{}\"]", esc(actor), esc(text), tag));
+        }
+        out.push(']');
+
+        // inspectable bonds
+        out.push_str(",\"bonds\":[");
+        for (i, b) in self.bonds.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            let place = match b.usual_place {
+                Some(p) => format!("\"{}\"", esc(p)),
+                None => "null".to_string(),
+            };
+            out.push_str(&format!(
+                "{{\"a\":\"{}\",\"b\":\"{}\",\"affinity\":{},\"trust\":{},\"meetings\":{},\"place\":{}}}",
+                esc(b.a), esc(b.b), b.affinity, b.trust, b.meetings, place
+            ));
+        }
+        out.push(']');
+
+        out.push('}');
+        out
+    }
+}

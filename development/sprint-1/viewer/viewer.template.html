@@ -3,253 +3,304 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ERA — First Breath · the district, watched</title>
+<title>ERA — the living district</title>
 <style>
-  :root { --panel:#14161d; --ink:#e8e4da; --dim:#9a94886; --line:#2a2d38; }
+  :root {
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232d; --ink:#e6edf3; --dim:#8b98a5;
+    --line:#2a3441; --accent:#e6b800; --warm:#e07a5f;
+  }
   * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; background:#0c0d12; color:#e8e4da;
-    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  #app { display:flex; height:100vh; }
-  #stage { flex:1; position:relative; min-width:0; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  #app { display:grid; grid-template-columns:1fr 340px; grid-template-rows:auto 1fr auto;
+    grid-template-areas:"head head" "stage side" "bar bar"; height:100vh; }
+  header { grid-area:head; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;
+    padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:15px; margin:0; font-weight:600; letter-spacing:.02em; }
+  header .clock { font-variant-numeric:tabular-nums; font-size:15px; color:var(--ink); }
+  header .clock b { color:var(--accent); }
+  header .phase { color:var(--dim); font-style:italic; }
+  header .season { color:#81b29a; margin-left:auto; }
+  #stagewrap { grid-area:stage; position:relative; overflow:hidden; }
   canvas { display:block; width:100%; height:100%; }
-  #side { width:340px; background:#14161d; border-left:1px solid #2a2d38;
-    display:flex; flex-direction:column; }
-  #side h1 { font-size:15px; margin:0; padding:16px 18px 4px; letter-spacing:.02em; }
-  #side .sub { padding:0 18px 12px; color:#8f8a7e; font-size:12px; }
-  #clock { padding:10px 18px; border-top:1px solid #2a2d38; border-bottom:1px solid #2a2d38; }
-  #clock .big { font-size:24px; font-weight:600; letter-spacing:.01em; }
-  #clock .oak { color:#c9a227; font-size:12px; margin-top:2px; }
-  #events { flex:1; overflow-y:auto; padding:10px 16px; }
-  #events .e { padding:3px 0; border-bottom:1px solid #1d2029; font-size:12.5px; }
-  #events .who { color:#b7b0a2; }
-  #events .match { color:#f2cc8f; font-weight:600; }
-  #events .dog { color:#c79a6b; font-style:italic; }
-  #events .town { color:#8fb0c9; }
-  #events .micro { color:#86bd86; font-style:italic; }
-  #events .moment { color:#a9a396; }
-  #events .b { color:#e8e4da; }
-  #legend { padding:10px 16px; border-top:1px solid #2a2d38; max-height:150px; overflow-y:auto; }
-  #legend .row { display:inline-flex; align-items:center; gap:6px; margin:2px 8px 2px 0; font-size:12px; }
-  #legend .sw { width:10px; height:10px; border-radius:50%; display:inline-block; }
-  #controls { display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid #2a2d38; }
-  #controls button { background:#22252f; color:#e8e4da; border:1px solid #333a48;
-    border-radius:6px; padding:6px 12px; cursor:pointer; font-size:13px; }
-  #controls button:hover { background:#2b2f3b; }
-  #scrub { position:absolute; left:16px; right:16px; bottom:14px; }
-  #scrub input { width:100%; }
-  .hint { position:absolute; left:18px; top:14px; color:#cfc8b8; font-size:12px;
-    background:rgba(12,13,18,.5); padding:4px 8px; border-radius:6px; }
-  select { background:#22252f; color:#e8e4da; border:1px solid #333a48; border-radius:6px; padding:5px; }
+  #callouts { position:absolute; left:14px; top:12px; right:14px; display:flex; flex-direction:column;
+    gap:6px; pointer-events:none; }
+  .callout { align-self:flex-start; background:rgba(20,26,34,.86); border:1px solid var(--line);
+    border-left:3px solid var(--accent); padding:5px 11px; border-radius:5px; font-size:13px;
+    max-width:80%; backdrop-filter:blur(3px); }
+  .callout.match { border-left-color:var(--warm); }
+  .callout.oak { border-left-color:#81b29a; }
+  .callout.social { border-left-color:#c05299; }
+  aside { grid-area:side; background:var(--panel); border-left:1px solid var(--line);
+    overflow-y:auto; padding:14px; }
+  aside h2 { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim);
+    margin:18px 0 8px; font-weight:600; }
+  aside h2:first-child { margin-top:0; }
+  .sel { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:11px; }
+  .sel .name { font-weight:600; font-size:15px; }
+  .sel .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px;
+    vertical-align:middle; }
+  .sel .meta { color:var(--dim); margin-top:3px; }
+  .sel .doing { margin-top:7px; }
+  .hint { color:var(--dim); font-size:12px; }
+  .bond { display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-bottom:1px solid var(--line); }
+  .bond .who { color:var(--ink); } .bond .where { color:var(--dim); font-size:12px; }
+  .bond .n { color:var(--accent); font-variant-numeric:tabular-nums; }
+  #ticker { list-style:none; margin:0; padding:0; max-height:260px; overflow-y:auto; }
+  #ticker li { padding:4px 0 4px 10px; border-left:2px solid var(--line); margin-bottom:3px; font-size:13px; }
+  #ticker li.b { border-left-color:var(--ink); }
+  #ticker li.match { border-left-color:var(--warm); }
+  #ticker li.town { border-left-color:#3d84a8; color:var(--dim); }
+  #ticker li.micro { border-left-color:#6a4c93; color:var(--dim); }
+  #ticker li.moment { border-left-color:#8d99ae; color:var(--dim); font-style:italic; }
+  #ticker li.dog,#ticker li.oak { border-left-color:#8b5a2b; }
+  #ticker .who { color:var(--accent); }
+  footer { grid-area:bar; display:flex; align-items:center; gap:14px; padding:10px 18px;
+    border-top:1px solid var(--line); background:var(--panel); }
+  button { background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:6px;
+    padding:6px 14px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--dim); }
+  button.play { background:var(--accent); color:#1a1200; border-color:var(--accent); font-weight:600; min-width:74px; }
+  input[type=range] { flex:1; accent-color:var(--accent); }
+  .speed { display:flex; align-items:center; gap:6px; color:var(--dim); }
+  .live { display:inline-flex; align-items:center; gap:6px; color:var(--warm); font-size:12px; }
+  .live .pip { width:8px; height:8px; border-radius:50%; background:var(--warm); animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="stage">
+  <header>
+    <h1>ERA · First Breath</h1>
+    <div class="clock"><b id="wd">—</b> · day <b id="day">0</b> · <b id="hh">00:00</b>
+      <span class="phase" id="phase"></span></div>
+    <span class="live"><span class="pip"></span>observing the live engine</span>
+    <div class="season" id="season"></div>
+  </header>
+
+  <div id="stagewrap">
     <canvas id="c"></canvas>
-    <div class="hint">Press <b>space</b> to play/pause · drag the timeline to scrub</div>
-    <div id="scrub"><input id="range" type="range" min="0" value="0" step="0.01"></div>
+    <div id="callouts"></div>
   </div>
-  <div id="side">
-    <h1>ERA — First Breath</h1>
-    <div class="sub">the district, watched. deterministic — the same seed, the same week.</div>
-    <div id="clock"><div class="big" id="ctime">—</div><div class="oak" id="coak"></div></div>
-    <div id="events"></div>
-    <div id="legend"></div>
-    <div id="controls">
-      <button id="play">▶ Play</button>
-      <label>speed
-        <select id="speed">
-          <option value="1">1×</option>
-          <option value="2" selected>2×</option>
-          <option value="4">4×</option>
-          <option value="8">8×</option>
-        </select>
-      </label>
+
+  <aside>
+    <h2>Selected</h2>
+    <div class="sel" id="sel"><span class="hint">Click anyone on the map to follow them.</span></div>
+    <h2>The Old Oak</h2>
+    <div id="oak" class="hint"></div>
+    <h2>Bonds forming</h2>
+    <div id="bonds"></div>
+    <h2>Happening now</h2>
+    <ul id="ticker"></ul>
+  </aside>
+
+  <footer>
+    <button class="play" id="play">Pause</button>
+    <button id="restart">Restart</button>
+    <input type="range" id="scrub" min="0" value="0" step="1">
+    <div class="speed">
+      <span>speed</span>
+      <button data-mul="0.5">½×</button>
+      <button data-mul="1">1×</button>
+      <button data-mul="2">2×</button>
+      <button data-mul="4">4×</button>
     </div>
-  </div>
+  </footer>
 </div>
+
 <script>
-const TRACE = __TRACE__;
-(function(){
-  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-  const coord = {}; TRACE.locations.forEach(l => coord[l.id] = {x:l.x, y:l.y, ...l});
-  const ent = TRACE.entities;
-  const ticks = TRACE.ticks;
-  const N = ticks.length;
-  const range = document.getElementById('range');
-  range.max = (N-1).toFixed(2);
+// The world and the stream of live engine snapshots. Rendering is driven purely
+// from this state — the page owns no simulation logic of its own.
+const DATA = __STREAM__;
+const WORLD = DATA.world, FRAMES = DATA.frames;
+const NODES = {}; WORLD.locations.forEach(l => NODES[l.id] = l);
 
-  // ---- layout / DPI ----
-  let W=0,H=0,scale=1,ox=0,oy=0;
-  function resize(){
-    const r = cv.parentElement.getBoundingClientRect();
-    const dpr = window.devicePixelRatio||1;
-    cv.width = r.width*dpr; cv.height=r.height*dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    W=r.width; H=r.height;
-    // fit map 1000x760 into view with padding
-    const mw=1000, mh=760, pad=30;
-    scale = Math.min((W-pad*2)/mw, (H-pad*2)/mh);
-    ox = (W - mw*scale)/2; oy = (H - mh*scale)/2;
-  }
-  function sx(x){ return ox + x*scale; }
-  function sy(y){ return oy + y*scale; }
-  window.addEventListener('resize', resize);
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+const VW = 1000, VH = 760;               // world (viewer) space
+let scale = 1, ox = 0, oy = 0;
 
-  // ---- colour helpers ----
-  function lerp(a,b,t){ return a+(b-a)*t; }
-  function hex(h){ h=h.replace('#',''); return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)]; }
-  function mix(c1,c2,t){ const a=hex(c1),b=hex(c2); return `rgb(${Math.round(lerp(a[0],b[0],t))},${Math.round(lerp(a[1],b[1],t))},${Math.round(lerp(a[2],b[2],t))})`; }
-  // sky keyframes by hour
-  const SKY = [[0,'#0f1220'],[5,'#182036'],[7,'#f0c79c'],[10,'#c9dbe6'],[14,'#d9e6ea'],[17,'#f4b168'],[20,'#a35f49'],[22,'#1b1728'],[24,'#0f1220']];
-  const GROUND = [[0,'#171b18'],[6,'#20261f'],[9,'#39412f'],[14,'#3e472f'],[18,'#4a3e2a'],[21,'#241f1c'],[24,'#171b18']];
-  function keyColor(kf, hour){
-    for(let i=0;i<kf.length-1;i++){ if(hour>=kf[i][0]&&hour<=kf[i+1][0]){ const t=(hour-kf[i][0])/(kf[i+1][0]-kf[i][0]); return mix(kf[i][1],kf[i+1][1],t);} }
-    return kf[0][1];
-  }
-  function nightness(hour){ // 0 day .. 1 deep night
-    if(hour>=21||hour<5) return 1;
-    if(hour>=5&&hour<7) return 1-(hour-5)/2;
-    if(hour>=19&&hour<21) return (hour-19)/2;
-    return 0;
-  }
+function resize() {
+  const w = c.parentElement.clientWidth, h = c.parentElement.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  c.width = w * dpr; c.height = h * dpr;
+  scale = Math.min(w / VW, h / VH);
+  ox = (w - VW * scale) / 2; oy = (h - VH * scale) / 2;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+const S = (x, y) => [ox + x * scale, oy + y * scale];
 
-  // ---- entity screen position at continuous tick ct ----
-  function framePos(frame, id){
-    const p = frame.p[id];
-    if(!p) return null;
-    if(p.at){ const c=coord[p.at]; return c?[c.x,c.y]:null; }
-    if(p.e){ const a=coord[p.e[0]], b=coord[p.e[1]]; if(!a||!b) return null; return [lerp(a.x,b.x,p.t), lerp(a.y,b.y,p.t)]; }
-    return null;
-  }
-  function entPos(ct, id){
-    const i=Math.max(0,Math.min(N-1,Math.floor(ct))), j=Math.min(N-1,i+1), f=ct-i;
-    const a=framePos(ticks[i],id), b=framePos(ticks[j],id);
-    if(!a) return b; if(!b) return a;
-    return [lerp(a[0],b[0],f), lerp(a[1],b[1],f)];
-  }
+// ---- playback clock ----
+let frame = 0;              // fractional index into FRAMES
+let playing = true;
+let speed = 1;             // multiplier on the baseline hours-per-second
+const BASE_HPS = 1.4;
+const scrub = document.getElementById('scrub');
+scrub.max = FRAMES.length - 1;
+let selected = null;
+let last = null;
 
-  // small stable offset so co-located entities don't perfectly overlap
-  const offs = {}; ent.forEach((e,i)=>{ const ang=i*2.399; offs[e.id]=[Math.cos(ang)*13,Math.sin(ang)*13]; });
+document.getElementById('play').onclick = e => {
+  playing = !playing; e.target.textContent = playing ? 'Pause' : 'Play';
+};
+document.getElementById('restart').onclick = () => { frame = 0; };
+scrub.oninput = () => { frame = +scrub.value; };
+document.querySelectorAll('[data-mul]').forEach(b =>
+  b.onclick = () => { speed = +b.dataset.mul; });
 
-  function draw(ct){
-    const fi = Math.max(0,Math.min(N-1,Math.floor(ct)));
-    const fr = ticks[fi];
-    const hour = fr.h + (ct-fi); // smooth hour
-    // sky
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, keyColor(SKY,hour%24));
-    g.addColorStop(1, keyColor(GROUND,hour%24));
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+c.addEventListener('click', ev => {
+  const r = c.getBoundingClientRect();
+  const mx = ev.clientX - r.left, my = ev.clientY - r.top;
+  const fr = FRAMES[Math.round(frame)];
+  let best = null, bd = 22;
+  fr.entities.forEach(e => {
+    const [sx, sy] = S(e.pos.x, e.pos.y);
+    const d = Math.hypot(sx - mx, sy - my);
+    if (d < bd) { bd = d; best = e.id; }
+  });
+  selected = best;
+});
 
-    // two moons at night — seen, never said
-    const nl = nightness(fr.h);
-    if(nl>0.05){
-      ctx.save(); ctx.globalAlpha = nl*0.9;
-      const day=fr.d;
-      // larger, slower moon
-      const m1x = W*(0.18 + 0.12*Math.sin(day*0.6)), m1y=H*0.16;
-      ctx.fillStyle='#eae2c8'; ctx.beginPath(); ctx.arc(m1x,m1y,17,0,7); ctx.fill();
-      // smaller, quicker moon
-      const m2x = W*(0.72 + 0.10*Math.cos(day*1.7)), m2y=H*0.11;
-      ctx.fillStyle='#cdd6e0'; ctx.beginPath(); ctx.arc(m2x,m2y,10,0,7); ctx.fill();
-      ctx.restore();
+// linear interpolation of entity positions between the two bracketing frames,
+// so travel reads as smooth motion though the engine ticks in whole hours.
+function lerpEntities(i0, i1, f) {
+  const a = FRAMES[i0], b = FRAMES[i1];
+  const bmap = {}; b.entities.forEach(e => bmap[e.id] = e);
+  return a.entities.map(e => {
+    const e2 = bmap[e.id] || e;
+    return { ...e, x: e.pos.x + (e2.pos.x - e.pos.x) * f, y: e.pos.y + (e2.pos.y - e.pos.y) * f };
+  });
+}
+
+function hoursLabel(h) { return String(h).padStart(2, '0') + ':00'; }
+
+function draw(ents, fr) {
+  const w = c.clientWidth, h = c.clientHeight;
+  ctx.clearRect(0, 0, w, h);
+
+  // edges
+  ctx.strokeStyle = '#222c38'; ctx.lineWidth = 2;
+  WORLD.edges.forEach(([a, b]) => {
+    const A = NODES[a], B = NODES[b]; if (!A || !B) return;
+    const [x1, y1] = S(A.x, A.y), [x2, y2] = S(B.x, B.y);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  });
+
+  const busiest = fr.busiest ? fr.busiest.place : null;
+  // nodes
+  WORLD.locations.forEach(l => {
+    const [x, y] = S(l.x, l.y);
+    const open = l.hours ? (fr.hour >= l.hours[0] && fr.hour < l.hours[1]) : true;
+    const occ = fr.occupancy[l.id] || 0;
+    if (l.id === busiest) {
+      ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fillStyle = 'rgba(230,184,0,.14)'; ctx.fill();
     }
-
-    // roads
-    ctx.lineWidth = Math.max(6, 9*scale); ctx.strokeStyle='rgba(20,18,14,.35)'; ctx.lineCap='round';
-    TRACE.edges.forEach(([a,b])=>{ const A=coord[a],B=coord[b]; ctx.beginPath(); ctx.moveTo(sx(A.x),sy(A.y)); ctx.lineTo(sx(B.x),sy(B.y)); ctx.stroke(); });
-
-    // locations
-    TRACE.locations.forEach(l=>{
-      const x=sx(l.x), y=sy(l.y);
-      const open = l.hours ? (fr.h>=l.hours[0] && fr.h<l.hours[1]) : true;
-      const isStadium = l.id==='loc_stadium', isOak=l.id==='loc_riverside';
-      const r = (isStadium?26:20)*scale;
-      // glow if lit (shops open, or residence at night, or stadium on matchday)
-      const matchday = fr.wd==='Sat';
-      const lit = (l.hours && open) || (l.home && nl>0.3) || (isStadium && matchday && fr.h>=13 && fr.h<=18);
-      ctx.beginPath(); ctx.arc(x,y,r,0,7);
-      ctx.fillStyle = l.home ? 'rgba(120,110,150,.30)' : (isOak?'rgba(120,140,90,.30)':'rgba(210,200,170,.16)');
-      ctx.fill();
-      if(lit){ ctx.save(); ctx.shadowColor='rgba(255,210,120,.9)'; ctx.shadowBlur=22*scale; ctx.fillStyle='rgba(255,214,140,.5)'; ctx.beginPath(); ctx.arc(x,y,r*0.55,0,7); ctx.fill(); ctx.restore(); }
-      ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.stroke();
-      // the Oak glyph
-      if(isOak){ ctx.fillStyle='#7c9a54'; ctx.beginPath(); ctx.arc(x, y-2, 11*scale,0,7); ctx.fill(); ctx.fillStyle='#5b4a34'; ctx.fillRect(x-2*scale, y, 4*scale, 12*scale);
-        // scarves / flowers accumulate
-        if(fr.sc>0){ ctx.fillStyle='#d1495b'; for(let i=0;i<Math.min(fr.sc,6);i++){ ctx.fillRect(x-14*scale+i*5*scale, y+13*scale, 3*scale, 7*scale);} }
-        if(fr.bq>0){ ctx.fillStyle='#e6b3d1'; for(let i=0;i<Math.min(fr.bq,6);i++){ ctx.beginPath(); ctx.arc(x-12*scale+i*5*scale, y+24*scale, 2.2*scale,0,7); ctx.fill(); } }
-      }
-      // label
-      ctx.fillStyle = open? 'rgba(240,235,222,.92)':'rgba(240,235,222,.4)';
-      ctx.font = `${Math.round(12*Math.max(.8,scale))}px sans-serif`; ctx.textAlign='center';
-      ctx.fillText(l.name, x, y+r+14*scale);
-    });
-
-    // entities
-    ent.forEach(e=>{
-      const pos = entPos(ct, e.id); if(!pos) return;
-      const o = offs[e.id]||[0,0];
-      const x=sx(pos[0])+o[0]*scale, y=sy(pos[1])+o[1]*scale;
-      const dog = e.kind==='dog';
-      const r = (dog?7:8)*Math.max(.85,scale);
-      ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle=e.color; ctx.fill();
-      ctx.lineWidth=1.5; ctx.strokeStyle= dog?'rgba(255,255,255,.5)':'rgba(0,0,0,.35)'; ctx.stroke();
-      if(!dog){ ctx.fillStyle='#fff'; ctx.font=`bold ${Math.round(9*Math.max(.85,scale))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(e.name[0], x, y+0.5); ctx.textBaseline='alphabetic'; }
-    });
-  }
-
-  // ---- events panel ----
-  let lastFrame=-1;
-  function updateSide(ct){
-    const fi=Math.max(0,Math.min(N-1,Math.floor(ct))); const fr=ticks[fi];
-    document.getElementById('ctime').textContent = `Day ${fr.d} · ${fr.wd} · ${String(fr.h).padStart(2,'0')}:00`;
-    document.getElementById('coak').textContent = `The Old Oak — ${fr.sc} scarf${fr.sc===1?'':'s'}, ${fr.bq} bouquet${fr.bq===1?'':'s'}`;
-    if(fi===lastFrame) return; lastFrame=fi;
-    const box=document.getElementById('events');
-    // show the current hour and the one before — behavioural first, then the
-    // ambient life of the town, so an hour reads like a place, not a log.
-    let html='';
-    for(let k=Math.max(0,fi-1);k<=fi;k++){
-      const evs = ticks[k].ev.slice();
-      // behavioural lines first, then town/micro/moment
-      const order = {b:0, match:0, town:1, micro:2, moment:3};
-      evs.sort((a,b)=>(order[a[2]]||0)-(order[b[2]]||0));
-      let moments=0;
-      evs.forEach(([who,msg,kind])=>{
-        if(kind==='moment'){ moments++; if(moments>6) return; }
-        let cls='e '+(kind||'b');
-        if(who==='Matchday') cls='e match';
-        else if(who==='the old dog') cls='e dog';
-        const w = (who==='Matchday')?'' : (kind==='b'?`<span class="who">${who}</span> ` : `<span class="who">${who}</span> — `);
-        html += `<div class="${cls}">${w}${msg}</div>`;
-      });
+    ctx.beginPath(); ctx.arc(x, y, l.home ? 8 : 11, 0, 7);
+    ctx.fillStyle = l.home ? '#2a3441' : (open ? '#34435a' : '#232c38');
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = l.id === busiest ? '#e6b800' : '#3a4759'; ctx.stroke();
+    // label
+    ctx.fillStyle = '#7d8b99'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(l.name, x, y + (l.home ? 20 : 24));
+    // occupancy badge
+    if (occ > 0) {
+      ctx.beginPath(); ctx.arc(x + 13, y - 11, 8, 0, 7);
+      ctx.fillStyle = l.id === busiest ? '#e6b800' : '#3d84a8'; ctx.fill();
+      ctx.fillStyle = l.id === busiest ? '#1a1200' : '#eaf1f6';
+      ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(occ, x + 13, y - 11); ctx.textBaseline = 'alphabetic';
     }
-    box.innerHTML = html || '<div class="e" style="color:#6a675e">…a quiet hour…</div>';
-    box.scrollTop = box.scrollHeight;
+  });
+
+  // entities
+  ents.forEach(e => {
+    const [x, y] = S(e.x, e.y);
+    const dog = e.kind === 'dog';
+    if (e.id === selected) {
+      ctx.beginPath(); ctx.arc(x, y, 13, 0, 7); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(x, y, dog ? 5 : 6.5, 0, 7);
+    ctx.fillStyle = e.color; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke();
+    if (!dog) {
+      ctx.fillStyle = '#c8d3de'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(e.name, x, y - 11);
+    }
+  });
+}
+
+function renderPanels(fr) {
+  document.getElementById('wd').textContent = fr.weekday;
+  document.getElementById('day').textContent = fr.day;
+  document.getElementById('hh').textContent = hoursLabel(fr.hour);
+  document.getElementById('phase').textContent = fr.phase;
+  document.getElementById('season').textContent = fr.oak.appearance + ' · ' + fr.oak.season;
+
+  // callouts
+  const co = document.getElementById('callouts'); co.innerHTML = '';
+  fr.callouts.forEach(k => {
+    const d = document.createElement('div'); d.className = 'callout ' + k.kind;
+    d.textContent = k.text; co.appendChild(d);
+  });
+
+  // selected
+  const sel = document.getElementById('sel');
+  if (selected) {
+    const e = fr.entities.find(x => x.id === selected);
+    if (e) sel.innerHTML =
+      `<div class="name"><span class="dot" style="background:${e.color}"></span>${e.name}</div>`
+      + `<div class="meta">${e.placeName}${e.moving ? ' · on the move' : ''}</div>`
+      + `<div class="doing">${e.doing}</div>`;
+  } else {
+    sel.innerHTML = '<span class="hint">Click anyone on the map to follow them.</span>';
   }
 
-  // ---- legend ----
-  (function(){ const L=document.getElementById('legend'); L.innerHTML = ent.map(e=>`<span class="row"><span class="sw" style="background:${e.color}"></span>${e.name}</span>`).join(''); })();
+  // oak
+  document.getElementById('oak').innerHTML =
+    `${fr.oak.ageYears} years old, ${fr.oak.appearance} this ${fr.oak.season}.<br>`
+    + `${fr.oak.visits} visits · ${fr.oak.scarves} scarves · ${fr.oak.bouquets} bouquets`;
 
-  // ---- playback ----
-  let ct=0, playing=false, speed=2, last=0;
-  const playBtn=document.getElementById('play');
-  function setPlaying(p){ playing=p; playBtn.textContent = p?'⏸ Pause':'▶ Play'; }
-  playBtn.onclick=()=>setPlaying(!playing);
-  document.getElementById('speed').onchange=e=>speed=+e.target.value;
-  range.addEventListener('input', ()=>{ ct=+range.value; setPlaying(false); draw(ct); updateSide(ct); });
-  window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); setPlaying(!playing);} });
+  // bonds
+  const bd = document.getElementById('bonds');
+  bd.innerHTML = fr.bonds.length ? '' : '<span class="hint">no shared history yet</span>';
+  fr.bonds.forEach(b => {
+    const row = document.createElement('div'); row.className = 'bond';
+    row.innerHTML = `<span class="who">${b.a} &amp; ${b.b}</span>`
+      + `<span class="where">${b.place ? 'the ' + b.place : ''}</span>`
+      + `<span class="n">${b.meetings}×</span>`;
+    bd.appendChild(row);
+  });
 
-  function frame(ts){
-    if(!last) last=ts; const dt=(ts-last)/1000; last=ts;
-    if(playing){ ct += dt*speed; if(ct>=N-1){ ct=N-1; setPlaying(false);} range.value=ct.toFixed(2); }
-    draw(ct); updateSide(ct);
-    requestAnimationFrame(frame);
+  // ticker
+  const t = document.getElementById('ticker'); t.innerHTML = '';
+  fr.events.forEach(([who, text, kind]) => {
+    const li = document.createElement('li'); li.className = kind;
+    li.innerHTML = kind === 'b' ? `<span class="who">${who}</span> ${(text.startsWith(who) ? text.slice(who.length).trim() : text)}`
+                                 : `<span class="who">${who}</span> — ${text}`;
+    t.appendChild(li);
+  });
+}
+
+let prevT = -1;
+function tick(ts) {
+  if (last === null) last = ts;
+  const dt = (ts - last) / 1000; last = ts;
+  if (playing) {
+    frame += dt * BASE_HPS * speed;
+    if (frame >= FRAMES.length - 1) { frame = FRAMES.length - 1; playing = false;
+      document.getElementById('play').textContent = 'Play'; }
   }
-  resize(); draw(0); updateSide(0); setPlaying(true);
-  requestAnimationFrame(frame);
-})();
+  const i0 = Math.floor(frame), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = frame - i0;
+  const fr = FRAMES[i0];
+  const ents = lerpEntities(i0, i1, f);
+  draw(ents, fr);
+  if (i0 !== prevT) { renderPanels(fr); prevT = i0; scrub.value = i0; }
+  requestAnimationFrame(tick);
+}
+
+resize();
+renderPanels(FRAMES[0]);
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>

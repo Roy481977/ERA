@@ -1132,14 +1132,21 @@ that remains, the child still looking, the Oak feeling emptier), and the shaping
 his route by weather and noise (pending weather). His ageing cadence is currently
 compressed for observability and is a tuning decision, not canon.
 
-*The world can now be watched.* Beside the terminal observer there is a **live
-visual viewer** — a map on which the residents and the dog move between places, the
-day's light shifts and two moons hang quietly in the night sky, the Old Oak gathers
-scarves and flowers on matchday, and an event ticker reads the hour. It replays a
-deterministic trace emitted by the core (the engine holds the logic; the viewer only
-renders — presentation stays independent from the engine, per *The Engine's Place*).
-The two moons there are a quiet *rendered backdrop*, not a simulated system. From
-here, the plan is to iterate from watching the world rather than from imagining it.
+*The world can now be watched, and the prototype has become the beginning of an
+engine (DS-006).* There is now an **`Engine`**: a persistent, continuously-ticking
+world you hold and advance one hour at a time, and observe through a **live
+snapshot** that reads its state without changing it. The **viewer** was rebuilt as a
+pure observer of those snapshots — a map on which residents and the dog move, with
+per-place occupancy, the busiest gathering called out, activity callouts, an event
+ticker, forming bonds, and an inspectable per-resident panel. It holds no simulation
+logic; every position and count is computed in the engine, so rendering is driven
+from state (per *The Engine's Place*). Determinism is preserved and asserted (two
+engines ticked alike yield identical snapshots). **Honest limit:** the browser today
+plays a faithful *recording* of a live run on a real-time clock — the tick loop does
+not yet run *inside* the page. Doing that needs either the Rust engine compiled to
+WebAssembly (currently blocked in the cloud build sandbox — the `wasm32` toolchain
+can't be fetched there) or a browser-side engine mirror; this is a reserved
+architecture decision (DS-006). The snapshot contract is identical either way.
 
 *The district is becoming continuously alive (density).* A layer of ambient life now
 fills the hours: the town's own routines (the ovens before dawn, the trains, the

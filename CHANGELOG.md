@@ -8,6 +8,36 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — DS-006: prototype → the beginning of the live engine — PROPOSED
+
+The architecture turned over from *run N days → export a flat trace → replay the
+file* to a persistent, continuously-ticking **`Engine`** (`src/engine/`) observed
+through a pure, non-mutating **`snapshot()`**. You hold an engine, `tick()` it one
+hour, and read its live state at any instant; the snapshot carries every entity's
+live position (screen coords + semantic at-node/along-edge), per-place occupancy,
+the busiest public gathering, activity callouts, the Old Oak, the events from that
+tick, and the forming bonds (inspectable state). The engine owns the map layout
+(`src/view/layout.rs`) so rendering is driven from state by construction.
+
+The **viewer** was rebuilt as a pure observer (no simulation logic): occupancy
+badges, busiest-place highlight, activity callouts, a live event ticker, an
+inspectable per-resident panel, forming bonds, smooth interpolated motion. Data now
+comes from `cargo run -- stream <days>` (one engine ticked, snapshots recorded);
+`cargo run -- snapshot [ticks]` prints one live snapshot. Determinism preserved and
+asserted (`tests/engine.rs`). **68 tests pass.**
+
+Honest limit: the browser plays a faithful *recording* of a live run — the tick
+loop does not yet run inside the page. True in-browser ticking needs WebAssembly
+(the `wasm32` toolchain is blocked in the cloud build sandbox) or a browser-side
+engine mirror — a reserved architecture decision (see DS-006). The snapshot contract
+is identical either way.
+
+Also: added the **School, Museum, Anchor pub and Old Bridge** (all genuinely
+lived-in; the bridge placed on the square↔riverside path so it is a crossed node),
+and — per Roy — **relaxed scheduling** so ordinary evening variation is allowed to
+stand: the strict "home at midnight" invariant became "home asleep in the small
+hours" (0 strandings at 03:00 over 28 days). Imperfection is part of the simulation.
+
 ## 2026-07-19 — Phase 3c: opening hours + closed-destination gate — PROPOSED
 
 Locations gained optional **opening hours**: the Bakery opens 05:00–17:00 and the

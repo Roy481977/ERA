@@ -1,13 +1,15 @@
-# ERA — First Breath visual viewer
+# ERA — First Breath live viewer
 
-A self-contained HTML/Canvas viewer that **replays** the deterministic simulation:
-a live map of the district with the residents and the old dog moving between
-places, the day's light and two moons in the sky, the Old Oak accumulating
-scarves/flowers on matchday, and an event ticker. Play/pause, speed, timeline scrub.
+A self-contained HTML/Canvas window that **observes the ERA engine**. The engine
+(`src/engine/`) is a continuously-ticking world with persistent entities; at every
+hour it reports a **live snapshot** of its state, and the viewer draws only what the
+snapshot says: where each resident and the old dog are, how busy each place is, the
+busiest gathering right now, activity callouts, the bonds forming between residents,
+and the Old Oak. Click anyone to follow them; play/pause, speed, scrub.
 
-The viewer renders data only — it holds no game logic. The Rust core is the single
-source of truth and emits a JSON trace; the viewer replays it. This keeps
-presentation independent from the engine (Book of ERA — *The Engine's Place*).
+The viewer holds **no simulation logic**. Every position, occupancy count and
+callout is computed inside the engine, from authoritative state — "rendering is
+driven from state" is true by construction (Book of ERA — *The Engine's Place*).
 
 ## Regenerate
 
@@ -16,12 +18,32 @@ cd development/sprint-1
 ./viewer/build.sh 7 era-first-breath-viewer.html   # 7 days
 ```
 
-That runs `cargo run -- trace <days>` (the trace emitter in `src/main.rs`) and
-injects the JSON into `viewer.template.html`, producing one self-contained file you
-can open in any browser.
+That runs `cargo run -- stream <days>` — which ticks a persistent `Engine` and
+records the snapshot it reports each hour — then injects the result into
+`viewer.template.html`, producing one self-contained file you can open in any
+browser. `cargo run -- snapshot [ticks]` prints a single live snapshot to the
+terminal (proof the world can be observed at any instant without replaying anything).
 
-## Trace format (per tick = 1 hour)
+## Snapshot contract
 
-`{ locations, edges, entities, ticks:[{ d, wd, h, sc, bq, p:{id:{at|e,t}}, ev:[[who,msg]] }] }`
-— positions are a node (`at`) or a fraction `t` along an `edge`, so the viewer can
-draw true along-road movement. Deterministic: same seed → same trace → same week.
+```
+{ world:  { locations, edges, entities },          // the static stage (sent once)
+  frames: [ { tick, day, hour, weekday, phase,      // one live frame per hour
+              entities:[{id,name,kind,color,pos:{at|e,t,x,y},place,placeName,doing,moving}],
+              occupancy:{place:count}, busiest, callouts,
+              oak, events:[[who,text,kind]], bonds } ] }
+```
+
+Positions carry ready screen coordinates (`x,y`) plus the semantic form (`at` a
+node, or fraction `t` along an `edge`), so the renderer needs no geometry of its
+own and can interpolate smooth motion between hours. Deterministic: same engine →
+same snapshots → same week.
+
+## Note on "live"
+
+Today the frames are produced by ticking the engine here and embedding the stream,
+so the browser plays a faithful recording of a live run on a real-time clock. The
+architecture (engine authoritative, snapshot as the sole interface, renderer purely
+observing) is the same one a truly in-browser engine would use: the same Rust
+engine compiled to WebAssembly would emit these identical snapshots and tick inside
+the page. That step is a pending decision (see `development/DS-006`).

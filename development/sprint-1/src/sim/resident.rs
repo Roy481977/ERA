@@ -111,6 +111,15 @@ impl Resident {
             .map(|a| a.affordance)
     }
 
+    /// The human-readable purpose of one of this resident's routine activities.
+    pub fn purpose_of(&self, activity_id: &str) -> Option<&'static str> {
+        self.routine
+            .activities
+            .iter()
+            .find(|a| a.id == activity_id)
+            .map(|a| a.purpose)
+    }
+
     /// Whether this resident is a child.
     pub fn is_child(&self) -> bool {
         self.age < 18
