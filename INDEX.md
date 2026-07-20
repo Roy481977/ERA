@@ -96,6 +96,7 @@ final), **8 key constitutional principles**, **7 open questions** (OQ-2…OQ-8) 
 | architecture/systems/ (15 briefs) | PROPOSED | Subsystem briefs: town, time, world-persistence, relationship, memory, recognition, event, matchday, club-culture, economy, narrative, ai-director, crowd, weather-season, audio-ecology |
 | architecture/system-contracts/ (WI-01, 7 docs) | PROPOSED | System Contracts & Vertical Slice: world-state schema, engine boundaries, inter-engine contracts, Town Engine vertical slice, acceptance tests, observability |
 | **`architecture/` module itself** | **RATIFIED (permanent)** | The module is a permanent first-class part of the repository (contents remain PROPOSED) |
+| development/DEV-000-development-constitution.md | **Active (RATIFIED)** | The development constitution: governs all implementation (Ladder of Life, memory-changes-behavior, relationships-through-behavior, emergence, observation-first). Sits alongside GOVERNANCE.md. |
 | development/DS-001-first-breath.md | PROPOSED | Sprint 1 implementation spec (First Breath): district (now 8 locations), 10 residents, Old Oak, roadmap |
 | development/DS-002-living-world.md | PROPOSED | Sprint 1 Phases 3–8 progress tracker (per-phase: what/files/choices/tests/limits) |
 | development/DS-003-sprint-1-report.md | PROPOSED | Sprint 1 final report: commits, systems, tests, run commands, samples, next steps |

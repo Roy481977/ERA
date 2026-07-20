@@ -18,6 +18,24 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — DEV-000 Development Constitution ratified — ACTIVE
+
+Roy delivered the **ERA Development Constitution** (DEV-000, v1.0), now the
+governing law for all implementation. Preserved verbatim at
+`development/DEV-000-development-constitution.md`. It defines the two inseparable
+goals (an exceptional deterministic engine + one of the most believable living
+worlds), the **Ladder of Life** (world exists → residents act → remember → habits →
+relationships visible → places accumulate history → traditions → attachment), and
+firm principles: **memory is only valuable if it changes the future**;
+**relationships should be experienced through behavior, not numbers**; understandable
+**emergence** over randomness; **observation-first** (a system that can't be observed
+is incomplete); depth over breadth; extend before creating; small reviewable commits,
+continue automatically. Sits alongside GOVERNANCE.md (knowledge preservation);
+DEV-000 governs how the simulation is built. Recorded in INDEX.
+
+Next work climbs the ladder from where Sprint 1 left off (rungs 4–5): making
+memory/relationships change behavior and become observable.
+
 ## 2026-07-19 — Phase 8: observation & demonstration — PROPOSED
 
 Rewrote `main.rs` into a structured terminal **observer** with modes (the earlier
