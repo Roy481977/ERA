@@ -1115,18 +1115,31 @@ code. When philosophy and implementation conflict, the philosophy wins and the
 implementation adapts. GOVERNANCE and DEV-000 remain in force as *how knowledge is
 kept* and *how the simulation is built*, subordinate to the Book's world truth.
 
-**Implementation status (honest note, 2026-07-19).** Current code (Sprint 1 +
-Sprint 2) already serves parts of the Book: one shared clock; persistent residents
+**Implementation status (honest note, updated 2026-07-19).** Current code (Sprint 1
++ Sprint 2) already serves parts of the Book: one shared clock; persistent residents
 with routines/intentions; relationships and socially-meaningful memory that changes
 behaviour; place identity ("their place"); shared history; matchday rhythms and
 their consequences; the Old Oak's accumulating history; companionship and reunions;
-observation-first tooling; determinism. Much of the Book is **not yet built and is
-future work to serve this world**, explicitly including: the two moons and the sky;
-the old dog (and animals / micro-life); aging, death and loss; the long light and
-weather; the river's double rhythm; the hidden/invisible layer (garden, fox, crows,
-the curator's letters); a fuller emotional geography (fountain, bridge, museum,
-railway, pub); and the ~20–30% of the world that should always remain beyond view.
-No completeness is claimed; these are named so the road stays honest.
+observation-first tooling; determinism.
+
+*The old dog* now partly exists (Book IV): he keeps his own daily rhythm through the
+public places (the café door where water is set down, a warm patch on the square,
+the shade outside the Club, and the Old Oak by evening), forms a quiet bond with the
+child that deepens through repeated meetings, and ages — his movement slows and he
+gives up the long walk to the Club as he grows old. He grants nothing and is not a
+quest. **Not yet built for him:** his eventual death and its aftermath (the bowl
+that remains, the child still looking, the Oak feeling emptier), and the shaping of
+his route by weather and noise (pending weather). His ageing cadence is currently
+compressed for observability and is a tuning decision, not canon.
+
+Still **not yet built and future work to serve this world**: the two moons and the
+sky; weather, fog and the long light; other animals / micro-life; aging, death and
+loss among residents; the river's double rhythm; the hidden/invisible layer
+(garden, fox, crows, the curator's letters); a fuller emotional geography (fountain,
+bridge, museum, railway, pub); physical continuity of traces (scarves that remain,
+litter after matchday, muddy paths, lit windows); and the ~20–30% of the world that
+should always remain beyond view. No completeness is claimed; these are named so the
+road stays honest.
 
 ### Proposed amendments
 

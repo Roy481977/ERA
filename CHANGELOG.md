@@ -18,6 +18,21 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — The old dog: a persistent presence in the district — PROPOSED
+
+First feature under the Book of ERA, chosen (per Roy) to most increase the feeling
+of a living place and to deepen the district before expanding it. New `sim/dog.rs`:
+the old dog keeps his own daily rhythm through the public places — the café door
+where water is set down, a warm patch on the square, the shade outside the Club,
+and the Old Oak by evening — forms a quiet bond with the child (Tomas) that deepens
+through repeated meetings, and ages (his movement slows; he gives up the long walk
+to the Club as he grows old). He is **not a resident**, grants nothing, and is not a
+quest or mechanic — pure ambient life, deterministic. Observer gains a `dog` view;
+he appears in the timeline, occupancy, and chronicle. Five new tests. **52 tests
+pass.** The Book's implementation-status note was updated honestly (built:
+routines/places/bond/ageing; deferred: his death & aftermath, weather/noise on his
+route).
+
 ## 2026-07-19 — Sprint 2 Step 3: social memory & continuity — PROPOSED
 
 Per Roy: before formal traditions, give residents *social continuity* — remembering

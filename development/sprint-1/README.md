@@ -33,8 +33,9 @@ cargo run -- week          # a seven-day summary (interactions, deviations, resu
 cargo run -- days 14       # an N-day summary
 cargo run -- explain Tomas # one resident's six days, with the reason for every move
 cargo run -- chronicle     # a month watched from afar: habits, bonds, traditions
+cargo run -- dog           # the old dog: his day, his places, the child who knows him
 cargo run -- district      # just the world (locations, hours, nav graph)
-cargo test                 # the full test suite (47 tests)
+cargo test                 # the full test suite (52 tests)
 ```
 
 Everything is deterministic: the same command always prints the same world.

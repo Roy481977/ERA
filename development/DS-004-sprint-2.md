@@ -147,13 +147,53 @@ to meet (no promises/plans); memory doesn't fade.
 
 ---
 
+## Step 4 — The old dog (deepening the district, Book IV) ✅
+
+**Direction (Roy):** under the Book of ERA, deepen the existing district before
+expanding; choose the feature that most increases the feeling of a living place.
+Priority #1 was the old dog.
+
+**What became more alive:** the district now has a life in it that owes the player
+nothing. The old dog keeps his own rounds — the café door in the morning where they
+set down water, a warm patch on the square at midday, the shade outside the Club in
+the afternoon, and the Old Oak by evening — and the child, Tomas, has come to know
+him, a bond that deepens through repeated quiet meetings. He ages: his movement
+slows, and as he grows old he gives up the long walk to the Club and keeps closer to
+the Oak.
+
+**Implemented:** `sim/dog.rs` — the dog as a persistent, ambient presence with his
+own daily rhythm and preferred places, a bond with the child that grows through
+co-located moments (seeded — "they sometimes find one another"), and gentle ageing
+that changes his route. He is **not a resident** (no job, no home, no end-of-day
+duty), grants nothing, and is not a quest or mechanic. Deterministic. The observer
+gains a `dog` view and he appears in the timeline, occupancy, and chronicle.
+
+**Files changed:** `sim/dog.rs` (new), `sim/simulation.rs` (dog field + `dog_pass`),
+`sim/mod.rs`, `main.rs` (`dog` view, occupancy, chronicle line), `tests/dog.rs`
+(new). The Book's implementation-status note was updated honestly.
+
+**Architectural choices:** the dog is his own small entity beside the residents, not
+forced into the resident model; his route is a pure function of time and age
+(weather/noise hooks noted for later); the child-bond is recorded but never surfaced
+as a score — only its moments are shown.
+
+**Tests added (5):** he keeps a daily rhythm; he is not a resident; the child comes
+to know him; he ages and roams less; deterministic. **52 tests total.**
+
+**Known limitations / deliberately deferred:** his death and its aftermath (the
+bowl that remains, the child still looking, the Oak feeling emptier); weather and
+noise shaping his route (pending weather); his ageing cadence is compressed for
+observability.
+
+**Commands:** `cargo run -- dog` · `cargo run` (he's in the timeline) · `cargo test`
+
+---
+
 ## Next candidates (climbing the ladder)
 
-- **Meaningful-event memory:** weight continuity by the *quality* of what happened
-  (a shared coffee, an encouragement) not just the count; let a standout moment
-  matter more than many nods.
-- **Plans/expectations:** two friends who often meet begin to *expect* each other
-  and adjust — the step from "half-expecting" to "we'll meet at the café at six".
-- **Emergent traditions** (rung 7), once continuity is rich enough that the engine
-  can *describe* a tradition it observes rather than invent one.
-- **Needs/mood** feeding selection (DEV-000: Explainability, Emergence).
+Per Roy's ordering (deepen the district): **weather & atmosphere** (rain, changing
+light, fog, seasonal feeling, and their effect on routines and appearance) → then
+**micro-life** (birds, cats, foxes) → then **physical continuity** (scarves
+remaining, flowers, matchday litter, muddy paths, lit windows — signs of yesterday).
+Also still open from earlier: meaningful-event memory weighting; plans/expectations;
+and emergent (described, never minted) traditions.

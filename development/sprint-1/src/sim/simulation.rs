@@ -5,6 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, TICKS_PER_DAY};
+use crate::sim::dog::Dog;
 use crate::sim::intention;
 use crate::sim::matchday::{self, MatchResult};
 use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
@@ -31,6 +32,7 @@ pub struct Simulation {
     pub relationships: Relationships,
     pub bonds: Bonds,
     pub oak: OldOak,
+    pub dog: Dog,
     pub log: Vec<Event>,
     /// Structured record of every interaction (observability / tests / Oak).
     pub interactions: Vec<social::Interaction>,
@@ -140,6 +142,7 @@ impl Simulation {
             relationships: Relationships::seeded(),
             bonds: Bonds::default(),
             oak: OldOak::new(),
+            dog: Dog::new(),
             log: Vec::new(),
             interactions: Vec::new(),
             last_day: 0,
@@ -346,6 +349,9 @@ impl Simulation {
             self.oak.record(ev);
         }
 
+        // --- the old dog keeps his own gentle rhythm through the district ---
+        self.dog_pass(day, hour);
+
         // --- social interactions among co-located residents ---
         self.social_pass();
 
@@ -504,6 +510,55 @@ impl Simulation {
 
     fn name_of(&self, id: &str) -> &'static str {
         self.residents.iter().find(|r| r.id == id).map(|r| r.name).unwrap_or("someone")
+    }
+
+    /// The old dog ambles slowly toward the place he'd rather be, settling for a
+    /// while when he arrives, and sometimes the child finds him there. He is not a
+    /// resident with a job and has no end-of-day duty; he is simply part of the
+    /// district. Deterministic; no reward, no mechanic.
+    fn dog_pass(&mut self, day: u64, hour: u64) {
+        use crate::sim::dog::{Dog, CHILD_ID};
+        self.dog.roll_day(day);
+
+        let pref = self.dog.preferred_spot(hour);
+        if self.dog.place != pref && self.dog.cooldown() == 0 {
+            if let Some(path) = self.world.nav.shortest_path(self.dog.place, pref) {
+                if path.len() >= 2 {
+                    let next = path[1];
+                    self.dog.arrive(next);
+                    if next == pref {
+                        self.log.push(Event {
+                            tick: self.clock.tick, day, hour, resident: crate::sim::dog::DOG_NAME,
+                            message: Dog::settle_phrase(next).to_string(),
+                        });
+                    }
+                }
+            }
+        } else {
+            // Resting (at his spot, or between ambles) — the wait counts down so he
+            // is ready to move when the day turns.
+            self.dog.tick_cooldown();
+        }
+
+        // The child sometimes finds him — they don't always meet.
+        if !self.dog.met_child_today() && self.world.location(self.dog.place).map(|l| !l.is_residential()).unwrap_or(false) {
+            let child_here = self
+                .residents
+                .iter()
+                .any(|r| r.id == CHILD_ID && r.place == self.dog.place && r.is_present());
+            if child_here && social::seed_hash(&["dog-child", self.dog.place], day) % 100 < 60 {
+                let child = self.name_of(CHILD_ID);
+                self.dog.meet_child();
+                let message = if self.dog.bond_with_child <= 1 {
+                    format!("{child} crouches to say hello to the old dog")
+                } else {
+                    format!("{child} finds the old dog and sits with him a while")
+                };
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: crate::sim::dog::DOG_NAME, message,
+                });
+            }
+        }
     }
 
     /// Companionship: from everyone's intentions, decide who leaves together and

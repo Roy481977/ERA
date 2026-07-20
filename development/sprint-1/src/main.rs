@@ -9,6 +9,7 @@
 //!   cargo run -- days 14      # an N-day summary
 //!   cargo run -- explain Tomas    # one resident's day, with the reason for every move
 //!   cargo run -- chronicle    # a month watched from afar: habits, bonds, traditions
+//!   cargo run -- dog          # the old dog: his day, his places, the child who knows him
 //!   cargo run -- district     # just the world (locations, hours, nav graph)
 
 use std::collections::BTreeMap;
@@ -33,6 +34,7 @@ fn main() {
         }
         "explain" => explain(args.get(1).cloned().unwrap_or_else(|| "Tomas".to_string())),
         "chronicle" => chronicle(args.get(1).and_then(|s| s.parse().ok()).unwrap_or(4)),
+        "dog" => dog_view(),
         "district" => print_district(&build_world()),
         _ => {
             eprintln!("unknown mode '{mode}'. try: normal | matchday | week | days N | explain NAME | chronicle | district");
@@ -252,6 +254,13 @@ fn chronicle(weeks: u64) {
     println!("\nThe weekly rhythm:");
     println!("  · every Saturday the town goes to the football ({} so far)", results.join(", "));
     println!("  · a scarf on the Oak after a win, flowers after a loss");
+
+    // -- The old dog: ambient life the town keeps --
+    println!("\nAnd through it all:");
+    println!(
+        "  · the old dog keeps his rounds (now {} days on, slower than he was); Tomas has come to know him ({} meetings)",
+        sim.dog.age_days, sim.dog.bond_with_child
+    );
 }
 
 fn time_of_day(hour: u64) -> &'static str {
@@ -264,6 +273,58 @@ fn time_of_day(hour: u64) -> &'static str {
 
 fn name<'a>(sim: &'a Simulation, id: &'a str) -> &'a str {
     sim.resident(id).map(|r| r.name).unwrap_or(id)
+}
+
+/// The old dog: his day, where he tends to be, and the child who has come to know
+/// him. He grants nothing — this is simply a window onto ambient life.
+fn dog_view() {
+    let mut sim = Simulation::new(cast());
+    sim.run(42);
+    println!("=== The old dog ===\n");
+    println!("He belongs to no one and to the whole district.");
+    println!(
+        "He is {} days into the world's watching, and was already old when we met him.",
+        sim.dog.age_days
+    );
+    if sim.dog.bond_with_child > 0 {
+        println!(
+            "Tomas has come to know him — {} quiet meetings so far.",
+            sim.dog.bond_with_child
+        );
+    }
+
+    // Where he is most often found (from where he settles).
+    let mut spots: BTreeMap<&str, u32> = BTreeMap::new();
+    for e in sim.log.iter().filter(|e| e.resident == "the old dog") {
+        let spot = if e.message.contains("Oak") {
+            Some("beneath the Old Oak")
+        } else if e.message.contains("café") {
+            Some("by the café door")
+        } else if e.message.contains("square") {
+            Some("in the sun on the square")
+        } else if e.message.contains("Club") {
+            Some("outside the Club")
+        } else {
+            None
+        };
+        if let Some(s) = spot {
+            *spots.entry(s).or_default() += 1;
+        }
+    }
+    println!("\nWhere he is usually found:");
+    let mut v: Vec<_> = spots.into_iter().collect();
+    v.sort_by(|a, b| b.1.cmp(&a.1));
+    for (spot, n) in v {
+        println!("  · {spot} ({n} days)");
+    }
+
+    // A recent day with him.
+    let day = 40;
+    println!("\nA day with him ({}):", weekday(day));
+    for e in sim.log.iter().filter(|e| e.day == day && e.resident == "the old dog") {
+        println!("  {:02}:00  {}", e.hour, e.message);
+    }
+    println!("\n(He is not a quest, a helper or a mechanic. He is simply here.)");
 }
 
 // ---------------------------------------------------------------- sections
@@ -347,6 +408,8 @@ fn render_occupancy(sim: &Simulation) {
         let name = sim.world.location(place).map(|l| l.name).unwrap_or(place);
         println!("  {:<18} {}", name, who.join(", "));
     }
+    let dog_place = sim.world.location(sim.dog.place).map(|l| l.name).unwrap_or(sim.dog.place);
+    println!("  {:<18} (the old dog)", dog_place);
 }
 
 fn print_connections(sim: &Simulation, day: u64) {
