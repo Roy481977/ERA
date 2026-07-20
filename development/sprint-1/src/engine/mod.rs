@@ -57,6 +57,13 @@ pub struct EntityView {
     pub partner: Option<&'static str>,
     /// Progress through a bounded state (a conversation), 0..1.
     pub phase: f64,
+    // --- disposition (residents; the renderer makes temperament visible) ---
+    /// Stable sociability trait (~ -2..3). 0 for non-residents.
+    pub soc: i32,
+    /// Current mood, -1..1. 0 for non-residents.
+    pub mood: f64,
+    /// Current energy, ~0.05..1. 1 for non-residents.
+    pub energy: f64,
 }
 
 /// The Old Oak, as a live reading.
@@ -229,6 +236,9 @@ impl Engine {
                 gesture: b.map(|b| b.gesture.tag()).unwrap_or("none"),
                 partner: b.and_then(|b| b.partner),
                 phase: b.map(|b| b.phase).unwrap_or(0.0),
+                soc: 0,
+                mood: 0.0,
+                energy: 1.0,
             }
         };
 
@@ -245,7 +255,11 @@ impl Engine {
                 }
             };
             let place_name = sim.world.location(r.place).map(|l| l.name).unwrap_or(r.place);
-            entities.push(make(r.id, r.name, "resident", layout::color_of(r.id), r.place, place_name, doing));
+            let mut ev = make(r.id, r.name, "resident", layout::color_of(r.id), r.place, place_name, doing);
+            ev.soc = r.sociability;
+            ev.mood = r.mood as f64;
+            ev.energy = r.energy as f64;
+            entities.push(ev);
             // Occupancy counts settled/idle residents at their node.
             if !traveling {
                 *occupancy.entry(r.place).or_default() += 1;

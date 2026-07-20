@@ -131,7 +131,8 @@ impl Snapshot {
             };
             out.push_str(&format!(
                 "{{\"id\":\"{}\",\"x\":{:.1},\"y\":{:.1},\"h\":{:.2},\"spd\":{:.2},\"ph\":{:.2},\
-                 \"pose\":\"{}\",\"gest\":\"{}\",\"partner\":{},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{}}}",
+                 \"pose\":\"{}\",\"gest\":\"{}\",\"partner\":{},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{},\
+                 \"soc\":{},\"mood\":{:.2},\"energy\":{:.2}}}",
                 e.id,
                 e.x,
                 e.y,
@@ -143,7 +144,10 @@ impl Snapshot {
                 partner,
                 e.place,
                 esc(&e.doing),
-                e.traveling
+                e.traveling,
+                e.soc,
+                e.mood,
+                e.energy
             ));
         }
         out.push(']');

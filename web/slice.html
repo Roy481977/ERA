@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERA — the prove-it slice (Pixi, isometric)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #a9d6e6; overflow: hidden;
+    font: 14px/1.5 -apple-system, system-ui, sans-serif; color: #1f2d1c; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+  .panel { position: fixed; z-index: 3; background: rgba(255,255,255,.86);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,0,0,.08); border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }
+  #hud { top: 12px; left: 12px; padding: 10px 14px; }
+  #hud .clock { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
+  #hud .sub { color: #4a5a44; font-size: 12px; margin-top: 1px; }
+  #legend { bottom: 12px; left: 12px; padding: 10px 14px; max-width: 300px; }
+  #legend h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: #4a5a44; font-weight: 600; }
+  #legend .row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 12.5px; }
+  #legend .sw { width: 14px; height: 14px; border-radius: 4px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.1); }
+  #controls { top: 12px; right: 12px; padding: 8px 10px; display: flex; gap: 6px; align-items: center; }
+  #controls button { font: inherit; font-size: 13px; border: 1px solid rgba(0,0,0,.12); background: #fff;
+    border-radius: 8px; padding: 4px 10px; cursor: pointer; color: #1f2d1c; }
+  #controls button:hover { background: #f0f4ee; }
+  #controls .mul.on { background: #2f7d46; color: #fff; border-color: #2f7d46; }
+  #note { bottom: 12px; right: 12px; padding: 8px 12px; max-width: 260px; font-size: 11.5px; color: #4a5a44; }
+  #tip { position: fixed; z-index: 4; pointer-events: none; background: #10331c;
+    color: #eaf6ee; padding: 6px 9px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .12s; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #2f4a2a; font-size: 15px; z-index: 5; background: #a9d6e6; }
+</style>
+</head>
+<body>
+<div id="loading">Building the little world…</div>
+<div id="stage"></div>
+
+<div id="hud" class="panel">
+  <div class="clock"><span id="hh">–</span></div>
+  <div class="sub"><span id="wd">–</span> · day <span id="day">–</span> · <span id="phase">–</span></div>
+</div>
+
+<div id="controls" class="panel">
+  <button id="play">Pause</button>
+  <button class="mul" data-mul="1">1×</button>
+  <button class="mul" data-mul="3">3×</button>
+  <button class="mul" data-mul="8">8×</button>
+</div>
+
+<div id="legend" class="panel">
+  <h4>temperament, made visible</h4>
+  <div class="row"><span class="sw" style="background:#2f7d46"></span> open stance, head up = outgoing / good mood</div>
+  <div class="row"><span class="sw" style="background:#6d7a86"></span> closed, head down = reserved / low mood</div>
+  <div class="row"><span class="sw" style="background:#e0a24a"></span> bounce &amp; pace scale with energy</div>
+  <div class="row" style="color:#4a5a44; margin-top:6px">hover anyone to read their disposition</div>
+</div>
+
+<div id="note" class="panel">placeholder figures, real behaviour — the movement is driven entirely by the live simulation's behaviour stream. art comes later; this proves the pipeline, the 2:1 iso, and that temperament reads on screen.</div>
+
+<div id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+<script type="module" src="./slice.js"></script>
+</body>
+</html>
