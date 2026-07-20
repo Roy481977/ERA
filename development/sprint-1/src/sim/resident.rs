@@ -64,6 +64,8 @@ pub struct Resident {
     pub memories: Vec<Memory>,
     /// Deviations taken today (bounds spontaneity to keep the day coherent).
     pub deviations_today: u32,
+    /// Extra ticks spent lingering with friends today (bounded).
+    pub lingered_today: u32,
 }
 
 impl Resident {
@@ -87,6 +89,7 @@ impl Resident {
             done_today: Vec::new(),
             memories: Vec::new(),
             deviations_today: 0,
+            lingered_today: 0,
         }
     }
 

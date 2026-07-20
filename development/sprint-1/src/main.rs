@@ -8,6 +8,7 @@
 //!   cargo run -- week         # a seven-day summary (interactions, deviations, results)
 //!   cargo run -- days 14      # an N-day summary
 //!   cargo run -- explain Tomas    # one resident's day, with the reason for every move
+//!   cargo run -- chronicle    # a month watched from afar: habits, bonds, traditions
 //!   cargo run -- district     # just the world (locations, hours, nav graph)
 
 use std::collections::BTreeMap;
@@ -31,9 +32,10 @@ fn main() {
             summary_view(n);
         }
         "explain" => explain(args.get(1).cloned().unwrap_or_else(|| "Tomas".to_string())),
+        "chronicle" => chronicle(args.get(1).and_then(|s| s.parse().ok()).unwrap_or(4)),
         "district" => print_district(&build_world()),
         _ => {
-            eprintln!("unknown mode '{mode}'. try: normal | matchday | week | days N | explain NAME | district");
+            eprintln!("unknown mode '{mode}'. try: normal | matchday | week | days N | explain NAME | chronicle | district");
         }
     }
 }
@@ -115,6 +117,103 @@ fn explain(name: String) {
     for m in &who.memories {
         println!("  · day {} {:02}:00 — {}", m.day, m.hour, m.note);
     }
+}
+
+/// Watch the town from afar for a few weeks and let its habits, bonds, and
+/// traditions surface — as behaviour, not numbers (DEV-000: People, Relationships).
+fn chronicle(weeks: u64) {
+    let days = weeks * 7;
+    let mut sim = Simulation::new(cast());
+    sim.run(days);
+    println!("=== The town, watched for {weeks} weeks ===\n");
+
+    // -- Habits: each resident's most-repeated daytime pursuit --
+    // (resident, purpose) -> (count, hour-sum), read from arrival lines.
+    let mut habit: BTreeMap<(&str, String), (u32, u64)> = BTreeMap::new();
+    for e in &sim.log {
+        if e.resident == "Matchday" {
+            continue;
+        }
+        let Some((purpose, place)) = e.message.split_once(" — at ") else { continue };
+        // Skip anything that happens at home (sleeping, waking, ending the day):
+        // a habit worth knowing someone for happens out in the town.
+        if matches!(place, "loc_millers_row" | "loc_high_street" | "loc_oakside") {
+            continue;
+        }
+        let p = purpose.to_string();
+        let ent = habit.entry((e.resident, p)).or_default();
+        ent.0 += 1;
+        ent.1 += e.hour;
+    }
+    println!("What each of them is known for:");
+    for r in &sim.residents {
+        let best = habit
+            .iter()
+            .filter(|((who, _), _)| *who == r.name)
+            .max_by_key(|(_, (count, _))| *count);
+        if let Some(((_, purpose), (count, hoursum))) = best {
+            let tod = time_of_day(hoursum / *count as u64);
+            println!("  · {:<7} {} — most {}s ({}×)", r.name, purpose, tod, count);
+        }
+    }
+
+    // -- Bonds: who keeps ending up together, and where --
+    let mut pair_place: BTreeMap<(&str, &str), BTreeMap<&str, u32>> = BTreeMap::new();
+    for it in &sim.interactions {
+        let (a, b) = if it.a <= it.b { (it.a, it.b) } else { (it.b, it.a) };
+        *pair_place.entry((a, b)).or_default().entry(it.place).or_default() += 1;
+    }
+    let mut bonds: Vec<(&str, &str, u32, &str)> = pair_place
+        .iter()
+        .map(|((a, b), places)| {
+            let total: u32 = places.values().sum();
+            let (place, _) = places.iter().max_by_key(|(_, n)| **n).unwrap();
+            (*a, *b, total, *place)
+        })
+        .collect();
+    bonds.sort_by(|x, y| y.2.cmp(&x.2));
+    println!("\nWho keeps finding each other:");
+    for (a, b, n, place) in bonds.into_iter().take(6) {
+        let an = name(&sim, a);
+        let bn = name(&sim, b);
+        let pn = sim.world.location(place).map(|l| l.name).unwrap_or(place);
+        println!("  · {an} and {bn} keep meeting at the {pn} ({n}×)");
+    }
+
+    // -- Places and their identity --
+    let mut place_meetings: BTreeMap<&str, u32> = BTreeMap::new();
+    for it in &sim.interactions {
+        *place_meetings.entry(it.place).or_default() += 1;
+    }
+    println!("\nWhere the town gathers:");
+    let mut pm: Vec<_> = place_meetings.into_iter().collect();
+    pm.sort_by(|a, b| b.1.cmp(&a.1));
+    for (place, n) in pm.into_iter().take(4) {
+        let pn = sim.world.location(place).map(|l| l.name).unwrap_or(place);
+        println!("  · the {pn} saw {n} meetings");
+    }
+    println!(
+        "  · the Old Oak drew {} visits, {} scarves, {} bouquets",
+        sim.oak.visit_count, sim.oak.scarves, sim.oak.bouquets
+    );
+
+    // -- Traditions: the matchday rhythm --
+    let results: Vec<_> = (0..weeks).map(|w| MatchResult::for_week(w).verb()).collect();
+    println!("\nThe weekly rhythm:");
+    println!("  · every Saturday the town goes to the football ({} so far)", results.join(", "));
+    println!("  · a scarf on the Oak after a win, flowers after a loss");
+}
+
+fn time_of_day(hour: u64) -> &'static str {
+    match hour {
+        0..=10 => "morning",
+        11..=16 => "afternoon",
+        _ => "evening",
+    }
+}
+
+fn name<'a>(sim: &'a Simulation, id: &'a str) -> &'a str {
+    sim.resident(id).map(|r| r.name).unwrap_or(id)
 }
 
 // ---------------------------------------------------------------- sections

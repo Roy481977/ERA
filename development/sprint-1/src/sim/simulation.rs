@@ -40,6 +40,32 @@ pub struct Simulation {
     oak_matchday_days: BTreeSet<u64>,
 }
 
+const LINGER_CAP: u32 = 2;
+
+/// Whether a resident whose activity is ending should linger — a close friend is
+/// present at the same public place, it isn't yet night, and they haven't lingered
+/// too much today. Returns the friend's name for the log.
+fn linger_with_friend(
+    r: &Resident,
+    hour: u64,
+    presence: &[intention::Presence],
+    rels: &Relationships,
+    world: &World,
+) -> Option<&'static str> {
+    if hour >= 18 || r.lingered_today >= LINGER_CAP {
+        return None;
+    }
+    if world.location(r.place).map(|l| l.is_residential()).unwrap_or(true) {
+        return None; // only linger in public places, not at home
+    }
+    presence
+        .iter()
+        .find(|(fid, _, fplace, present)| {
+            *present && *fid != r.id && *fplace == r.place && rels.get(r.id, fid).affinity >= 3
+        })
+        .map(|(_, fname, _, _)| *fname)
+}
+
 /// If the activity a resident just began is a visit to the Old Oak, record it as
 /// an Oak event and give the resident a memory of it.
 fn record_oak_visit(
@@ -109,6 +135,7 @@ impl Simulation {
             for r in &mut self.residents {
                 r.done_today.clear();
                 r.deviations_today = 0;
+                r.lingered_today = 0;
             }
             self.social_seen_today.clear();
             self.last_day = day;
@@ -160,6 +187,16 @@ impl Simulation {
                 Status::Performing { activity, left, start_day } => {
                     if left > 1 {
                         r.status = Status::Performing { activity, left: left - 1, start_day };
+                    } else if let Some(friend) = linger_with_friend(r, hour, &presence, relationships, world) {
+                        // A close friend is here — stay a little longer. Behaviour
+                        // changed by a relationship, shown as behaviour.
+                        r.lingered_today += 1;
+                        r.status = Status::Performing { activity, left: 1, start_day };
+                        log.push(Event {
+                            tick: clock.tick, day: clock.day(), hour: clock.hour(),
+                            resident: r.name,
+                            message: format!("lingers a little longer, enjoying {friend}'s company"),
+                        });
                     } else if start_day == clock.day() {
                         // finished today -> Idle (selects below)
                         r.done_today.push(activity);

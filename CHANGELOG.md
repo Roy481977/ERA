@@ -18,6 +18,23 @@ bypass hours, so proprietors still open their own premises before dawn. New test
 cover the open/close windows and the selection gate. **13 tests pass**; the
 observer now prints each location's hours.
 
+## 2026-07-19 — Sprint 2 Step 1: relationships visible through behaviour — PROPOSED
+
+First step under DEV-000, climbing the Ladder of Life (rungs 4–5). Relationships
+now *change behaviour* and *show* without numbers:
+
+- **Lingering.** A resident whose activity is ending at a public place stays a
+  little longer when a close friend (affinity ≥ 3) is present — logged as behaviour
+  ("lingers a little longer, enjoying Sofia's company"). Bounded (≤ 2/day, daytime),
+  deterministic, never strands anyone.
+- **The `chronicle` observer** (`cargo run -- chronicle`): watch the town for a
+  month and its habits, bonds, gathering places, and matchday rhythm surface as
+  behaviour — what each resident is known for, who keeps finding whom and where.
+
+New `tests/companionship.rs` (4). **38 tests pass.** Deeper companionship (waiting
+for / leaving with a friend) needs a decide-then-act tick — flagged as the next
+*architectural* decision (DS-004), not built silently.
+
 ## 2026-07-19 — DEV-000 Development Constitution ratified — ACTIVE
 
 Roy delivered the **ERA Development Constitution** (DEV-000, v1.0), now the

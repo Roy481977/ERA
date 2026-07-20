@@ -32,8 +32,9 @@ cargo run -- matchday      # a Saturday: how the town reacts to the football
 cargo run -- week          # a seven-day summary (interactions, deviations, results)
 cargo run -- days 14       # an N-day summary
 cargo run -- explain Tomas # one resident's six days, with the reason for every move
+cargo run -- chronicle     # a month watched from afar: habits, bonds, traditions
 cargo run -- district      # just the world (locations, hours, nav graph)
-cargo test                 # the full test suite (34 tests)
+cargo test                 # the full test suite (38 tests)
 ```
 
 Everything is deterministic: the same command always prints the same world.
