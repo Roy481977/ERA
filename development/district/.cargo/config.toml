@@ -1,0 +1,6 @@
+# getrandom 0.3+ requires its browser backend to be selected via this cfg flag on
+# the wasm target (in addition to the crate's `wasm_js` feature). Without it the
+# wasm build fails with "could not compile getrandom". Applies to the whole
+# dependency tree for this target; harmless to crates that don't read the cfg.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
