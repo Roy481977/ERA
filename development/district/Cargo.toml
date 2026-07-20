@@ -1,0 +1,33 @@
+[package]
+name = "era_district"
+version = "0.1.0"
+edition = "2021"
+description = "ERA — the district: a native/WASM Bevy visualisation of the living world."
+
+[dependencies]
+# The simulation is the source of truth. Bevy visualises its behaviour stream; it
+# never scripts scenes of its own.
+era_first_breath = { path = "../sprint-1" }
+
+# A lean Bevy: 3D rendering, a window, no audio/UI/asset pipeline we don't need.
+# `webgl2` lets the same build run in the browser; `x11` is for native dev builds.
+bevy = { version = "0.15", default-features = false, features = [
+  "bevy_winit",
+  "bevy_render",
+  "bevy_core_pipeline",
+  "bevy_pbr",
+  "x11",
+  "webgl2",
+] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Surface Rust panics in the browser console during development.
+console_error_panic_hook = "0.1"
+# Enable getrandom's browser backend for the whole wasm dependency tree (a common
+# Bevy-on-web requirement).
+getrandom = { version = "0.2", features = ["js"] }
+
+# Smaller, faster wasm.
+[profile.release]
+opt-level = "s"
+lto = "thin"

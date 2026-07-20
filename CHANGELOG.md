@@ -8,6 +8,30 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — The Bevy district: first vertical slice (native + WASM) — PROPOSED
+
+Direction (Roy): freeze the top-down build as a debugging reference and begin the
+native Rust + Bevy district — a small, complete visual vertical slice, driven by
+the behaviour stream (Bevy visualises; it never scripts scenes). Reconciled with
+the no-terminal/online constraint by compiling Bevy to WebAssembly and hosting it
+at the same URL.
+
+- **`development/district/`** — a Bevy (0.15) app depending on `era_first_breath`.
+  The engine ticks as a resource; each frame the app reads the behaviour snapshot
+  and moves real figures, **interpolating position and facing between ticks** so
+  nothing snaps (continuity). First slice: residents, the dog and animals as simple
+  figures with a facing marker; place markers and the Old Oak; a free orbit camera
+  (drag/scroll/WASD) with Tab-to-follow a resident; a day/night sun driven by the
+  sim clock (the small hours read as night, animals still abroad).
+- Compiles to **native** (verified here — the Bevy code is valid) and to **WASM**
+  via Trunk (getrandom js backend + canvas binding handled).
+- Hosting (workflow added via the web UI): `/ERA/district/` serves the Bevy
+  district; `/ERA/` keeps the top-down client as the debugging view — so the
+  working URL is not disturbed while the district is brought up.
+
+Poses beyond position/facing (staged conversations and gatherings in 3D, sitting/
+resting, richer animal behaviour, natural arrival/departure) are the next slice.
+
 ## 2026-07-20 — ERA online: the engine in the browser (WASM) + auto-deploy — PROPOSED
 
 Direction (Roy): each visitor runs their own copy; set up a permanent, no-terminal

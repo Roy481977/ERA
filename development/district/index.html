@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERA — the district</title>
+<!-- Trunk builds this crate to WebAssembly and injects the loader here. -->
+<link data-trunk rel="rust" data-wasm-opt="s" data-bin="era_district" />
+<style>
+  html, body { margin: 0; height: 100%; background: #04050a; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+  #hint { position: fixed; left: 12px; bottom: 12px; z-index: 2; pointer-events: none;
+    color: #8b98a5; font: 13px/1.5 -apple-system, system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #6b7683; font: 15px system-ui; background: #04050a; z-index: 3; }
+</style>
+</head>
+<body>
+<div id="loading">Building the district…</div>
+<canvas id="era-canvas"></canvas>
+<div id="hint">drag to look · scroll to zoom · WASD / arrows to move · Tab to follow a resident · Esc to release</div>
+<script>
+  // Hide the loading veil once the canvas has drawn a frame.
+  const iv = setInterval(() => {
+    const c = document.getElementById('era-canvas');
+    if (c && c.width > 1) { const l = document.getElementById('loading'); if (l) l.remove(); clearInterval(iv); }
+  }, 250);
+</script>
+</body>
+</html>
