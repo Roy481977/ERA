@@ -41,6 +41,7 @@ fn is_social_place(place: &str) -> bool {
 
 /// Consider a deviation for a resident who is idle and whose routine would next
 /// send them home. Returns `Some(Deviation)` to override that plan.
+#[allow(clippy::too_many_arguments)]
 pub fn consider_social_detour(
     me: &Resident,
     hour: u64,
@@ -49,6 +50,7 @@ pub fn consider_social_detour(
     rels: &Relationships,
     world: &World,
     nav: &NavGraph,
+    readiness: i32,
 ) -> Option<Deviation> {
     if me.deviations_today > 0 {
         return None;
@@ -96,7 +98,10 @@ pub fn consider_social_detour(
     let (fid, fname, fplace, _aff, _to) = best?;
 
     // Deterministic gate: even with a friend present, they don't always detour.
-    if seed_hash(&[me.id, fid, fplace, "detour"], tick) % 100 >= 55 {
+    // Someone bright and full of energy turns aside for a friend far more readily
+    // than someone spent and withdrawn.
+    let gate = (55 + readiness * 4).clamp(15, 90) as u64;
+    if seed_hash(&[me.id, fid, fplace, "detour"], tick) % 100 >= gate {
         return None;
     }
 
@@ -127,6 +132,7 @@ pub fn consider_reunion(
     rels: &Relationships,
     world: &World,
     nav: &NavGraph,
+    readiness: i32,
 ) -> Option<Deviation> {
     if me.deviations_today > 0 {
         return None;
@@ -161,7 +167,8 @@ pub fn consider_reunion(
     }
 
     let (fid, fname, place, _m) = best?;
-    if seed_hash(&[me.id, fid, place, "reunion"], tick) % 100 >= 45 {
+    let gate = (45 + readiness * 4).clamp(15, 90) as u64;
+    if seed_hash(&[me.id, fid, place, "reunion"], tick) % 100 >= gate {
         return None;
     }
     let place_name = world.location(place).map(|l| l.name).unwrap_or(place);

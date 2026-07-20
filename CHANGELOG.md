@@ -8,6 +8,45 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-20 — Social realism I: disposition + chosen togetherness — PROPOSED
+
+Direction (Roy): make relationships feel real — "close people will generally start
+walking together and doing stuff together" — and (mid-work) "you can take partial
+paths together and then go separate ways." Addresses maturity gaps #1 (chosen
+togetherness / shared plans) and #3–#4 (mood, energy, social personality).
+
+- **Disposition on every resident** (`sim/resident.rs`): a stable `sociability`
+  trait (seeded once — a busker is outgoing, a solitary man is not; unknown ids get
+  a stable value from their id), plus a `mood` that eases toward neutral and is
+  lifted by warm encounters, and an `energy` that wanes while out and recovers while
+  resting, reset fresh each morning. A single `social_readiness()` folds the three
+  into the dial every social gate reads — so the same town behaves differently
+  morning vs. night, and person to person. All deterministic (no RNG; f32 arithmetic
+  in fixed order); residents still draw from no random source.
+- **Disposition modulates existing behaviour** (`sim/simulation.rs`, `social.rs`,
+  `sim/intention.rs`): interaction odds, lingering, the detour/reunion gates, and
+  waiting for a friend now bend to how ready each person is for company right now.
+- **Chosen togetherness — shared outings (gap #1)**: two close friends at a loose
+  end together in public, both up for it, may *decide* to spend a while somewhere
+  together (café, square) instead of drifting off separately. Their intentions are
+  formed jointly in DECIDE, so RECONCILE walks them out as a pair. Bounded (one
+  deviation each per day), time-safe (they can always get home), deterministic
+  (seeded choice).
+- **Partial shared paths (Roy's mid-work note)**: two friends leaving the same place
+  for *different* destinations whose routes share the opening stretch walk it
+  together, then part at the fork ("… walk out together to the Main Square, where
+  Sofia stops and Elias carries on to the Oakside Cottages"). Their paths already
+  coincide there, so this recognises and narrates what the movement does anyway —
+  the renderer shows the shared stretch for free via co-located positions.
+- Tests: `tests/disposition.rs` (9) — seeding/stability, the daily energy arc and
+  overnight recovery, mood movement, full determinism of disposition and
+  togetherness, outings taken and bounded, partial walks, and no stranding at 03:00.
+  Whole suite green (85).
+- **Still open** (Roy: "continue to all"): gap #2 groups, #5 life events/change, #6
+  physical language of closeness, #7 seeking/noticing, #8 roles/asymmetry — and the
+  larger world change Roy raised: residents who don't only reside in town (leaving
+  and returning, an off-map destination).
+
 ## 2026-07-20 — The Bevy district: first vertical slice (native + WASM) — PROPOSED
 
 Direction (Roy): freeze the top-down build as a debugging reference and begin the

@@ -78,6 +78,10 @@ fn linger_with_friend(
     if hour >= 18 || r.lingered_today >= LINGER_CAP {
         return None;
     }
+    // Someone tired or not in the mood for company doesn't dawdle.
+    if r.social_readiness() < 0 {
+        return None;
+    }
     if world.location(r.place).map(|l| l.is_residential()).unwrap_or(true) {
         return None; // only linger in public places, not at home
     }
@@ -130,6 +134,11 @@ fn edge_weight(nav: &NavGraph, a: LocationId, b: LocationId) -> u32 {
 
 const COMPANION_AFFINITY: i32 = 3;
 const WAIT_CAP: u32 = 3;
+/// How long a spontaneous shared outing lasts (ticks) — long enough to be "a
+/// while together", not a token stop.
+const SHARED_TICKS: u32 = 4;
+/// A shared plan must let both friends get there, stay, and reach home by here.
+const LEISURE_END: u64 = 22;
 /// A friend is "finishing up" during the last stretch of their activity — a
 /// short window (not a single five-minute tick), so a companion can catch them.
 const FINISHING_TICKS: u32 = 3;
@@ -152,6 +161,10 @@ struct Intent {
 struct Coord {
     /// idx -> partner idx: they set off together (same place, same destination).
     together: BTreeMap<usize, usize>,
+    /// idx -> (partner idx, split place): two friends bound for *different* places
+    /// whose routes share the first stretch — they walk it together, then part at
+    /// the split place. Companionable travel without a shared plan.
+    partial: BTreeMap<usize, (usize, LocationId)>,
     /// idx -> friend name: this resident waits this tick to leave with them.
     waiting: BTreeMap<usize, &'static str>,
 }
@@ -204,9 +217,18 @@ impl Simulation {
                 r.deviations_today = 0;
                 r.lingered_today = 0;
                 r.waited_today = 0;
+                r.energy = 1.0; // woke rested
             }
             self.social_seen_today.clear();
             self.last_day = day;
+        }
+
+        // Disposition drifts a little each tick before anyone decides anything:
+        // energy wanes or recovers with where they are, mood eases toward neutral.
+        // Every social gate below reads the result, so the same town behaves
+        // differently morning vs. night, and person to person.
+        for r in &mut self.residents {
+            r.tick_disposition();
         }
         let hour = self.clock.hour();
         let minute = self.clock.minute();
@@ -294,9 +316,32 @@ impl Simulation {
         // ======================= PHASE 2 — DECIDE =======================
         // Every idle resident forms an intention without moving. Seeing where all
         // of them *mean* to go is what makes coordination possible.
+        //
+        // First, chosen togetherness: close friends at a loose end together may
+        // agree to go somewhere as a pair. That agreement, formed before anyone
+        // decides alone, overrides each of their solo plans below.
+        let outings = self.plan_shared_outings(hour, weekday, match_result, self.clock.tick);
         let mut intents: Vec<Intent> = Vec::new();
         for (i, r) in self.residents.iter().enumerate() {
             if !matches!(r.status, Status::Idle) {
+                continue;
+            }
+            if let Some(&(partner, dest, dur)) = outings.get(&i) {
+                // One of the pair carries the log line; both get the same plan, so
+                // RECONCILE pairs them into a joint departure.
+                let reason = if i < partner {
+                    let place_name = self.world.location(dest).map(|l| l.name).unwrap_or(dest);
+                    Some(format!(
+                        "{} and {} are close, and neither wants the afternoon to end — they decide to head to the {} together",
+                        r.name, self.residents[partner].name, place_name
+                    ))
+                } else {
+                    None
+                };
+                intents.push(Intent {
+                    idx: i, aid: "dev_shared_plan", purpose: "a while together",
+                    dur, dest, deviation: true, reason,
+                });
                 continue;
             }
             if let Some(m) = matchday::consider(r, weekday, hour, match_result) {
@@ -308,12 +353,13 @@ impl Simulation {
             if dest == r.home {
                 // First: a friend is here now (join them). Else: our usual place
                 // (go there on the memory of past meetings, expecting them).
+                let readiness = r.social_readiness();
                 let dev = intention::consider_social_detour(
-                    r, hour, self.clock.tick, &presence, &self.relationships, &self.world, &self.world.nav,
+                    r, hour, self.clock.tick, &presence, &self.relationships, &self.world, &self.world.nav, readiness,
                 )
                 .or_else(|| {
                     intention::consider_reunion(
-                        r, hour, self.clock.tick, &presence, &self.bonds, &self.relationships, &self.world, &self.world.nav,
+                        r, hour, self.clock.tick, &presence, &self.bonds, &self.relationships, &self.world, &self.world.nav, readiness,
                     )
                 });
                 if let Some(dev) = dev {
@@ -330,6 +376,10 @@ impl Simulation {
         let coord = self.reconcile_companionship(&intents);
 
         // ======================== PHASE 4 — ACT =========================
+        // Where each intending resident means to go — so a partial-path companion
+        // can name their friend's onward destination in the log.
+        let intent_dest: BTreeMap<usize, LocationId> =
+            intents.iter().map(|it| (it.idx, it.dest)).collect();
         let mut oak_events2: Vec<OakEvent> = Vec::new();
         for intent in &intents {
             let i = intent.idx;
@@ -362,21 +412,40 @@ impl Simulation {
             } else if let Some(path) = self.world.nav.shortest_path(place, intent.dest) {
                 let leg = edge_weight(&self.world.nav, path[0], path[1]) * TRAVEL_TICKS_PER_WEIGHT;
                 let route = path.join(" -> ");
-                match coord.together.get(&i) {
-                    Some(&partner) if i < partner => {
+                if let Some(&partner) = coord.together.get(&i) {
+                    if i < partner {
                         let pname = self.residents[partner].name;
                         self.log.push(Event {
                             tick: self.clock.tick, day, hour, resident: name,
                             message: format!("sets off with {pname} for {} ({}) via {route}", intent.dest, intent.purpose),
                         });
-                    }
-                    Some(_) => { /* the earlier partner already logged the joint departure */ }
-                    None => {
+                    } // else: the earlier partner already logged the joint departure
+                } else if let Some(&(partner, split)) = coord.partial.get(&i) {
+                    if i < partner {
+                        let pname = self.residents[partner].name;
+                        let split_name = self.world.location(split).map(|l| l.name).unwrap_or(split);
+                        let mine = self.world.location(intent.dest).map(|l| l.name).unwrap_or(intent.dest);
+                        let their_dest = intent_dest.get(&partner).copied().unwrap_or(split);
+                        let theirs = self.world.location(their_dest).map(|l| l.name).unwrap_or(their_dest);
+                        let msg = if intent.dest == split {
+                            // I arrive at the fork; my friend carries on past it.
+                            format!("{name} and {pname} walk out together to the {split_name}, where {name} stops and {pname} carries on to the {theirs}")
+                        } else if their_dest == split {
+                            // My friend arrives at the fork; I carry on past it.
+                            format!("{name} and {pname} walk out together to the {split_name}, where {pname} stops and {name} carries on to the {mine}")
+                        } else {
+                            // The road forks at the split and each takes their own.
+                            format!("{name} and {pname} walk out together as far as the {split_name}, then part — {name} to the {mine}, {pname} to the {theirs}")
+                        };
                         self.log.push(Event {
-                            tick: self.clock.tick, day, hour, resident: name,
-                            message: format!("sets out for {} ({}) via {route}", intent.dest, intent.purpose),
+                            tick: self.clock.tick, day, hour, resident: name, message: msg,
                         });
-                    }
+                    } // else: the earlier partner already logged the shared stretch
+                } else {
+                    self.log.push(Event {
+                        tick: self.clock.tick, day, hour, resident: name,
+                        message: format!("sets out for {} ({}) via {route}", intent.dest, intent.purpose),
+                    });
                 }
                 self.residents[i].status = Status::Traveling {
                     activity: intent.aid, purpose: intent.purpose, dest: intent.dest, dur: intent.dur,
@@ -476,7 +545,12 @@ impl Simulation {
                     }
                     let rel = self.relationships.get(pair.0, pair.1);
                     let familiarity = self.bonds.meetings(pair.0, pair.1);
-                    if let Some(outcome) = social::decide(pair.0, pair.1, place, tick, rel, familiarity) {
+                    // Both people's current readiness for company shifts the odds.
+                    let social_lift =
+                        (self.residents[ia].social_readiness() + self.residents[ib].social_readiness()) * 2;
+                    if let Some(outcome) =
+                        social::decide(pair.0, pair.1, place, tick, rel, familiarity, social_lift)
+                    {
                         busy[ia] = true;
                         busy[ib] = true;
                         applies.push(Apply {
@@ -500,7 +574,12 @@ impl Simulation {
             let place_name = self.world.location(ap.place).map(|l| l.name).unwrap_or(ap.place);
             let verb = ap.kind.verb();
 
+            // A warm exchange lifts both moods; a sour one dents them. This is how
+            // a day's encounters colour how ready someone is for the next.
+            let mood_delta = if ap.kind == social::InteractionKind::Disagreement { -0.15 } else { 0.10 };
+
             if let Some(ra) = self.residents.iter_mut().find(|r| r.id == ap.a) {
+                ra.nudge_mood(mood_delta);
                 ra.memories.push(Memory {
                     day,
                     hour,
@@ -509,6 +588,7 @@ impl Simulation {
                 });
             }
             if let Some(rb) = self.residents.iter_mut().find(|r| r.id == ap.b) {
+                rb.nudge_mood(mood_delta);
                 rb.memories.push(Memory {
                     day,
                     hour,
@@ -764,6 +844,108 @@ impl Simulation {
         }
     }
 
+    /// Chosen togetherness. Two close friends who are at a loose end together in
+    /// public — both idle, with no errand pulling them anywhere but home — may
+    /// *decide* to spend a while somewhere together instead of drifting off
+    /// separately. Returns, per participant index, their partner and the shared
+    /// destination; DECIDE then gives both the same outing so RECONCILE walks them
+    /// out side by side.
+    ///
+    /// Gated by closeness and by how ready each is for company right now (two
+    /// tired or withdrawn people just head home), bounded to one deviation each
+    /// per day, time-safe (they can always get home), and deterministic (a seeded
+    /// choice, no RNG).
+    fn plan_shared_outings(
+        &self,
+        hour: u64,
+        weekday: u64,
+        match_result: MatchResult,
+        tick: u64,
+    ) -> BTreeMap<usize, (usize, LocationId, u32)> {
+        let mut out: BTreeMap<usize, (usize, LocationId, u32)> = BTreeMap::new();
+        // The unhurried end of the day, when "shall we?" happens.
+        if !(15..=19).contains(&hour) {
+            return out;
+        }
+        let rs = &self.residents;
+        // "Free enough" to say yes: idle, out in public, up for company, not
+        // already spent today's spontaneity, no pressing errand (nothing to do,
+        // or only home left), and not caught up in the matchday pull.
+        let is_free = |r: &Resident| -> bool {
+            if !matches!(r.status, Status::Idle) || r.deviations_today > 0 {
+                return false;
+            }
+            if r.social_readiness() < 1 {
+                return false;
+            }
+            let public = self.world.location(r.place).map(|l| !l.is_residential()).unwrap_or(false);
+            if !public {
+                return false;
+            }
+            if matchday::consider(r, weekday, hour, match_result).is_some() {
+                return false;
+            }
+            match r.select(hour, weekday, &self.world) {
+                None => true,
+                Some(act) => Routine::target_location(act, r.home) == Some(r.home),
+            }
+        };
+        let mut taken = vec![false; rs.len()];
+        for i in 0..rs.len() {
+            if taken[i] || !is_free(&rs[i]) {
+                continue;
+            }
+            for j in (i + 1)..rs.len() {
+                if taken[j] || rs[j].place != rs[i].place || !is_free(&rs[j]) {
+                    continue;
+                }
+                if self.relationships.get(rs[i].id, rs[j].id).affinity < COMPANION_AFFINITY {
+                    continue;
+                }
+                let Some((dest, dur)) = self.pick_shared_leisure(&rs[i], &rs[j], hour) else {
+                    continue;
+                };
+                // Even willing friends don't always make a plan — a seeded choice,
+                // likelier the more up for company the two of them are.
+                let readiness = rs[i].social_readiness() + rs[j].social_readiness();
+                let gate = (40 + readiness * 4).clamp(15, 85) as u64;
+                if social::seed_hash(&[rs[i].id, rs[j].id, dest, "shared"], tick) % 100 >= gate {
+                    continue;
+                }
+                out.insert(i, (j, dest, dur));
+                out.insert(j, (i, dest, dur));
+                taken[i] = true;
+                taken[j] = true;
+                break;
+            }
+        }
+        out
+    }
+
+    /// Choose a public place two friends can go to now and still both get home in
+    /// time. Prefers the café, then the square. Returns (destination, stay-ticks).
+    fn pick_shared_leisure(&self, ra: &Resident, rb: &Resident, hour: u64) -> Option<(LocationId, u32)> {
+        let nav = &self.world.nav;
+        for dest in ["loc_cafe", "loc_main_square"] {
+            if dest == ra.place || !self.world.is_open(dest, hour) {
+                continue;
+            }
+            let (Some(to), Some(home_a), Some(home_b)) = (
+                nav.travel_time(ra.place, dest),
+                nav.travel_time(dest, ra.home),
+                nav.travel_time(dest, rb.home),
+            ) else {
+                continue;
+            };
+            let latest_home = home_a.max(home_b) as u64;
+            if hour + to as u64 + SHARED_TICKS as u64 + latest_home > LEISURE_END {
+                continue;
+            }
+            return Some((dest, SHARED_TICKS));
+        }
+        None
+    }
+
     /// Companionship: from everyone's intentions, decide who leaves together and
     /// who waits. Deterministic (residents and intents in stable order); reads
     /// only positions, statuses, and relationships.
@@ -795,6 +977,55 @@ impl Simulation {
             }
         }
 
+        // Walk partway together: two close friends leaving the same place for
+        // *different* destinations, whose shortest routes share the opening
+        // stretch, keep each other company as far as the fork, then part. Their
+        // paths already coincide on that stretch, so this only recognises and
+        // narrates what the movement does anyway.
+        for a in 0..intents.len() {
+            let ia = intents[a].idx;
+            let ra = &self.residents[ia];
+            if intents[a].dest == ra.place
+                || coord.together.contains_key(&ia)
+                || coord.partial.contains_key(&ia)
+            {
+                continue;
+            }
+            for b in intents.iter().skip(a + 1) {
+                let ib = b.idx;
+                let rb = &self.residents[ib];
+                if b.dest == rb.place
+                    || coord.together.contains_key(&ib)
+                    || coord.partial.contains_key(&ib)
+                {
+                    continue;
+                }
+                if ra.place != rb.place || intents[a].dest == b.dest {
+                    continue; // different start, or same dest (that's `together`)
+                }
+                if self.relationships.get(ra.id, rb.id).affinity < COMPANION_AFFINITY {
+                    continue;
+                }
+                let (Some(pa), Some(pb)) = (
+                    self.world.nav.shortest_path(ra.place, intents[a].dest),
+                    self.world.nav.shortest_path(rb.place, b.dest),
+                ) else {
+                    continue;
+                };
+                // Longest shared leading run of nodes; they part at its last node.
+                let mut split = 0usize;
+                while split + 1 < pa.len() && split + 1 < pb.len() && pa[split + 1] == pb[split + 1] {
+                    split += 1;
+                }
+                if split >= 1 {
+                    let split_node = pa[split];
+                    coord.partial.insert(ia, (ib, split_node));
+                    coord.partial.insert(ib, (ia, split_node));
+                    break;
+                }
+            }
+        }
+
         // Wait: a resident about to travel waits a moment for a close friend who
         // is co-located and just finishing up (Performing with one tick left), so
         // they can leave together next tick.
@@ -802,6 +1033,10 @@ impl Simulation {
             let i = it.idx;
             let ri = &self.residents[i];
             if it.dest == ri.place || coord.together.contains_key(&i) || ri.waited_today >= WAIT_CAP {
+                continue;
+            }
+            // You linger to leave with a friend only if you're up for company.
+            if ri.social_readiness() < 1 {
                 continue;
             }
             for (j, rj) in self.residents.iter().enumerate() {

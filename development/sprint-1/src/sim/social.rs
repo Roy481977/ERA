@@ -152,6 +152,7 @@ pub fn decide(
     tick: u64,
     rel: Rel,
     familiarity: u32,
+    social_lift: i32,
 ) -> Option<Outcome> {
     // Shared history warms an encounter: every few past meetings is a point of
     // warmth on top of raw affinity (capped), and it makes people a little more
@@ -159,7 +160,10 @@ pub fn decide(
     let fam_bonus = (familiarity / 4).min(3) as i32;
 
     let roll = (seed_hash(&[a, b, place], tick) % 100) as i32;
-    let chance = (24 + rel.affinity * 8 + fam_bonus * 4).clamp(6, 95);
+    // `social_lift` folds in both people's readiness for company right now — an
+    // outgoing pair in bright spirits stop to talk far more than two tired
+    // introverts crossing the same square.
+    let chance = (24 + rel.affinity * 8 + fam_bonus * 4 + social_lift).clamp(6, 95);
     if roll >= chance {
         return None;
     }
