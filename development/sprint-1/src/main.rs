@@ -333,14 +333,18 @@ fn dog_view() {
 
 /// Hand-laid 2D coordinates for the district map (viewer space ~ 1000 x 760).
 const MAP: &[(&str, f64, f64)] = &[
-    ("loc_stadium", 500.0, 130.0),
-    ("loc_bakery", 320.0, 300.0),
+    ("loc_stadium", 500.0, 120.0),
+    ("loc_school", 300.0, 165.0),
+    ("loc_museum", 840.0, 235.0),
+    ("loc_bakery", 320.0, 315.0),
     ("loc_main_square", 500.0, 360.0),
-    ("loc_cafe", 680.0, 300.0),
-    ("loc_riverside", 500.0, 585.0),
-    ("loc_millers_row", 285.0, 455.0),
-    ("loc_high_street", 715.0, 455.0),
-    ("loc_oakside", 500.0, 700.0),
+    ("loc_cafe", 690.0, 310.0),
+    ("loc_pub", 675.0, 520.0),
+    ("loc_bridge", 470.0, 480.0),
+    ("loc_riverside", 500.0, 600.0),
+    ("loc_millers_row", 270.0, 470.0),
+    ("loc_high_street", 730.0, 455.0),
+    ("loc_oakside", 500.0, 705.0),
 ];
 
 /// A distinct colour per resident, plus the dog.

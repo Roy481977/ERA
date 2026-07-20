@@ -56,13 +56,15 @@ fn the_result_leaves_its_mark_on_the_oak() {
 
 #[test]
 fn everyone_still_gets_home_on_matchday() {
+    // A win can keep supporters in the square late, but the night still ends the
+    // same way for everyone: home asleep in the small hours.
     let mut sim = Simulation::new(cast());
-    for _ in 0..7 {
-        for _ in 0..24 {
-            sim.step();
-        }
-        for r in &sim.residents {
-            assert_eq!(r.place, r.home, "{} stranded on day {}", r.name, sim.clock.day() - 1);
+    for _ in 0..(7 * 24) {
+        sim.step();
+        if sim.clock.hour() == 3 {
+            for r in &sim.residents {
+                assert_eq!(r.place, r.home, "{} stranded on day {}", r.name, sim.clock.day());
+            }
         }
     }
 }

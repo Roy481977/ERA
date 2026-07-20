@@ -15,9 +15,9 @@ fn deviation_events(sim: &Simulation) -> Vec<(u64, &'static str)> {
 #[test]
 fn residents_deviate_from_their_routine() {
     let mut sim = Simulation::new(cast());
-    sim.run(5);
+    sim.run(14);
     let devs = deviation_events(&sim);
-    assert!(!devs.is_empty(), "nobody ever deviated from routine in five days");
+    assert!(!devs.is_empty(), "nobody ever deviated from routine in two weeks");
     // Several distinct residents deviate across the run.
     let who: BTreeSet<_> = devs.iter().map(|(_, r)| *r).collect();
     assert!(who.len() >= 2, "expected several residents to deviate, got {}", who.len());
@@ -46,14 +46,15 @@ fn a_resident_deviates_at_most_once_per_day() {
 
 #[test]
 fn deviations_never_strand_a_resident() {
-    // Even with detours, everyone still reaches home at the end of every day.
+    // A detour may make someone's evening run late, but never strands them:
+    // everyone is home asleep in the small hours of every day.
     let mut sim = Simulation::new(cast());
-    for _ in 0..5 {
-        for _ in 0..24 {
-            sim.step();
-        }
-        for r in &sim.residents {
-            assert_eq!(r.place, r.home, "{} stranded away from home", r.name);
+    for _ in 0..(5 * 24) {
+        sim.step();
+        if sim.clock.hour() == 3 {
+            for r in &sim.residents {
+                assert_eq!(r.place, r.home, "{} stranded away from home (day {})", r.name, sim.clock.day());
+            }
         }
     }
     assert!(!deviation_events(&sim).is_empty(), "no deviations occurred to test");

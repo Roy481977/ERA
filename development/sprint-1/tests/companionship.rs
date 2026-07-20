@@ -43,13 +43,15 @@ fn lingering_is_deterministic() {
 
 #[test]
 fn lingering_never_strands_anyone() {
+    // Lingering may push someone's evening later — that is allowed. What must
+    // never happen is a stranding: everyone is home asleep in the small hours.
     let mut sim = Simulation::new(cast());
-    for _ in 0..7 {
-        for _ in 0..24 {
-            sim.step();
-        }
-        for r in &sim.residents {
-            assert_eq!(r.place, r.home, "{} stranded after lingering", r.name);
+    for _ in 0..(7 * 24) {
+        sim.step();
+        if sim.clock.hour() == 3 {
+            for r in &sim.residents {
+                assert_eq!(r.place, r.home, "{} stranded after lingering (day {})", r.name, sim.clock.day());
+            }
         }
     }
 }

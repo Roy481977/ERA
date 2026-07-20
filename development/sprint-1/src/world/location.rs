@@ -83,6 +83,30 @@ pub fn locations() -> Vec<Location> {
             hours: None,
         },
         Location {
+            id: "loc_school",
+            name: "The School",
+            affordances: &["SCHOOL", "GATHER"],
+            hours: Some(OpenHours { open: 8, close: 15 }),
+        },
+        Location {
+            id: "loc_museum",
+            name: "The Museum",
+            affordances: &["VISIT_MUSEUM", "GATHER"],
+            hours: Some(OpenHours { open: 10, close: 17 }),
+        },
+        Location {
+            id: "loc_pub",
+            name: "The Anchor (pub)",
+            affordances: &["DRINK", "GATHER", "LEGENDS_CORNER"],
+            hours: Some(OpenHours { open: 11, close: 23 }),
+        },
+        Location {
+            id: "loc_bridge",
+            name: "The Old Bridge",
+            affordances: &["CROSS", "SIT_BENCH", "PAUSE"],
+            hours: None,
+        },
+        Location {
             id: "loc_millers_row",
             name: "Miller's Row",
             affordances: &["HOME", "REST"],

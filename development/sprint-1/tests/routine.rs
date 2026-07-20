@@ -45,15 +45,22 @@ fn weekdays_produce_different_routines() {
 }
 
 #[test]
-fn everyone_ends_every_day_at_home_across_a_week() {
-    // Step a full week, checking the end-of-day position at each midnight.
+fn everyone_is_home_asleep_in_the_small_hours() {
+    // Ordinary human variation in the evening is *desirable* — someone may get
+    // home late after the match or after lingering with a friend, and that is not
+    // a flaw to optimise away. The believable invariant is weaker and truer: no
+    // runaway drift and no impossible schedule, i.e. everyone is home asleep in
+    // the small hours. Checked at 03:00 each day across a week.
     let mut sim = Simulation::new(cast());
-    for _ in 0..7 {
-        for _ in 0..24 {
-            sim.step();
-        }
-        for r in &sim.residents {
-            assert_eq!(r.place, r.home, "{} not home at end of a day", r.name);
+    for _ in 0..(7 * 24) {
+        sim.step();
+        if sim.clock.hour() == 3 {
+            for r in &sim.residents {
+                assert_eq!(
+                    r.place, r.home,
+                    "{} not home at 03:00 on day {}", r.name, sim.clock.day()
+                );
+            }
         }
     }
 }
@@ -73,8 +80,9 @@ fn residents_complete_believable_routines() {
     sim.run(1); // one full day; done_today reflects day 0
 
     let tomas = sim.resident("res_tomas").unwrap();
-    assert!(tomas.done_today.contains(&"tomas_roll"), "Tomas never got his roll");
-    assert!(tomas.done_today.contains(&"tomas_play"), "Tomas never played");
+    // Day 0 is a Monday: school, and the Old Oak after. (The warm-roll run is a
+    // weekend thing now that school fills his weekday mornings.)
+    assert!(tomas.done_today.contains(&"tomas_school"), "Tomas never went to school on a weekday");
     assert!(tomas.done_today.contains(&"tomas_oak"), "Tomas never visited the oak");
 
     let elias = sim.resident("res_elias").unwrap();

@@ -14,9 +14,12 @@ pub const EDGES: &[(LocationId, LocationId, u32)] = &[
     ("loc_main_square", "loc_bakery", 1),
     ("loc_main_square", "loc_cafe", 1),
     ("loc_main_square", "loc_stadium", 2),
-    ("loc_main_square", "loc_riverside", 2),
     ("loc_bakery", "loc_cafe", 1),
     ("loc_cafe", "loc_riverside", 2),
+    // The Old Bridge sits on the river path: square <-> bridge <-> riverside keeps
+    // the same distance (2) as the old direct edge, but people now cross the bridge.
+    ("loc_main_square", "loc_bridge", 1),
+    ("loc_bridge", "loc_riverside", 1),
     // Residential lanes connected into the district.
     ("loc_millers_row", "loc_main_square", 1),
     ("loc_millers_row", "loc_bakery", 1),
@@ -24,6 +27,11 @@ pub const EDGES: &[(LocationId, LocationId, u32)] = &[
     ("loc_high_street", "loc_cafe", 1),
     ("loc_oakside", "loc_riverside", 1),
     ("loc_oakside", "loc_main_square", 2),
+    // New places (leaves — they do not shorten any existing route).
+    ("loc_school", "loc_main_square", 1),
+    ("loc_museum", "loc_cafe", 1),
+    ("loc_pub", "loc_main_square", 1),
+    ("loc_pub", "loc_high_street", 1),
 ];
 
 #[derive(Debug, Clone)]

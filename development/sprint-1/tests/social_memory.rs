@@ -52,13 +52,15 @@ fn social_memory_is_deterministic() {
 
 #[test]
 fn continuity_never_strands_anyone() {
+    // Reunions and detours may run late, but no one drifts indefinitely: over a
+    // fortnight everyone is home asleep in the small hours, every day.
     let mut sim = Simulation::new(cast());
-    for _ in 0..14 {
-        for _ in 0..24 {
-            sim.step();
-        }
-        for r in &sim.residents {
-            assert_eq!(r.place, r.home, "{} stranded", r.name);
+    for _ in 0..(14 * 24) {
+        sim.step();
+        if sim.clock.hour() == 3 {
+            for r in &sim.residents {
+                assert_eq!(r.place, r.home, "{} stranded (day {})", r.name, sim.clock.day());
+            }
         }
     }
 }

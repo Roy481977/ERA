@@ -14,6 +14,12 @@ use crate::world::location::LocationId;
 /// Working week: Monday–Saturday (0–5). The shops rest on Sunday (6).
 const WORKING_DAYS: &[u64] = &[0, 1, 2, 3, 4, 5];
 const SUNDAY: &[u64] = &[6];
+/// School week: Monday–Friday.
+const MON_FRI: &[u64] = &[0, 1, 2, 3, 4];
+/// The weekend.
+const WEEKEND: &[u64] = &[5, 6];
+/// Friday — a night at the pub.
+const FRIDAY: &[u64] = &[4];
 
 /// An activity that resolves its place from its affordance.
 #[allow(clippy::too_many_arguments)]
@@ -100,14 +106,14 @@ pub fn cast() -> Vec<Resident> {
             act("victor_sleep", "wakes slowly in the High Street rooms", "HOME", 0, 1, 10, 6),
             act("victor_walk", "a slow walk past the stadium", "GATHER", 8, 2, 6, 2),
             act("victor_corner", "holds court in his café corner", "LEGENDS_CORNER", 12, 3, 8, 2),
+            act("victor_pub", "a pint at the Anchor", "DRINK", 18, 1, 6, 1).on_weekdays(FRIDAY),
             act("victor_home", "home for the evening", "HOME", 20, 4, 7, 3),
         ]),
         Resident::new("res_elias", "Elias", 66, "Groundskeeper", "loc_oakside", vec![
             act("elias_sleep", "sleeps at Oakside Cottages", "HOME", 0, 1, 10, 5),
             act("elias_work_am", "mows the pitch at first light", "WORK_GROUNDSKEEP", 6, 2, 9, 3),
-            act("elias_coffee", "a quick coffee", "DRINK_COFFEE", 12, 3, 7, 1),
-            act("elias_oak", "checks the old oak", "VISIT_OAK", 15, 4, 8, 2),
-            act("elias_home", "home to Oakside", "HOME", 20, 4, 6, 2),
+            act("elias_oak", "checks the old oak", "VISIT_OAK", 14, 4, 8, 2),
+            act("elias_home", "home to Oakside", "HOME", 20, 5, 6, 2),
         ]),
         Resident::new("res_eva", "Eva", 41, "Florist", "loc_millers_row", vec![
             act("eva_sleep", "sleeps on Miller's Row", "HOME", 0, 1, 10, 6),
@@ -122,13 +128,15 @@ pub fn cast() -> Vec<Resident> {
             act("karim_mid", "the midday papers", "KIOSK", 11, 3, 8, 3).on_weekdays(WORKING_DAYS),
             act("karim_pm", "the afternoon trade", "KIOSK", 15, 3, 7, 3).on_weekdays(WORKING_DAYS),
             act_at("karim_sun", "a quiet Sunday on the square", "GATHER", "loc_main_square", 11, 4, 5, 3).on_weekdays(SUNDAY),
+            act("karim_pub", "a pint at the Anchor after work", "DRINK", 18, 1, 6, 1).on_weekdays(FRIDAY),
             act("karim_home", "home above the High Street", "HOME", 20, 4, 6, 3),
         ]),
         Resident::new("res_agnes", "Agnes", 81, "Retired supporter", "loc_oakside", vec![
             act("agnes_sleep", "sleeps at Oakside Cottages", "HOME", 0, 1, 10, 6),
             act("agnes_bench", "her morning bench", "SIT_BENCH", 7, 2, 8, 3),
             act_at("agnes_mid", "watches the square", "GATHER", "loc_main_square", 11, 3, 5, 2),
-            act("agnes_oak", "visits the old oak", "VISIT_OAK", 15, 3, 7, 2),
+            act("agnes_oak", "visits the old oak", "VISIT_OAK", 15, 3, 7, 2).on_weekdays(&[0, 1, 3, 6]),
+            act("agnes_museum", "revisits the club museum", "VISIT_MUSEUM", 14, 3, 7, 2).on_weekdays(&[2, 4]),
             act("agnes_home", "home before dark", "HOME", 20, 4, 9, 3),
         ]),
         Resident::new("res_milo", "Milo", 22, "Street musician", "loc_high_street", vec![
@@ -140,9 +148,10 @@ pub fn cast() -> Vec<Resident> {
         ]),
         Resident::new("res_tomas", "Tomas", 9, "Schoolchild", "loc_oakside", vec![
             act("tomas_sleep", "sleeps at Oakside Cottages", "HOME", 0, 1, 10, 7),
-            act("tomas_roll", "runs for a warm roll", "BUY_BREAD", 8, 2, 8, 1),
-            act_at("tomas_play", "plays in the square", "GATHER", "loc_main_square", 12, 3, 5, 3),
-            act("tomas_oak", "visits the Old Oak", "VISIT_OAK", 16, 3, 7, 2),
+            act("tomas_school", "goes to school", "SCHOOL", 9, 2, 8, 4).on_weekdays(MON_FRI),
+            act("tomas_roll", "runs for a warm roll", "BUY_BREAD", 8, 2, 8, 1).on_weekdays(WEEKEND),
+            act_at("tomas_play", "plays in the square", "GATHER", "loc_main_square", 11, 3, 5, 3).on_weekdays(WEEKEND),
+            act("tomas_oak", "visits the Old Oak", "VISIT_OAK", 15, 3, 7, 2),
             act("tomas_home", "home to Oakside", "HOME", 20, 4, 9, 4),
         ]),
     ]

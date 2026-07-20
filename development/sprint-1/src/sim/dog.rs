@@ -69,7 +69,8 @@ impl Dog {
                     "loc_main_square"
                 }
             }
-            _ => "loc_riverside", // evening and night, beneath the Old Oak
+            19..=21 => "loc_bridge", // an evening by the old bridge
+            _ => "loc_riverside",    // night, beneath the Old Oak
         }
     }
 
@@ -85,6 +86,7 @@ impl Dog {
             "loc_cafe" => "curls by the café door, where they set down water for him",
             "loc_main_square" => "finds a patch of warm light on the square",
             "loc_stadium" => "lies in the long shade outside the Club",
+            "loc_bridge" => "settles by the old bridge, watching the water go by",
             _ => "settles down a while",
         }
     }

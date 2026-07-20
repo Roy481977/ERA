@@ -4,9 +4,9 @@ use era_first_breath::world::build_world;
 use era_first_breath::world::navigation::NavGraph;
 
 #[test]
-fn eight_locations_five_civic_three_residential() {
+fn twelve_locations_three_residential() {
     let world = build_world();
-    assert_eq!(world.locations.len(), 8);
+    assert_eq!(world.locations.len(), 12);
     // Exactly three residential nodes, each offering HOME.
     let homes: Vec<_> = world
         .locations
