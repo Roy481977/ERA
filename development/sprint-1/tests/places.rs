@@ -30,6 +30,16 @@ fn the_new_places_are_lived_in() {
 }
 
 #[test]
+fn the_four_new_places_are_lived_in() {
+    // The bible's new places earn their keep: over a week the grocer is worked,
+    // the club offices staffed, the training ground trained on, the shop browsed.
+    let seen = occupied_places(7);
+    for id in ["loc_corner_grocer", "loc_club_offices", "loc_training_ground", "loc_club_shop"] {
+        assert!(seen.contains(id), "no one ever went to {id}");
+    }
+}
+
+#[test]
 fn the_old_bridge_is_crossed() {
     // The bridge sits on the path between the square and the riverside, so a
     // resident walking to the river actually steps onto it.
