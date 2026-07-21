@@ -4,3 +4,7 @@ pkg/
 # locally vendored three for headless plate renders — not shipped
 vendor/
 world.json
+
+# generated blockout inputs (derived from design/bible + sim)
+world-coords.json
+world.json
