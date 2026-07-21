@@ -195,7 +195,7 @@ fn townsfolk() -> Vec<Resident> {
             act("yusuf_coffee", "the afternoon café", "DRINK_COFFEE", 15, 2, 6, 2),
             act("yusuf_home", "home to Canalside", "HOME", 19, 4, 6, 3),
         ]),
-        Resident::new("res_otto", "Otto", 74, "Retired", "loc_north_gate", vec![
+        Resident::new("res_otto", "Otto", 74, "Retired", "loc_slate_house", vec![
             act("otto_sleep", "wakes slowly at North Gate", "HOME", 0, 1, 10, 6),
             act("otto_bench", "his morning bench", "SIT_BENCH", 8, 2, 8, 3),
             act_at("otto_mid", "watches the square go by", "GATHER", "loc_main_square", 12, 3, 6, 2),

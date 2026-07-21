@@ -41,6 +41,12 @@ pub const EDGES: &[(LocationId, LocationId, u32)] = &[
     ("loc_north_gate", "loc_stadium", 1),
     ("loc_orchard_close", "loc_museum", 1),
     ("loc_weavers_lane", "loc_oakside", 1),
+    // NEW places (leaves — they do not shorten any existing route).
+    ("loc_club_offices", "loc_north_gate", 1),
+    ("loc_club_shop", "loc_north_gate", 1),
+    ("loc_corner_grocer", "loc_high_street", 1),
+    ("loc_training_ground", "loc_stadium", 2),
+    ("loc_slate_house", "loc_millers_row", 1),
 ];
 
 #[derive(Debug, Clone)]

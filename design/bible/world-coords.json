@@ -1668,7 +1668,7 @@
   },
   {
    "n": 3,
-   "name": "The Turnstile Arms",
+   "name": "The Anchor",
    "role": "sim:loc_pub",
    "world": [
     1603.12,
@@ -1958,7 +1958,7 @@
  },
  "reconcile": [
   "bible #11 North Gate = the GROUND PLAZA, but sim loc_north_gate is currently a residential HOME.",
-  "bible #3 pub = 'The Turnstile Arms', but current sim name is 'The Anchor'.",
+  "bible #3 pub = 'The Anchor', but current sim name is 'The Anchor'.",
   "off_frame + loc_main_square/high_street coords are PROVISIONAL \u2014 retune when the plate camera is locked (step 3)."
  ]
 }

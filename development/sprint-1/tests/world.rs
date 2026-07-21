@@ -6,9 +6,11 @@ use era_first_breath::world::navigation::NavGraph;
 #[test]
 fn locations_and_residential_nodes() {
     let world = build_world();
-    // The district's twelve places plus the wider town's six residential lanes.
-    assert_eq!(world.locations.len(), 18);
-    // Nine residential nodes now, each offering HOME.
+    // 18 original places + the Slate House (home) + 4 new civic places
+    // (Club Offices, Club Shop, Corner Grocer, Training Ground) = 23.
+    assert_eq!(world.locations.len(), 23);
+    // Still nine residential nodes: North Gate left the home set (now the Ground
+    // plaza), the Slate House joined it.
     let homes: Vec<_> = world
         .locations
         .iter()
