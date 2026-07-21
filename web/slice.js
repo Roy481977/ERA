@@ -118,10 +118,15 @@ function pickFor(arr, id, salt) { let h = 2166136261; for (const c of id + salt)
 // streets, sidewalks and filler buildings. This is deterministic *context* — not
 // simulated entities — so the real town reads as one district of a bigger place.
 const EX0 = -260, EX1 = 1260, EY0 = -170, EY1 = 1010, GAP = 190;
+// the river's winding course (world coords), crossed by the bridge.
+const RIVER = [[735, 150], [565, 300], [470, 470], [430, 600], [300, 760], [110, 905]];
+const FLOCKKINDS = ['geese', 'starlings', 'gulls', 'crows', 'pigeons'];
 let TOWN = null, HORIZON = 0;
 function buildFabric() {
   const nodes = WORLD.locations.map(l => [l.x, l.y]);
-  const near = (x, y, d) => nodes.some(([nx, ny]) => Math.hypot(nx - x, ny - y) < d);
+  const near = (x, y, d) =>
+    nodes.some(([nx, ny]) => Math.hypot(nx - x, ny - y) < d) ||
+    RIVER.some(([rx, ry]) => Math.hypot(rx - x, ry - y) < 95);   // keep buildings off the water
   const streets = [];
   for (let x = EX0; x <= EX1; x += GAP) streets.push([x, EY0, x, EY1]);
   for (let y = EY0; y <= EY1; y += GAP) streets.push([EX0, y, EX1, y]);
@@ -253,37 +258,79 @@ function drawStatic() {
     gPaths.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 7 * FIT.s + 3, color: C.path, alpha: 0.9, cap: 'round' });
   });
 
-  // points of interest first (they sit around the buildings): benches, trees,
-  // the fountain, the shade under the stadium's east wing — each with a little
-  // volume, so the world has things in it, not just labelled dots.
+  // the river winds through the town, on the ground beneath everything.
+  drawRiver();
+
+  // points of interest first (benches, trees, the fountain, the stadium's wing).
   gPlaces.clear();
   labelLayer.removeChildren();
   (WORLD.pois || []).forEach(p => { const [cx, cy] = project(p.x, p.y); drawPoiProp(gPlaces, p.kind, cx, cy); });
 
-  // buildings: proper isometric volumes (walls + roof), sorted back-to-front.
+  // landmarks & buildings, back-to-front. The square, the stadium and the bridge
+  // get their own composition; the rest are isometric building volumes.
   const locs = WORLD.locations.slice().sort((a, b) => (a.x + a.y) - (b.x + b.y));
   locs.forEach(l => {
     const [cx, cy] = project(l.x, l.y);
-    const isWater = /river|bridge/.test(l.id);
-    const isOak = /oak/.test(l.id);
-    if (isWater) {
-      const r = 22 * FIT.s + 8;
-      gPlaces.poly([cx, cy - r * 0.5, cx + r, cy, cx, cy + r * 0.5, cx - r, cy]).fill(C.water);
-      gPlaces.poly([cx, cy - r * 0.5, cx + r, cy, cx, cy + r * 0.5, cx - r, cy]).fill({ color: 0x8fd8e0, alpha: 0.25 });
-    } else if (isOak) {
-      tree(gPlaces, cx, cy, 26 * FIT.s + 12);
-    } else {
+    if (l.id === 'loc_bridge') drawBridge(cx, cy);
+    else if (l.id === 'loc_riverside') tree(gPlaces, cx, cy, 15 * FIT.s + 8);
+    else if (/oak/.test(l.id)) tree(gPlaces, cx, cy, 26 * FIT.s + 12);
+    else if (l.id === 'loc_main_square') drawPlaza(cx, cy);
+    else if (l.id === 'loc_stadium') drawStadium(cx, cy);
+    else {
       const w = (l.home ? 15 : 24) * FIT.s + 7;
       const h = (l.home ? 20 : 30) * FIT.s + 9;
       const walls = l.home ? 0xece0c4 : 0xeef0ee;
-      const roof = l.home ? 0xc65a3a : (/stadium/.test(l.id) ? 0x566270 : 0xb5613f);
+      const roof = l.home ? 0xc65a3a : 0xb5613f;
       isoBuilding(gPlaces, cx, cy, w, w * 0.55, h, walls, roof);
+      if (l.id === 'loc_cafe' || l.id === 'loc_pub') drawUmbrellas(cx, cy, 18 * FIT.s + 8);
     }
     const t = new PIXI.Text({ text: l.name, style: { fontFamily: 'system-ui', fontSize: 11,
       fill: 0xf2f6ee, fontWeight: '500', stroke: { color: 0x1a2a14, width: 3, join: 'round' } } });
-    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + 14 * FIT.s + 4; t.alpha = 0.9;
+    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + 16 * FIT.s + 4; t.alpha = 0.9;
     labelLayer.addChild(t);
   });
+}
+
+function drawRiver() {
+  const pts = RIVER.map(([x, y]) => project(x, y));
+  for (let i = 0; i < pts.length - 1; i++) gGround.moveTo(pts[i][0], pts[i][1]).lineTo(pts[i + 1][0], pts[i + 1][1]).stroke({ width: 30 * FIT.s + 7, color: 0x3f9aa6, cap: 'round' });
+  for (let i = 0; i < pts.length - 1; i++) gGround.moveTo(pts[i][0], pts[i][1]).lineTo(pts[i + 1][0], pts[i + 1][1]).stroke({ width: 13 * FIT.s + 3, color: 0x68c6d0, alpha: 0.4, cap: 'round' });
+}
+
+function drawBridge(cx, cy) {
+  const w = 20 * FIT.s + 8;
+  gPlaces.ellipse(cx, cy + w * 0.16, w * 0.6, w * 0.24).fill(0x24333c);          // arch shadow
+  gPlaces.poly([cx - w, cy, cx, cy - w * 0.5, cx + w, cy, cx, cy + w * 0.5]).fill(0xcbb98f); // stone deck
+  gPlaces.poly([cx - w, cy, cx, cy - w * 0.5, cx + w, cy, cx, cy + w * 0.5]).stroke({ width: 1.5, color: 0xa89772, alpha: 0.7 });
+}
+
+function drawPlaza(cx, cy) {
+  const r = 34 * FIT.s + 14;
+  gPlaces.ellipse(cx, cy, r, r * 0.5).fill(0xd8d2c4);        // paved plaza
+  gPlaces.ellipse(cx, cy, r * 0.9, r * 0.45).stroke({ width: 1.5, color: 0xbdb7a6, alpha: 0.7 });
+  gPlaces.ellipse(cx, cy, r * 0.42, r * 0.21).fill(0x9aa86a); // the roundabout island (green)
+  const h = 18 * FIT.s + 10;                                  // the monument column
+  gPlaces.rect(cx - 1.8, cy - h, 3.6, h).fill(0xe8e2d4);
+  gPlaces.circle(cx, cy - h, 2.6).fill(0xb5613f);
+  drawUmbrellas(cx, cy, r * 0.82);
+}
+
+function drawStadium(cx, cy) {
+  const w = 30 * FIT.s + 12;
+  gPlaces.ellipse(cx, cy, w, w * 0.56).fill(0x9aa0a6);        // the stands
+  gPlaces.ellipse(cx, cy, w * 0.9, w * 0.5).fill(0x7f858b);
+  gPlaces.ellipse(cx, cy, w * 0.66, w * 0.36).fill(0x57ab46); // the pitch
+  gPlaces.ellipse(cx, cy, w * 0.66, w * 0.36).stroke({ width: 1, color: 0xeef4ec, alpha: 0.8 });
+  gPlaces.ellipse(cx, cy - w * 0.42, w * 1.02, w * 0.28).fill({ color: 0xdfe4e8, alpha: 0.85 }); // roof lip
+}
+
+function drawUmbrella(x, y, col) {
+  gPlaces.rect(x - 0.5, y - 8, 1, 8).fill(0x555555);
+  gPlaces.ellipse(x, y - 8, 5, 2.6).fill(col);
+}
+function drawUmbrellas(cx, cy, spread) {
+  const cols = [0xd1495b, 0xe0a24a, 0x3d84a8, 0x5fa85a];
+  for (let i = 0; i < 4; i++) { const a = i * 1.57 + 0.6; drawUmbrella(cx + Math.cos(a) * spread, cy + Math.sin(a) * spread * 0.5 + 5, cols[i % 4]); }
 }
 
 // an isometric cuboid: bottom diamond at (cx,cy), raised by h, two front faces + top.
@@ -624,16 +671,32 @@ function drawAir() {
     gAir.ellipse(x, y, r, r * 0.48).fill({ color: cloudTint, alpha: 0.55 });
     gAir.ellipse(x + r * 0.5, y + 5, r * 0.7, r * 0.4).fill({ color: cloudTint, alpha: 0.45 });
   }
-  // a flock of birds crosses now and then (~ every 40s, over ~12s)
-  const cyc = t % 40;
-  if (cyc < 12) {
-    const p = cyc / 12, fx = -90 + p * (W + 180), fy = HORIZON * 0.42 + Math.sin(t * 0.5) * 10;
-    for (let b = 0; b < 10; b++) {
-      const bx = fx - (b % 4) * 15 - Math.floor(b / 4) * 11;
-      const by = fy + (b % 4) * 7 + Math.floor(b / 4) * 6 + Math.sin(t * 3 + b) * 1.5;
-      const fl = 2 + Math.abs(Math.sin(t * 5 + b)) * 2.5;
-      gAir.moveTo(bx - 3, by).lineTo(bx, by - fl).lineTo(bx + 3, by).stroke({ width: 1.3, color: 0x2a2a30, alpha: 0.8 });
-    }
+  // flocks: about two a day, at seeded hours, each a different kind of bird.
+  if (cur) {
+    const ds = Math.imul(cur.day + 1, 2654435761) >>> 0;
+    const len = FLOCKKINDS.length;
+    const k1 = ds % len, k2 = (k1 + 1 + ((ds >>> 5) % (len - 1))) % len;   // two distinct kinds
+    const windows = [[6 + (ds % 6), FLOCKKINDS[k1]], [14 + ((ds >>> 8) % 6), FLOCKKINDS[k2]]];
+    for (const [fh, kind] of windows) if (cur.hour === fh && cur.minute < 25) drawFlock(kind, W, t);
+  }
+}
+
+function chevron(x, y, s, col, a) {
+  const fl = 0.5 + Math.abs(Math.sin(tms / 1000 * 5 + x * 0.3)) * 0.7;
+  gAir.moveTo(x - s, y).lineTo(x, y - s * fl).lineTo(x + s, y).stroke({ width: s * 0.35 + 0.7, color: col, alpha: a });
+}
+function drawFlock(kind, W, t) {
+  const x0 = ((t * 42) % (W + 260)) - 130, y0 = HORIZON * 0.4 + Math.sin(t * 0.4) * 12;
+  if (kind === 'geese') {
+    for (let b = 0; b < 9; b++) { const s = b % 2 ? 1 : -1, r = Math.ceil(b / 2); chevron(x0 - r * 16, y0 + s * r * 9, 4, 0x3a3a42, 0.85); }
+  } else if (kind === 'starlings') {
+    for (let b = 0; b < 46; b++) { const bx = x0 - (b % 12) * 6 + Math.sin(t * 2 + b) * 3; const by = y0 - 6 + Math.floor(b / 12) * 6 + Math.cos(t * 2 + b) * 3; gAir.circle(bx, by, 0.9).fill({ color: 0x2a2a30, alpha: 0.75 }); }
+  } else if (kind === 'gulls') {
+    for (let b = 0; b < 7; b++) chevron(x0 - b * 22 + Math.sin(t + b) * 4, y0 + Math.sin(t * 0.8 + b) * 10, 5, 0x5a5a62, 0.8);
+  } else if (kind === 'crows') {
+    for (let b = 0; b < 11; b++) chevron(x0 - (b % 6) * 16 - Math.floor(b / 6) * 8, y0 + (b % 6) * 5 + Math.floor(b / 6) * 7 + Math.sin(t * 3 + b) * 2, 3.6, 0x17171d, 0.85);
+  } else {
+    for (let b = 0; b < 14; b++) chevron(x0 - (b % 5) * 10 + Math.sin(t * 2 + b) * 2, y0 + Math.floor(b / 5) * 7, 3, 0x555562, 0.8);
   }
 }
 
