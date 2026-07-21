@@ -159,7 +159,7 @@ function build() {
 
 async function main() {
   COORDS = await (await fetch('./world-coords.json')).json();
-  const RW = qf('w', 1980), RH = qf('h', 900);
+  const RW = qf('w', 2640), RH = qf('h', 1200);   // 2.2:1 wide plate
   renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1); renderer.setSize(RW, RH);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -168,9 +168,11 @@ async function main() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfe0ea);
   scene.fog = new THREE.Fog(0xcfe4ec, 60, 220);
-  camera = new THREE.PerspectiveCamera(qf('fov', 40), RW / RH, 0.5, 700);
-  camera.position.set(qf('cx', -3), qf('cy', 20), qf('cz', 52));
-  camera.lookAt(qf('tx', 4), qf('ty', 1), qf('tz', -8));
+  // THE LOCKED PLATE CAMERA (CD-008, Roy 2026-07-21): composition "C" — the Ground
+  // cropped on the right, town winding to the left, river through the foreground.
+  camera = new THREE.PerspectiveCamera(qf('fov', 52), RW / RH, 0.5, 700);
+  camera.position.set(qf('cx', 15), qf('cy', 11), qf('cz', 26));
+  camera.lookAt(qf('tx', 0), qf('ty', 1.5), qf('tz', -10));
 
   hemi = new THREE.HemisphereLight(0xcfe4ec, 0x6a5a3a, 0.9); scene.add(hemi);
   amb = new THREE.AmbientLight(0xbfae90, 0.35); scene.add(amb);
