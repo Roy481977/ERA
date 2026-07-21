@@ -519,8 +519,8 @@
   {
    "n": 17,
    "px": [
-    648,
-    652
+    540,
+    615
    ],
    "name": "Riverside Row",
    "role": "sim:loc_riverside",
@@ -611,5 +611,6 @@
   "No back street through the upper terraces \u2014 they back onto gardens and the railway hedge (verified).",
   "Every path doubles as a sim nav route: residents walk these exact curves (CD canon: no straight lines).",
   "Inferred/off-frame: station approach (hidden by hedge), NL beyond frame, RS beyond frame, service way behind the stand."
- ]
+ ],
+ "LOCKED": "2026-07-21 \u2014 nav graph locked (Roy). Roads by Roy, buildings bound."
 }
