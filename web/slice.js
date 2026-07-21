@@ -271,120 +271,222 @@ function shade(c, t) {
 }
 
 // ------------------------------------------------------------------- actors
-function drawActors(ents) {
+// Each sprite carries a small persistent "life" — breathing, blinking, a wandering
+// gaze, a weight shift, and occasional micro-gestures — so nobody is ever a frozen
+// figure on a dot. Cartoonish, but continuously alive, and shaped by temperament.
+const life = {};
+function rand01(L) { L.seed = (Math.imul(L.seed, 1664525) + 1013904223) >>> 0; return L.seed / 4294967296; }
+
+function updateLife(e, dt, ents) {
+  let L = life[e.id];
+  if (!L) {
+    let h = 2166136261; for (const c of e.id) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    L = life[e.id] = { seed: h >>> 0, breathe: (h % 1000) / 159, blinkIn: 1 + (h % 100) / 40, blinking: 0,
+      gaze: e.h, gazeTgt: e.h, gazeHold: 0.4, gest: null, gestT: 0, gestDur: 1, gestIn: 1 + (h % 60) / 30, sway: (h % 200) / 60 };
+  }
+  dt = Math.min(dt, 0.05);
+  const soc = socOf(e), mood = moodOf(e), energy = energyOf(e);
+  L.breathe += dt * (1.5 + (1 - energy) * 0.6);
+  L.sway += dt * (0.5 + energy * 0.4);
+  // blink
+  if (L.blinking > 0) L.blinking -= dt;
+  else { L.blinkIn -= dt; if (L.blinkIn <= 0) { L.blinking = 0.11; L.blinkIn = 2 + rand01(L) * 4; } }
+  // gaze — pick something to look at, then ease the eyes toward it
+  L.gazeHold -= dt;
+  if (L.gazeHold <= 0) {
+    L.gazeHold = 0.7 + rand01(L) * 2.3;
+    const [sx, sy] = project(e.x, e.y);
+    if (e.pose === 'talk' && e.partner) {
+      const p = ents.find(o => o.id === e.partner);
+      if (p) { const [bx, by] = project(p.x, p.y); L.gazeTgt = Math.atan2(by - sy, bx - sx); }
+    } else if (e.moving) {
+      L.gazeTgt = e.h + (rand01(L) - 0.5) * 0.7;      // mostly where they're going
+    } else if (rand01(L) < 0.62) {
+      let best = null, bd = 150;                        // glance at the nearest neighbour
+      ents.forEach(o => { if (o.id === e.id) return; const [ox, oy] = project(o.x, o.y); const d = Math.hypot(ox - sx, oy - sy); if (d < bd) { bd = d; best = [ox - sx, oy - sy]; } });
+      L.gazeTgt = best ? Math.atan2(best[1], best[0]) : e.h + (rand01(L) - 0.5) * 3;
+    } else {
+      L.gazeTgt = e.h + (rand01(L) - 0.5) * 3;          // just look around
+    }
+  }
+  let d = L.gazeTgt - L.gaze; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283;
+  L.gaze += d * Math.min(1, dt * 7);
+  // micro-gestures — only when settled; frequency bends to temperament
+  if (L.gest) { L.gestT -= dt; if (L.gestT <= 0) L.gest = null; }
+  else {
+    L.gestIn -= dt;
+    if (L.gestIn <= 0 && !e.moving && e.pose !== 'talk' && e.pose !== 'work') {
+      const rate = 0.5 + Math.max(0, soc) * 0.12 + Math.max(0, mood) * 0.3 + energy * 0.3;
+      L.gestIn = (2.4 + rand01(L) * 5) / rate;
+      const early = cur && cur.hour <= 6, sky = cur && cur.weather ? cur.weather.sky : 'clear';
+      const pool = ['lookAbout', 'lookAbout', 'headTilt', 'shrug', 'adjust', 'stretch'];
+      if (energy < 0.55 || early) { pool.push('yawn', 'yawn'); }
+      if (soc >= 1) { pool.push('checkTime', 'wave'); }
+      if (cur && cur.season === 'Summer' && (sky === 'clear' || sky === 'fair')) pool.push('squint');
+      L.gest = pool[Math.floor(rand01(L) * pool.length)];
+      L.gestDur = L.gest === 'yawn' ? 1.2 : L.gest === 'stretch' ? 1.4 : L.gest === 'checkTime' ? 1.0 : L.gest === 'wave' ? 0.9 : 0.7;
+      L.gestT = L.gestDur;
+    }
+  }
+  return L;
+}
+
+function drawActors(ents, dt) {
   gActors.clear();
-  // conversation partners drawn as a soft link, first
   const handled = new Set();
   ents.forEach(e => {
     if (e.pose === 'talk' && e.partner && !handled.has(e.id)) {
       const p = ents.find(o => o.id === e.partner);
       if (p) {
         const [ax, ay] = project(e.x, e.y), [bx, by] = project(p.x, p.y);
-        gActors.moveTo(ax, ay - 10).lineTo(bx, by - 10)
-          .stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
-        const mx = (ax + bx) / 2, my = (ay + by) / 2 - 16;
-        const t = (tms / 320) % 3;
-        for (let i = 0; i < 3; i++) {
-          const pp = (t + i) % 3;
-          gActors.circle(mx + (i - 1) * 3, my - pp * 3, 1.4).fill({ color: 0xfff3d6, alpha: 0.35 + 0.25 * (2 - pp) });
-        }
+        gActors.moveTo(ax, ay - 10).lineTo(bx, by - 10).stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
+        const mx = (ax + bx) / 2, my = (ay + by) / 2 - 16, t = (tms / 320) % 3;
+        for (let i = 0; i < 3; i++) { const pp = (t + i) % 3; gActors.circle(mx + (i - 1) * 3, my - pp * 3, 1.4).fill({ color: 0xfff3d6, alpha: 0.35 + 0.25 * (2 - pp) }); }
         handled.add(e.id); handled.add(p.id);
       }
     }
   });
-
-  // depth sort: nearer (greater x+y) draws later / on top
   const order = ents.map((e, i) => i).sort((a, b) => (ents[a].x + ents[a].y) - (ents[b].x + ents[b].y));
-  order.forEach(i => drawFigure(ents[i]));
+  order.forEach(i => drawFigure(ents[i], dt, ents));
 }
 
-function drawFigure(e) {
+function limb(x1, y1, x2, y2, w, color) {
+  gActors.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: w, color, cap: 'round' });
+}
+
+function drawFigure(e, dt, ents) {
   const meta = ROSTER[e.id] || { color: '#888', kind: 'resident', name: e.id };
   const kind = meta.kind;
   const [x, y0] = project(e.x, e.y);
   const T = tms / 1000, sd = seedOf(e.id);
   const isRes = kind === 'resident';
-  const dog = kind === 'dog';
+  const dogK = kind === 'dog';
   const small = kind === 'fox' || kind === 'cat' || kind === 'hedgehog';
   const bird = kind === 'crow' || kind === 'owl' || kind === 'heron';
+  const L = updateLife(e, dt, ents);
+  const breath = Math.sin(L.breathe);          // -1..1
 
-  // base figure metrics
-  let bodyH = isRes ? 22 : dog ? 11 : small ? 9 : 8;
-  let bodyW = isRes ? 12 : dog ? 16 : 11;
+  let bodyH = isRes ? 22 : dogK ? 11 : small ? 9 : 8;
+  let bodyW = isRes ? 12 : dogK ? 16 : 11;
   bodyH *= FIT.s * 1.1 + 0.55; bodyW *= FIT.s * 1.1 + 0.55;
 
-  // --- disposition shapes the body (residents) ---
   let headDrop = 0, lean = 0, widen = 1, bounceScale = 1, tint = null;
   if (isRes) {
-    const rd = readiness(e);                     // ~ -7..8
-    const openness = Math.max(-1, Math.min(1, rd / 6));
-    headDrop = openness < 0 ? -openness * bodyH * 0.16 : -openness * bodyH * 0.05; // low mood → head down
-    widen = 1 + openness * 0.16;                 // open stance vs closed
-    bounceScale = 0.55 + energyOf(e) * 0.9;      // energy → springier gait
-    // mood tints the body subtly warm (up) or cool (down)
+    const openness = Math.max(-1, Math.min(1, readiness(e) / 6));
+    headDrop = openness < 0 ? -openness * bodyH * 0.16 : -openness * bodyH * 0.05;
+    widen = 1 + openness * 0.16;
+    bounceScale = 0.55 + energyOf(e) * 0.9;
     const m = moodOf(e);
     tint = m >= 0 ? mix(hex(meta.color), 0xffe6b0, m * 0.28) : mix(hex(meta.color), 0x6d7a86, -m * 0.30);
   }
   const col = tint != null ? tint : hex(meta.color);
 
-  // --- per-pose motion (behaviour → body) ---
-  let dx = 0, dy = 0, hb = 0;
-  if (e.pose === 'walk') { const b = Math.sin(T * 9 + sd * 6) * (0.7 + (e.spd || 0.3) * 2.5) * bounceScale; hb = -Math.abs(b) * 1.1; dx = b * 0.2; }
+  // per-pose motion
+  let dx = 0, dy = 0, hb = 0, gait = 0;
+  if (e.pose === 'walk') { gait = Math.sin(T * 9 + sd * 6); const b = gait * (0.7 + (e.spd || 0.3) * 2.5) * bounceScale; hb = -Math.abs(b) * 1.1; dx = b * 0.2; }
   else if (e.pose === 'talk') { lean += Math.sin(T * 2.2 + sd * 6) * 1.4; if (e.gest === 'laugh') hb = -Math.abs(Math.sin(T * 11)) * 2.2; }
-  else if (e.pose === 'work') { const w = Math.sin(T * 3 + sd * 6); dx = w * 2.0; }
+  else if (e.pose === 'work') { dx = Math.sin(T * 3 + sd * 6) * 2.0; }
   else if (e.pose === 'sit') { dy = bodyH * 0.28; bodyH *= 0.7; }
-  else if (e.pose === 'stand' || e.pose === 'alert') { dx = Math.sin(T * 0.8 + sd) * 1.1 * bounceScale; hb = Math.sin(T * 1.4 + sd) * 0.8; }
+  else if (e.pose === 'stand' || e.pose === 'alert') { dx = Math.sin(L.sway) * 1.1; hb = breath * 0.5; }
   else if (e.pose === 'forage' || e.pose === 'sniff') { dy = Math.abs(Math.sin(T * 3.2 + sd * 6)) * 2.2; }
   else if (e.pose === 'play') { dx = (Math.sin(T * 2.1 + sd * 6) + Math.sin(T * 3.7 + sd * 3)) * 6; dy = -(Math.abs(Math.sin(T * 3.1 + sd))) * 6; }
   else if (e.pose === 'lie' || e.pose === 'perch') { bodyH *= 0.5; }
 
   const px = x + dx, base = y0 + dy;
 
-  // shadow
   gActors.ellipse(px, base + 1, bodyW * 0.7 * widen, bodyW * 0.32).fill({ color: 0x1a3a12, alpha: 0.18 });
-
-  // hover ring
   if (e.id === hoverId) gActors.circle(px, base - bodyH * 0.5, Math.max(bodyW, bodyH) * 0.8).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
 
   if (bird) {
-    // little wing chevron
-    gActors.moveTo(px - 6, base).lineTo(px, base - 5).lineTo(px + 6, base).stroke({ width: 2.4, color: col });
-  } else if (dog || small) {
-    // low rounded body + head
-    gActors.roundRect(px - bodyW * 0.5, base - bodyH * 0.9 + hb, bodyW, bodyH * 0.8, bodyH * 0.3).fill(col);
+    const flap = 1 + Math.abs(Math.sin(T * 6 + sd)) * (e.moving ? 3 : 0.4);
+    gActors.moveTo(px - 6, base).lineTo(px, base - flap - 3).lineTo(px + 6, base).stroke({ width: 2.4, color: col });
+    return;
+  }
+  if (dogK || small) {
+    const bh = bodyH * (0.8 + breath * 0.03);
+    gActors.roundRect(px - bodyW * 0.5, base - bodyH * 0.9 + hb, bodyW, bh, bodyH * 0.3).fill(col);
     gActors.circle(px + Math.cos(e.h) * bodyW * 0.5, base - bodyH * 0.9 + hb, bodyH * 0.35).fill(col);
-  } else {
-    // resident: body capsule + head, posture from disposition
-    const topY = base - bodyH + hb;
-    gActors.roundRect(px - bodyW * 0.5 * widen, topY + bodyH * 0.32, bodyW * widen, bodyH * 0.68, bodyW * 0.42).fill(col);
-    // head
-    const hx = px + lean * 0.6, hy = topY + headDrop + bodyH * 0.16;
-    gActors.circle(hx, hy, bodyW * 0.42).fill(mix(col, 0xffffff, 0.06));
-    // facing nub
-    gActors.circle(hx + Math.cos(e.h) * bodyW * 0.5, hy + Math.sin(e.h) * bodyW * 0.28, 1.8).fill({ color: 0xffffff, alpha: 0.85 });
-    // what they've got on — the possessions layer (coat, scarf, hat, umbrella…)
-    const worn = e.worn || [];
-    if (worn.length) {
-      const neckY = hy + bodyW * 0.5;
-      if (worn.includes('coat')) gActors.roundRect(px - bodyW * 0.5 * widen, topY + bodyH * 0.34, bodyW * widen, bodyH * 0.44, bodyW * 0.34).fill(shade(col, -0.2));
-      if (worn.includes('club_scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(0xd1495b);
-      else if (worn.includes('scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(hex(meta.color));
-      if (worn.includes('sunhat')) gActors.ellipse(hx, hy - bodyW * 0.36, bodyW * 0.58, bodyW * 0.2).fill(0xe8d9a0);
-      else if (worn.includes('cap')) gActors.ellipse(hx, hy - bodyW * 0.34, bodyW * 0.46, bodyW * 0.2).fill(0x5a7d86);
-      if (worn.includes('umbrella')) { gActors.rect(hx - 0.6, hy - bodyW * 1.05, 1.2, bodyW * 0.95).fill(0x555555); gActors.ellipse(hx, hy - bodyW * 1.05, bodyW * 0.85, bodyW * 0.34).fill(0x3d84a8); }
-      if (worn.includes('basket') || worn.includes('satchel')) gActors.circle(px + bodyW * 0.55 * widen, base - bodyH * 0.42, 2.6).fill(0xb5834a);
-      if (worn.includes('flower')) gActors.circle(hx + bodyW * 0.42, hy, 1.8).fill(0xe36a9a);
-    }
-    // gesture spark
-    if (e.pose === 'talk') gActors.arc(hx, hy - bodyW * 0.7, 3 + Math.sin(T * 4 + sd * 6) * 1.3, Math.PI * 0.1, Math.PI * 0.9).stroke({ width: 1.4, color: 0xffe6b0, alpha: 0.9 });
+    return;
   }
 
-  // name label for residents (persistent Text object, positioned each frame)
-  if (isRes) {
-    let t = labels[e.id];
-    if (!t) { t = new PIXI.Text({ text: meta.name, style: { fontFamily: 'system-ui', fontSize: 10.5, fill: 0x22371a } }); t.anchor.set(0.5, 1); labelLayer.addChild(t); labels[e.id] = t; }
-    t.x = px; t.y = base - bodyH - 6 + hb; t.alpha = 0.9;
+  // ---- a person ----
+  const worn = e.worn || [];
+  const wet = cur && cur.weather && cur.weather.wet;
+  const cold = worn.includes('coat') || worn.includes('gloves');
+  const hunch = (wet || cold) ? bodyH * 0.06 : 0;             // shoulders up, head tucked
+  const armCol = worn.includes('coat') ? shade(col, -0.2) : col;
+
+  const swayX = Math.sin(L.sway) * (0.5 + energyOf(e) * 0.4);
+  const cx = px + swayX;
+  const topY = base - bodyH + hb + breath * bodyH * 0.012 + hunch * 0.5;
+  const shoulderY = topY + bodyH * 0.34 - hunch;
+  const shoulderX = bodyW * (cold ? 0.34 : 0.42) * widen;
+
+  // torso (+ coat overlay)
+  gActors.roundRect(cx - bodyW * 0.5 * widen, topY + bodyH * 0.32, bodyW * widen, bodyH * 0.68, bodyW * 0.42).fill(col);
+  if (worn.includes('coat')) gActors.roundRect(cx - bodyW * 0.5 * widen, topY + bodyH * 0.34, bodyW * widen, bodyH * 0.5, bodyW * 0.34).fill(armCol);
+
+  // arms — rest, swing while walking, or reach for a gesture
+  const armW = Math.max(2, bodyW * 0.3);
+  const gp = L.gest ? Math.sin((1 - L.gestT / L.gestDur) * Math.PI) : 0;   // 0→1→0 ease
+  const hx = cx + lean * 0.6 + Math.cos(L.gaze) * bodyW * 0.06 - hunch * 0.2;
+  const hy = topY + headDrop + bodyH * 0.16 + hunch;
+  for (const side of [-1, 1]) {
+    const sX = cx + side * shoulderX, sY = shoulderY;
+    let hX = sX - side * bodyW * 0.06, hY = shoulderY + bodyH * 0.36 + breath * 0.4;   // resting hand
+    if (e.pose === 'walk') hY += side * gait * bodyH * 0.12;
+    // a held keepsake sits in one hand
+    if (side === 1 && (worn.includes('basket') || worn.includes('satchel'))) { hX = sX + bodyW * 0.14; hY = shoulderY + bodyH * 0.3; }
+    // gestures move the leading (right) hand
+    if (L.gest && side === 1) {
+      if (L.gest === 'checkTime') { hX = hx + bodyW * 0.2; hY = hy + bodyW * 0.2 - gp * bodyW * 0.1; }
+      else if (L.gest === 'adjust') { hX = hx + bodyW * 0.1; hY = hy + bodyW * 0.5 - gp * bodyW * 0.2; }
+      else if (L.gest === 'squint') { hX = hx + bodyW * 0.1; hY = hy - bodyW * 0.4 * gp - bodyW * 0.1; }
+      else if (L.gest === 'wave') { hX = sX + bodyW * 0.5; hY = shoulderY - bodyH * 0.2 * gp + Math.sin(T * 12) * 2 * gp; }
+      else if (L.gest === 'yawn') { hX = hx + bodyW * 0.15; hY = hy + bodyW * 0.1 - gp * bodyW * 0.2; }
+      else if (L.gest === 'stretch') { hX = sX + side * bodyW * 0.2; hY = shoulderY - bodyH * 0.5 * gp; }
+    }
+    if (L.gest === 'stretch' || L.gest === 'shrug') { hY = shoulderY - bodyH * (L.gest === 'stretch' ? 0.5 : 0.16) * gp; hX = sX + side * bodyW * 0.12; }
+    limb(sX, sY, hX, hY, armW, armCol);
+    gActors.circle(hX, hY, armW * 0.42).fill(mix(col, 0xffffff, 0.04));
   }
+
+  // head (tilts for a listen, tips back for a yawn)
+  const tilt = (L.gest === 'headTilt' ? 0.5 : 0) * gp;
+  const headBackY = (L.gest === 'yawn' ? -bodyW * 0.18 * gp : 0);
+  gActors.circle(hx + tilt * bodyW * 0.3, hy + headBackY, bodyW * 0.42).fill(mix(col, 0xffffff, 0.06));
+
+  // eyes — track the gaze; blink now and then
+  const hr = bodyW * 0.42, gx = Math.cos(L.gaze), gy = Math.sin(L.gaze);
+  const ex = hx + gx * hr * 0.42 + tilt * bodyW * 0.3, ey = hy + gy * hr * 0.3 + headBackY;
+  const px2 = -gy, py2 = gx;
+  if (L.blinking > 0) {
+    gActors.moveTo(ex + px2 * 2.2, ey + py2 * 2.2).lineTo(ex - px2 * 2.2, ey - py2 * 2.2).stroke({ width: 1.2, color: 0x243318 });
+  } else {
+    gActors.circle(ex + px2 * 1.7, ey + py2 * 1.7, 1.15).fill(0x243318);
+    gActors.circle(ex - px2 * 1.7, ey - py2 * 1.7, 1.15).fill(0x243318);
+  }
+  // mouth — open for a yawn or a laugh
+  if (L.gest === 'yawn') gActors.circle(hx + gx * hr * 0.5, hy + gy * hr * 0.5 + headBackY + bodyW * 0.12, 1.6 * gp + 0.6).fill(0x3a2a22);
+  else if (e.pose === 'talk' && e.gest === 'laugh') gActors.circle(hx + gx * hr * 0.5, hy + gy * hr * 0.5 + bodyW * 0.1, 1.4).fill(0x3a2a22);
+
+  // worn: hats, scarves, umbrella, keepsakes
+  const neckY = hy + bodyW * 0.5;
+  if (worn.includes('club_scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(0xd1495b);
+  else if (worn.includes('scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(hex(meta.color));
+  if (worn.includes('sunhat')) gActors.ellipse(hx, hy - bodyW * 0.36, bodyW * 0.58, bodyW * 0.2).fill(0xe8d9a0);
+  else if (worn.includes('cap')) gActors.ellipse(hx, hy - bodyW * 0.34, bodyW * 0.46, bodyW * 0.2).fill(0x5a7d86);
+  if (worn.includes('umbrella')) { gActors.rect(hx - 0.6, hy - bodyW * 1.05, 1.2, bodyW * 0.95).fill(0x555555); gActors.ellipse(hx, hy - bodyW * 1.05, bodyW * 0.85, bodyW * 0.34).fill(0x3d84a8); }
+  if (worn.includes('basket') || worn.includes('satchel')) gActors.circle(cx + shoulderX + bodyW * 0.2, shoulderY + bodyH * 0.34, 2.8).fill(0xb5834a);
+  if (worn.includes('flower')) gActors.circle(hx + bodyW * 0.42, hy, 1.8).fill(0xe36a9a);
+
+  // conversation spark
+  if (e.pose === 'talk') gActors.arc(hx, hy - bodyW * 0.7, 3 + Math.sin(T * 4 + sd * 6) * 1.3, Math.PI * 0.1, Math.PI * 0.9).stroke({ width: 1.4, color: 0xffe6b0, alpha: 0.9 });
+
+  // name
+  let t = labels[e.id];
+  if (!t) { t = new PIXI.Text({ text: meta.name, style: { fontFamily: 'system-ui', fontSize: 10.5, fill: 0x22371a } }); t.anchor.set(0.5, 1); labelLayer.addChild(t); labels[e.id] = t; }
+  t.x = cx; t.y = topY - 6; t.alpha = 0.9;
 }
 
 // tiny colour helpers
@@ -442,7 +544,7 @@ function loop(ticker) {
   const ents = lerpEntities(prev, cur, f);
   // re-dress the static scene when the season turns
   if (cur.season !== lastSeason) { SEASON = SEASONS[cur.season] || SEASON; lastSeason = cur.season; drawStatic(); }
-  drawActors(ents);
+  drawActors(ents, dt);
   drawWeather(cur);
   if (cur.tick !== lastHudTick) { renderHud(cur); lastHudTick = cur.tick; }
 }
