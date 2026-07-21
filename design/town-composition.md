@@ -1,6 +1,27 @@
 # ERA — Town composition (the basic layout)
 
-**Status: REFERENCE / PROPOSED.** The composition north-star for the town area,
+> **THE COMPOSITION BIBLE — LOCKED (Roy, 2026-07-21).**
+> [`design/bible/composition-bible.png`](bible/composition-bible.png) is the
+> canonical image of ERA's district. Generated in Krea (concept-first, per
+> CD-008), picked and iterated by Roy. It defines:
+>
+> - **Scale canon:** a compact quarter, ~200 m of frontage (~300 m deep). The
+>   stadium is a small-town football ground — one main stand, cropped by the
+>   right frame edge (~70 % visible), garden/park in front and beside it.
+> - **Fabric:** dense joined terraces, terracotta/cream/teal clay-felt style,
+>   **winding organic streets** (residents never walk straight lines — nav paths
+>   curve; passages sized so walking figures read clearly), clock-tower square
+>   with market stalls + café umbrellas (static props), river + stone bridge
+>   sweeping the foreground, station with **empty tracks** on the horizon.
+> - **The plate is empty of life:** no people, no crowd, no train, no weather,
+>   no time-of-day — all of that is the composited living layer (CD-008).
+>   Parked cars are props and stay.
+> - Lineage in [`design/bible/`](bible/); the alt with a cleaner square kept as
+>   `lineage-3`. Bible is square; the wide desktop plate comes from the 2.4:1
+>   blockout + tiled depth-locked generation using the bible as style reference.
+
+**Status: REFERENCE / superseded in part by the bible above.** The composition
+north-star for the town area,
 from Roy's reference images. Sits alongside the [Asset Design Model](asset-design-model.md)
 (the *look*) and the [Generative World System](generative-world-system.md) (what
 grows). This document fixes *where the pieces sit and how the town reads*.
