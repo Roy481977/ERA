@@ -4,6 +4,14 @@
 residents, motion and body language, props, light and effect — consistently, at
 scale, mostly with AI, and rig-ready for PixiJS + Spine/Rive.*
 
+> **CD-008 (LOCKED, 2026-07-21) — the Plate World.** The *world fabric* (buildings,
+> streets, terrain, greenery) is no longer built as runtime assets at all: it is a
+> **pre-rendered AI-generated master plate** (2.5D, fixed camera, tiled), with a
+> depth mask from the Three.js blockout for occlusion. This document's asset
+> machinery now governs the **living layer** — characters, motion, sprites,
+> overlays, effects — and the *style law* that the plate generation must obey.
+> See [creative-decisions/CD-008-plate-world.md](../creative-decisions/CD-008-plate-world.md).
+
 **Status: FOUNDATION / v0.1.** Prepared for Roy. Downstream of
 [research/visual-engine-and-design-strategy.md](../research/visual-engine-and-design-strategy.md)
 (stack: Rust sim core → behaviour stream → PixiJS renderer, Spine/Rive residents).

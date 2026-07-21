@@ -71,3 +71,4 @@ Each Creative Decision is its own file, `CD-###-slug.md`:
 | [CD-005](CD-005-relational-axiom.md) | The Relational Axiom (over "Non-Control") | PROPOSED (CKO seed) | IP-002 AR, CE-6, CR-8, RQ-1; supersedes AT-6 |
 | [CD-006](CD-006-simulate-intention-not-movement.md) | Simulate Intention, Not Movement (the Town Engine) | PROPOSED | IP-002 AR; living-world (README, interwoven-lives, places); tech companion `research/town-engine-technical-strategy.md` |
 | [CD-007](CD-007-core-language-rust.md) | The authoritative core is written in Rust | PROPOSED | IP-003; CD-006; Town Engine strategy; DS-001 |
+| [CD-008](CD-008-plate-world.md) | The Plate World — pre-rendered 2.5D fabric, live composited layer | **LOCKED (Roy)** | supersedes runtime-3D world fabric; design/asset-design-model.md; design/town-composition.md; research/visual-engine-and-design-strategy.md |
