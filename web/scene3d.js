@@ -47,7 +47,7 @@ let eng, WORLD, prev = null, cur = null;
 const ROSTER = {}, people = {}, lastPos = {}, lampFx = [];
 let playing = true, speed = 1, acc = 0, last = null, tms = 0;
 const BASE_TPS = 7 / 6;
-const orbit = { az: 0.7, pol: 1.12, rad: 60, tx: 0, ty: 4, tz: 0 };   // close & low — the hero fills the frame
+const orbit = { az: 0.3, pol: 1.15, rad: 42, tx: -12, ty: 5, tz: -16 }; // framed on the stadium, close
 
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2, '0');
@@ -64,7 +64,7 @@ function buildTown() {
   const nodes = WORLD.locations.map(l => [l.x, l.y]);
 
   // ground
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x8fae52, roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x86bf3a, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; town.add(ground);
 
   buildStreets(town);   // roads with sidewalks, markings, trees, lamps and cars
@@ -98,8 +98,8 @@ function buildTown() {
       const isle = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 0.25, 24), new THREE.MeshLambertMaterial({ color: 0x9aa86a })); isle.position.set(sx, 0.15, sz); town.add(isle);
       const mon = box(0.5, 4, 0.5, 0xe8e2d4); mon.position.set(sx, 2, sz); town.add(mon);
     } else if (l.id === 'loc_stadium') {
-      const stands = new THREE.Mesh(new THREE.CylinderGeometry(8, 9, 3.2, 36, 1, true), new THREE.MeshLambertMaterial({ color: 0x9aa0a6, side: THREE.DoubleSide })); stands.position.set(sx, 1.6, sz); town.add(stands);
-      const pitch = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.2, 36), new THREE.MeshLambertMaterial({ color: 0x57ab46 })); pitch.position.set(sx, 0.15, sz); town.add(pitch);
+      const stands = new THREE.Mesh(new THREE.CylinderGeometry(11, 12.5, 3.8, 40, 1, true), new THREE.MeshLambertMaterial({ color: 0x9aa0a6, side: THREE.DoubleSide })); stands.position.set(sx, 1.9, sz); town.add(stands);
+      const pitch = new THREE.Mesh(new THREE.CylinderGeometry(8.5, 8.5, 0.2, 40), new THREE.MeshLambertMaterial({ color: 0x5fbf4a })); pitch.position.set(sx, 0.15, sz); town.add(pitch);
     } else if (/oak/.test(l.id)) {
       const trunk = box(0.5, 2, 0.5, 0x7a5a3a); trunk.position.set(sx, 1, sz); town.add(trunk);
       const crown = new THREE.Mesh(new THREE.SphereGeometry(2.4, 12, 10), new THREE.MeshLambertMaterial({ color: 0x3f8a30 })); crown.position.set(sx, 3.2, sz); town.add(crown);
@@ -118,7 +118,7 @@ function buildTown() {
 function streetTree(x, z) {
   const g = new THREE.Group();
   const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 1 })); tr.position.y = 0.7; g.add(tr);
-  const cr = new THREE.Mesh(new THREE.SphereGeometry(0.95, 10, 8), new THREE.MeshStandardMaterial({ color: 0x7fae3a, roughness: 1 })); cr.position.y = 2.0; cr.scale.y = 1.15; g.add(cr);
+  const cr = new THREE.Mesh(new THREE.SphereGeometry(0.95, 10, 8), new THREE.MeshStandardMaterial({ color: 0x72c233, roughness: 1 })); cr.position.y = 2.0; cr.scale.y = 1.15; g.add(cr);
   g.position.set(x, 0, z); return g;
 }
 function lamp(x, z) {
@@ -218,7 +218,7 @@ function frame(ts) {
   if (cloudGroup) cloudGroup.position.x = ((ts / 1000 * 1.2) % 120) - 60;
 
   if (cur.tick !== frame._t) { renderHud(cur); frame._t = cur.tick; }
-  if (bokeh) bokeh.uniforms['focus'].value = orbit.rad;   // keep focus on the hero (camera→target)
+  if (bokeh) bokeh.uniforms['focus'].value = orbit.rad * 1.15;   // focal plane on the hero
   composer.render();
   requestAnimationFrame(frame);
 }
@@ -244,12 +244,12 @@ async function main() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfe0ea);
-  scene.fog = new THREE.Fog(0xbfe0ea, 55, 240);          // depth haze → the horizon
+  scene.fog = new THREE.Fog(0xbfe0ea, 90, 380);          // gentle depth haze → the horizon
   camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.5, 800);
 
-  hemi = new THREE.HemisphereLight(0xbfe0ea, 0x6a5a3a, 0.9); scene.add(hemi);
-  amb = new THREE.AmbientLight(0xbfae90, 0.35); scene.add(amb);
-  sun = new THREE.DirectionalLight(0xfff0d2, 1.15); sun.position.set(60, 80, 40); scene.add(sun);
+  hemi = new THREE.HemisphereLight(0xbfe0ea, 0x6a5a3a, 0.98); scene.add(hemi);
+  amb = new THREE.AmbientLight(0xbfae90, 0.38); scene.add(amb);
+  sun = new THREE.DirectionalLight(0xfff0d2, 1.28); sun.position.set(60, 80, 40); scene.add(sun);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004;
   { const c = sun.shadow.camera; c.left = -75; c.right = 75; c.top = 75; c.bottom = -75; c.near = 1; c.far = 320; }
 
@@ -266,7 +266,7 @@ async function main() {
   // macro depth of field — the hero sharp, the rest melting to blur (tilt-shift).
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bokeh = new BokehPass(scene, camera, { focus: orbit.rad, aperture: 0.0016, maxblur: 0.012 });
+  bokeh = new BokehPass(scene, camera, { focus: orbit.rad * 1.15, aperture: 0.0013, maxblur: 0.009 });
   composer.addPass(bokeh);
   composer.addPass(new OutputPass());
 
