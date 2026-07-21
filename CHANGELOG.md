@@ -1100,3 +1100,6 @@ entry above):
 - GitHub mirror was not yet live; auth path was pending. Resolved 2026-07-19 via
   fine-grained PAT.
 - No `constitution/` or `canon/` content exists yet — awaiting first material.
+
+## Blockout step 1 — bible px -> plate world coords (2026-07-21)
+Mapped the locked nav graph + places into plate world units (design/bible/world-coords.json) via tools/bible_to_world.py (uniform linear, 1wu=0.25m, bible=right half). 22 sim_bindings ready for the Rust sim. Verified by tools/verify_world_coords.py.
