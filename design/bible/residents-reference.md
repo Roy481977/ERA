@@ -44,6 +44,24 @@ rows or zoomed moments.
 - Passages in the bible were deliberately widened so these sprites stay clearly
   visible on streets (Roy).
 
-Crops: `residents/sq-figures.png` (square walkers + stalls), `residents/
-street-cafe.png` (café sitters, walking pair, browsing), `residents/
-stand-crowd.png` (crowd-as-texture). Source images in `../bible/` lineage.
+## The street set (Roy: "they were perfect for there")
+
+- **`residents/riverside-dog.png` — the definitive street reference.** A man in a
+  mustard sweater walking his felt dog mid-stride, and a *pair walking close
+  together* along the river wall (chosen togetherness made visible). Proportions
+  read perfectly against the picket fence and kerb. This is how ERA streets
+  should feel.
+- `residents/square-street.png` — square + street walkers among stalls and
+  parked cars, all colour-as-identity.
+- `residents/crossing.png` — the corner group by the zebra crossing.
+- `residents/xwalk-figures.png` — market-stall browsers; note the **felt bird on
+  the rooftop** — ambient wildlife belongs to the same material world.
+- **`residents/pitch-players.png` — matchday reference:** an orange-kitted keeper
+  at a goal with a woven net, outfield players in dark kits, the packed stand
+  behind, tiny ad boards on the perimeter wall. Players are sprites; the crowd
+  is texture.
+
+Other crops: `residents/sq-figures.png` (square walkers + stalls),
+`residents/street-cafe.png` (café sitters, walking pair, browsing),
+`residents/stand-crowd.png` (crowd-as-texture). Source images in the
+`../bible/` lineage.
