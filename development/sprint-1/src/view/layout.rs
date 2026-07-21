@@ -12,27 +12,34 @@ use crate::sim::resident::Status;
 use crate::world::location::LocationId;
 use crate::world::World;
 
-/// Hand-laid 2D coordinates for each district node.
+/// Hand-laid 2D coordinates for each district node — plate WORLD units
+/// (1 wu = 0.25 m; plate 1800x1000 wu). Derived from the locked composition
+/// bible via design/bible/world-coords.json (blockout step 1). Off-frame
+/// places (school, weavers, training ground) sit in the left extension.
 pub const MAP: &[(&str, f64, f64)] = &[
-    ("loc_stadium", 500.0, 120.0),
-    ("loc_school", 300.0, 165.0),
-    ("loc_museum", 840.0, 235.0),
-    ("loc_bakery", 320.0, 315.0),
-    ("loc_main_square", 500.0, 360.0),
-    ("loc_cafe", 690.0, 310.0),
-    ("loc_pub", 675.0, 520.0),
-    ("loc_bridge", 470.0, 480.0),
-    ("loc_riverside", 500.0, 600.0),
-    ("loc_millers_row", 270.0, 470.0),
-    ("loc_high_street", 730.0, 455.0),
-    ("loc_oakside", 500.0, 705.0),
-    // The wider town's lanes, out around the district in the greater-town fabric.
-    ("loc_elm_row", 150.0, 250.0),
-    ("loc_kiln_yard", 175.0, 560.0),
-    ("loc_canal_side", 905.0, 470.0),
-    ("loc_north_gate", 610.0, 55.0),
-    ("loc_orchard_close", 1000.0, 215.0),
-    ("loc_weavers_lane", 355.0, 785.0),
+    ("loc_stadium", 1726.17, 588.67),
+    ("loc_school", 430.0, 240.0),
+    ("loc_museum", 1636.52, 407.62),
+    ("loc_bakery", 1343.85, 379.49),
+    ("loc_main_square", 1515.23, 469.14),
+    ("loc_cafe", 1481.84, 449.8),
+    ("loc_pub", 1603.12, 499.9),
+    ("loc_bridge", 1506.45, 564.06),
+    ("loc_riverside", 1374.61, 640.53),
+    ("loc_millers_row", 1106.54, 936.72),
+    ("loc_high_street", 1339.45, 376.86),
+    ("loc_oakside", 1727.93, 945.51),
+    ("loc_elm_row", 1198.83, 324.12),
+    ("loc_kiln_yard", 1121.48, 720.51),
+    ("loc_canal_side", 1650.0, 520.0),
+    ("loc_north_gate", 1657.62, 544.73),
+    ("loc_orchard_close", 1660.0, 260.0),
+    ("loc_weavers_lane", 470.0, 720.0),
+    ("loc_slate_house", 1040.63, 810.16),
+    ("loc_club_offices", 1666.41, 486.72),
+    ("loc_club_shop", 1638.28, 516.6),
+    ("loc_corner_grocer", 1418.55, 398.83),
+    ("loc_training_ground", 180.0, 300.0),
 ];
 
 /// A distinct colour per resident, plus the old dog.

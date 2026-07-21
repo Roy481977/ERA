@@ -130,9 +130,17 @@ pub fn locations() -> Vec<Location> {
         Location { id: "loc_elm_row", name: "Elm Row", affordances: &["HOME", "REST"], hours: None },
         Location { id: "loc_kiln_yard", name: "Kiln Yard", affordances: &["HOME", "REST"], hours: None },
         Location { id: "loc_canal_side", name: "Canalside", affordances: &["HOME", "REST"], hours: None },
-        Location { id: "loc_north_gate", name: "North Gate", affordances: &["HOME", "REST"], hours: None },
         Location { id: "loc_orchard_close", name: "Orchard Close", affordances: &["HOME", "REST"], hours: None },
         Location { id: "loc_weavers_lane", name: "Weavers' Lane", affordances: &["HOME", "REST"], hours: None },
+        // North Gate is the plaza outside the Ground (bible #11), not a home.
+        Location { id: "loc_north_gate", name: "North Gate (the Ground plaza)", affordances: &["MATCH_GATE", "GATHER", "KIOSK"], hours: None },
+        // The Slate House takes in Otto, evicted when North Gate became the plaza (bible #13).
+        Location { id: "loc_slate_house", name: "The Slate House", affordances: &["HOME", "REST"], hours: None },
+        // NEW civic places drawn from the composition bible.
+        Location { id: "loc_club_offices", name: "Club Offices — ERA FC", affordances: &["WORK", "CLUB_ADMIN", "GATHER"], hours: Some(OpenHours { open: 9, close: 17 }) },
+        Location { id: "loc_club_shop", name: "The Club Shop", affordances: &["SHOP", "BUY_KIT"], hours: Some(OpenHours { open: 9, close: 17 }) },
+        Location { id: "loc_corner_grocer", name: "The Corner Grocer", affordances: &["SHOP", "BUY_GROCERIES"], hours: Some(OpenHours { open: 7, close: 20 }) },
+        Location { id: "loc_training_ground", name: "The Training Ground", affordances: &["TRAIN", "WORK_GROUNDSKEEP", "GATHER"], hours: None },
     ]
 }
 
