@@ -146,21 +146,26 @@ impl Choreographer {
         let tick = sim.clock.tick;
 
         // --- positions of every visible entity this tick ---
+        // A settled entity drifts to a nearby point of interest (a bench, the shade
+        // under the stadium's east wing) so a place is inhabited at fine grain,
+        // not a stack of dots. Travellers keep their on-edge position.
+        let day = sim.clock.day();
         let mut pos: BTreeMap<&'static str, (f64, f64)> = BTreeMap::new();
         let mut moving: BTreeMap<&'static str, bool> = BTreeMap::new();
         for r in &sim.residents {
             let p = layout::entity_pos(&sim.world, r.place, &r.status);
-            pos.insert(r.id, (p.x(), p.y()));
-            moving.insert(r.id, matches!(r.status, Status::Traveling { .. }));
+            let mv = matches!(r.status, Status::Traveling { .. });
+            pos.insert(r.id, settled_xy(r.id, r.place, mv, day, p.x(), p.y()));
+            moving.insert(r.id, mv);
         }
         {
             let p = layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle);
-            pos.insert("the_old_dog", (p.x(), p.y()));
+            pos.insert("the_old_dog", settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y()));
             moving.insert("the_old_dog", false);
         }
         for a in &sim.wildlife.animals {
             let (xy, mv) = animal_xy(a);
-            pos.insert(a.id, xy);
+            pos.insert(a.id, settled_xy(a.id, a.place, mv, day, xy.0, xy.1));
             moving.insert(a.id, mv);
         }
 
@@ -201,7 +206,7 @@ impl Choreographer {
 
             // pose + gesture + partner, and progress through a bounded state
             let cv = convo_of(id);
-            let (pose, gesture, partner, face) = self.pose_of(sim, id, &pos, tick, mv, cv);
+            let (pose, gesture, partner, face) = self.pose_of(sim, id, &pos, tick, day, mv, cv);
             let phase = cv
                 .map(|c| {
                     let span = c.ends.saturating_sub(c.started).max(1) as f64;
@@ -227,9 +232,11 @@ impl Choreographer {
         id: &'static str,
         pos: &BTreeMap<&'static str, (f64, f64)>,
         tick: u64,
+        day: u64,
         moving: bool,
         convo: Option<&Convo>,
     ) -> (Pose, Gesture, Option<&'static str>, Option<f64>) {
+        use crate::world::poi::Posture;
         // A conversation overrides everything: turn to face the partner and talk.
         if let Some(c) = convo {
             let partner = if c.a == id { c.b } else { c.a };
@@ -256,12 +263,23 @@ impl Choreographer {
                 Status::Performing { activity, .. } => r.affordance_of(activity),
                 _ => None,
             };
-            let pose = match aff {
+            let mut pose = match aff {
                 Some(a) if a.starts_with("WORK") || a == "KIOSK" || a == "MARKET" || a == "BUSK" => Pose::Work,
                 Some("SIT_BENCH") => Pose::Sit,
                 Some("GATHER") | Some("SCHOOL") if r.is_child() => Pose::Play,
                 _ => Pose::Stand,
             };
+            // If they're just standing about, the spot they drifted to shapes what
+            // they do there — sit on the bench, play by the tree.
+            if pose == Pose::Stand {
+                if let Some(post) = crate::world::poi::assign(id, r.place, day).map(|p| p.posture()) {
+                    pose = match post {
+                        Posture::Sit => Pose::Sit,
+                        Posture::Play if r.is_child() => Pose::Play,
+                        _ => Pose::Stand,
+                    };
+                }
+            }
             // an idle glance now and then, so standing isn't frozen
             let g = if pose == Pose::Stand && seed_hash(&[id, "idle"], tick) % 100 < 12 {
                 Gesture::Glance
@@ -275,6 +293,13 @@ impl Choreographer {
         if id == "the_old_dog" {
             if moving {
                 return (Pose::Walk, Gesture::None, None, None);
+            }
+            // The spot he's settled at shapes his rest: deep shade or a den is for
+            // napping (the east wing of the stadium), a rail is for watching.
+            match crate::world::poi::assign(id, sim.dog.place, day).map(|p| p.posture()) {
+                Some(Posture::Rest) => return (Pose::Lie, Gesture::None, None, None),
+                Some(Posture::Watch) => return (Pose::Alert, Gesture::Glance, None, None),
+                _ => {}
             }
             let (pose, g) = match seed_hash(&["dog", "rest"], tick) % 100 {
                 0..=54 => (Pose::Lie, Gesture::None),
@@ -301,6 +326,36 @@ impl Choreographer {
 
         (Pose::Stand, Gesture::None, None, None)
     }
+}
+
+/// A settled entity drifts to a nearby point of interest, so a place reads as
+/// inhabited at fine grain rather than a stack of figures on one node. Travellers
+/// keep their on-edge position. Deterministic (seeded by id + place + day).
+fn settled_xy(id: &str, place: &str, moving: bool, day: u64, bx: f64, by: f64) -> (f64, f64) {
+    if moving {
+        return (bx, by);
+    }
+    match crate::world::poi::assign(id, place, day) {
+        Some(p) => {
+            let (px, py) = p.xy();
+            let (jx, jy) = jitter(id);
+            (px + jx, py + jy)
+        }
+        None => (bx, by),
+    }
+}
+
+/// A tiny stable per-id offset (a few px) so two figures sharing a spot don't sit
+/// perfectly on top of each other.
+fn jitter(id: &str) -> (f64, f64) {
+    let mut h: u32 = 2166136261;
+    for b in id.bytes() {
+        h ^= b as u32;
+        h = h.wrapping_mul(16777619);
+    }
+    let a = (h % 360) as f64 * std::f64::consts::PI / 180.0;
+    let r = 4.0 + (h / 360 % 6) as f64;
+    (a.cos() * r, a.sin() * r)
 }
 
 /// An animal's screen position, and whether it is moving.

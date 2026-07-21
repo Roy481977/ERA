@@ -2,6 +2,7 @@
 
 pub mod location;
 pub mod navigation;
+pub mod poi;
 
 use std::collections::BTreeSet;
 

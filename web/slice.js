@@ -47,8 +47,10 @@ function computeFit(vw, vh) {
     minx = Math.min(minx, ix); maxx = Math.max(maxx, ix);
     miny = Math.min(miny, iy); maxy = Math.max(maxy, iy);
   });
-  const pad = 90;
-  const s = Math.min((vw - pad * 2) / (maxx - minx), (vh - pad * 2) / (maxy - miny));
+  const pad = 120;
+  // Pull the camera back a little (× 0.85) so the world reads as a small model on
+  // a table, with air around it, rather than filling the frame.
+  const s = Math.min((vw - pad * 2) / (maxx - minx), (vh - pad * 2) / (maxy - miny)) * 0.85;
   FIT.s = s;
   FIT.ox = vw / 2 - ((minx + maxx) / 2) * s;
   FIT.oy = vh / 2 - ((miny + maxy) / 2) * s + 10;
@@ -165,32 +167,88 @@ function drawStatic() {
     gPaths.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 7 * FIT.s + 3, color: C.path, alpha: 0.9, cap: 'round' });
   });
 
-  // place pads: a small iso diamond per location, water-tinted for the river/oak.
+  // points of interest first (they sit around the buildings): benches, trees,
+  // the fountain, the shade under the stadium's east wing — each with a little
+  // volume, so the world has things in it, not just labelled dots.
   gPlaces.clear();
   labelLayer.removeChildren();
-  WORLD.locations.forEach(l => {
+  (WORLD.pois || []).forEach(p => { const [cx, cy] = project(p.x, p.y); drawPoiProp(gPlaces, p.kind, cx, cy); });
+
+  // buildings: proper isometric volumes (walls + roof), sorted back-to-front.
+  const locs = WORLD.locations.slice().sort((a, b) => (a.x + a.y) - (b.x + b.y));
+  locs.forEach(l => {
     const [cx, cy] = project(l.x, l.y);
-    const r = (l.home ? 16 : 22) * FIT.s + 6;
-    const isWater = /river|oak|bridge/.test(l.id);
-    const fill = isWater ? C.water : (l.home ? C.padHome : C.padPublic);
-    diamond(gPlaces, cx, cy, r, r * 0.5, fill, C.pathEdge);
-    // a tiny roof block on public buildings, for diorama read
-    if (!l.home && !isWater) {
-      const h = 12 * FIT.s + 5;
-      gPlaces.poly([cx - r * 0.5, cy - r * 0.25, cx, cy - r * 0.5, cx + r * 0.5, cy - r * 0.25,
-        cx + r * 0.5, cy - r * 0.25 - h, cx, cy - r * 0.5 - h, cx - r * 0.5, cy - r * 0.25 - h])
-        .fill(0xc65a3a);
+    const isWater = /river|bridge/.test(l.id);
+    const isOak = /oak/.test(l.id);
+    if (isWater) {
+      const r = 22 * FIT.s + 8;
+      gPlaces.poly([cx, cy - r * 0.5, cx + r, cy, cx, cy + r * 0.5, cx - r, cy]).fill(C.water);
+      gPlaces.poly([cx, cy - r * 0.5, cx + r, cy, cx, cy + r * 0.5, cx - r, cy]).fill({ color: 0x8fd8e0, alpha: 0.25 });
+    } else if (isOak) {
+      tree(gPlaces, cx, cy, 26 * FIT.s + 12);
+    } else {
+      const w = (l.home ? 15 : 24) * FIT.s + 7;
+      const h = (l.home ? 20 : 30) * FIT.s + 9;
+      const walls = l.home ? 0xece0c4 : 0xeef0ee;
+      const roof = l.home ? 0xc65a3a : (/stadium/.test(l.id) ? 0x566270 : 0xb5613f);
+      isoBuilding(gPlaces, cx, cy, w, w * 0.55, h, walls, roof);
     }
     const t = new PIXI.Text({ text: l.name, style: { fontFamily: 'system-ui', fontSize: 11,
       fill: 0x2f4a2a, fontWeight: '500' } });
-    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + r * 0.5 + 2; t.alpha = 0.85;
+    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + 14 * FIT.s + 4; t.alpha = 0.85;
     labelLayer.addChild(t);
   });
 }
 
-function diamond(g, cx, cy, rx, ry, fill, stroke) {
-  g.poly([cx, cy - ry, cx + rx, cy, cx, cy + ry, cx - rx, cy]).fill(fill);
-  g.poly([cx, cy - ry, cx + rx, cy, cx, cy + ry, cx - rx, cy]).stroke({ width: 1.5, color: stroke, alpha: 0.6 });
+// an isometric cuboid: bottom diamond at (cx,cy), raised by h, two front faces + top.
+function isoPrism(g, cx, cy, rx, ry, h, colTop, colL, colR) {
+  g.poly([cx - rx, cy, cx, cy + ry, cx, cy + ry - h, cx - rx, cy - h]).fill(colL);      // left front
+  g.poly([cx + rx, cy, cx, cy + ry, cx, cy + ry - h, cx + rx, cy - h]).fill(colR);      // right front
+  g.poly([cx, cy - ry - h, cx + rx, cy - h, cx, cy + ry - h, cx - rx, cy - h]).fill(colTop); // top
+}
+function isoBuilding(g, cx, cy, rx, ry, h, walls, roof) {
+  const wl = shade(walls, -0.14), wr = shade(walls, 0.06);
+  // walls
+  g.poly([cx - rx, cy, cx, cy + ry, cx, cy + ry - h, cx - rx, cy - h]).fill(wl);
+  g.poly([cx + rx, cy, cx, cy + ry, cx, cy + ry - h, cx + rx, cy - h]).fill(wr);
+  // roof: a raised pyramid-ish cap over the top diamond
+  const rh = h * 0.5;
+  g.poly([cx - rx, cy - h, cx, cy + ry - h, cx, cy + ry - h - rh, cx - rx, cy - h - rh]).fill(shade(roof, -0.1));
+  g.poly([cx + rx, cy - h, cx, cy + ry - h, cx, cy + ry - h - rh, cx + rx, cy - h - rh]).fill(shade(roof, 0.05));
+  g.poly([cx, cy - ry - h - rh, cx + rx, cy - h - rh, cx, cy + ry - h - rh, cx - rx, cy - h - rh]).fill(roof);
+}
+
+function tree(g, cx, cy, r) {
+  g.rect(cx - r * 0.08, cy - r * 0.5, r * 0.16, r * 0.5).fill(0x7a5a3a);
+  g.ellipse(cx, cy - r * 0.55, r * 0.7, r * 0.5).fill(0x3f8a30);
+  g.ellipse(cx - r * 0.22, cy - r * 0.75, r * 0.42, r * 0.34).fill(0x66bd53);
+  g.ellipse(cx + r * 0.2, cy - r * 0.68, r * 0.36, r * 0.3).fill(0x57ab46);
+}
+
+function drawPoiProp(g, kind, cx, cy) {
+  const s = FIT.s;
+  if (kind === 'tree') { tree(g, cx, cy, 16 * s + 8); return; }
+  if (kind === 'bench') { isoPrism(g, cx, cy, 9 * s + 4, 5 * s + 2, 4 * s + 2, 0xb5834a, 0x8a5f34, 0xa5763f); return; }
+  if (kind === 'fountain') {
+    isoPrism(g, cx, cy, 8 * s + 4, 4 * s + 2, 4 * s + 2, 0xd8d2c4, 0xb7b09e, 0xc9c2b2);
+    g.ellipse(cx, cy - 4 * s - 2, 6 * s + 3, 3 * s + 1.5).fill(0x5fc0cc); return;
+  }
+  if (kind === 'stall') {
+    isoPrism(g, cx, cy, 9 * s + 4, 5 * s + 2, 5 * s + 3, 0xc65a3a, 0x9c4630, 0xb5533a);
+    g.poly([cx - 11 * s - 4, cy - 5 * s - 3, cx, cy - 9 * s - 5, cx + 11 * s + 4, cy - 5 * s - 3]).fill({ color: 0xeef0ee, alpha: 0.9 }); return;
+  }
+  if (kind === 'wing') { isoPrism(g, cx, cy, 14 * s + 6, 7 * s + 3, 3 * s + 2, 0x6d7a86, 0x4c5661, 0x5c6773); return; }
+  if (kind === 'den') { g.ellipse(cx, cy, 9 * s + 4, 5 * s + 2).fill(0x4a3f34); g.ellipse(cx, cy - 1, 6 * s + 2, 3 * s + 1).fill(0x2f281f); return; }
+  if (kind === 'verge') { g.ellipse(cx, cy, 12 * s + 5, 5 * s + 2).fill(0x66bd53); return; }
+  // nook / default: a small doorway block
+  isoPrism(g, cx, cy, 6 * s + 3, 3 * s + 1.5, 5 * s + 3, 0xd8c6a0, 0xb49a70, 0xc7b487);
+}
+
+// shade a colour toward black (t<0) or white (t>0)
+function shade(c, t) {
+  const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+  const to = t < 0 ? 0 : 255, k = Math.abs(t);
+  return ((r + (to - r) * k) << 16 | (g + (to - g) * k) << 8 | (b + (to - b) * k)) & 0xffffff;
 }
 
 // ------------------------------------------------------------------- actors

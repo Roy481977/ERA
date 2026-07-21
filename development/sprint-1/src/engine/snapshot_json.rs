@@ -102,6 +102,21 @@ impl Engine {
         }
         out.push(']');
 
+        // points of interest — the fine spatial layer (benches, the fountain, the
+        // shade under the stadium's east wing). Static dressing the renderer draws.
+        out.push_str(",\"pois\":[");
+        for (i, p) in crate::world::poi::POIS.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            let (x, y) = p.xy();
+            out.push_str(&format!(
+                "{{\"id\":\"{}\",\"host\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"x\":{:.1},\"y\":{:.1}}}",
+                p.id, p.host, esc(p.name), p.kind.tag(), x, y
+            ));
+        }
+        out.push(']');
+
         out.push('}');
         out
     }
