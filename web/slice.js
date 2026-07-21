@@ -50,19 +50,18 @@ let hoverId = null;
 // ------------------------------------------------------------------- fit view
 let FIT = { s: 1, ox: 0, oy: 0 };
 function computeFit(vw, vh) {
+  // Reserve the top ~30% of the frame for sky, and fit the *whole greater town*
+  // (not just the twelve places) into the lower band — so the real elements sit
+  // small inside a bigger place, with clouds and horizon above.
+  HORIZON = vh * 0.30;
+  const cs = [iso(EX0, EY0), iso(EX1, EY0), iso(EX1, EY1), iso(EX0, EY1)];
   let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
-  WORLD.locations.forEach(l => {
-    const [ix, iy] = iso(l.x, l.y);
-    minx = Math.min(minx, ix); maxx = Math.max(maxx, ix);
-    miny = Math.min(miny, iy); maxy = Math.max(maxy, iy);
-  });
-  const pad = 120;
-  // Pull the camera back a little (× 0.85) so the world reads as a small model on
-  // a table, with air around it, rather than filling the frame.
-  const s = Math.min((vw - pad * 2) / (maxx - minx), (vh - pad * 2) / (maxy - miny)) * 0.85;
+  cs.forEach(([ix, iy]) => { minx = Math.min(minx, ix); maxx = Math.max(maxx, ix); miny = Math.min(miny, iy); maxy = Math.max(maxy, iy); });
+  const availW = vw * 0.98, availH = vh * 0.97 - HORIZON;
+  const s = Math.min(availW / (maxx - minx), availH / (maxy - miny));
   FIT.s = s;
   FIT.ox = vw / 2 - ((minx + maxx) / 2) * s;
-  FIT.oy = vh / 2 - ((miny + maxy) / 2) * s + 10;
+  FIT.oy = HORIZON + availH / 2 - ((miny + maxy) / 2) * s;
 }
 function project(x, y) { const [ix, iy] = iso(x, y); return [ix * FIT.s + FIT.ox, iy * FIT.s + FIT.oy]; }
 
@@ -84,7 +83,7 @@ function readiness(e) { return socOf(e) + moodOf(e) * 3 + (energyOf(e) - 0.5) * 
 function seedOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return ((h >>> 0) % 1000) / 1000; }
 
 // --------------------------------------------------------------------- Pixi
-let app, gGround, gPaths, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather;
+let app, gSky, gAir, gGround, gPaths, gTown, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather;
 const labels = {};
 
 // day/night lighting — a sky colour, an ambient wash, and a sun elevation, all
@@ -115,6 +114,36 @@ const HAIRS = [0x2a2018, 0x4a3526, 0x6b4a2f, 0x30303a, 0xb08a5a, 0x7a3a2a, 0x9a9
 const TROUSERS = [0x3a4a63, 0x5a4a3a, 0x44543f, 0x6a4a55, 0x40566a, 0x4a4550];
 function pickFor(arr, id, salt) { let h = 2166136261; for (const c of id + salt) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return arr[(h >>> 0) % arr.length]; }
 
+// The greater town: the twelve simulated places sit inside a larger fabric of
+// streets, sidewalks and filler buildings. This is deterministic *context* — not
+// simulated entities — so the real town reads as one district of a bigger place.
+const EX0 = -260, EX1 = 1260, EY0 = -170, EY1 = 1010, GAP = 190;
+let TOWN = null, HORIZON = 0;
+function buildFabric() {
+  const nodes = WORLD.locations.map(l => [l.x, l.y]);
+  const near = (x, y, d) => nodes.some(([nx, ny]) => Math.hypot(nx - x, ny - y) < d);
+  const streets = [];
+  for (let x = EX0; x <= EX1; x += GAP) streets.push([x, EY0, x, EY1]);
+  for (let y = EY0; y <= EY1; y += GAP) streets.push([EX0, y, EX1, y]);
+  const wallPal = [0xece0c4, 0xeef0ee, 0xdcc8a4, 0xe6d6b8, 0xd8dcd8, 0xcbb89a];
+  const roofPal = [0xb5613f, 0xc65a3a, 0x566270, 0x6d7a86, 0xa5502f, 0x7a5a3a];
+  const blds = [];
+  let s = 987654321;
+  const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  for (let x = EX0 + GAP * 0.5; x < EX1; x += GAP) {
+    for (let y = EY0 + GAP * 0.5; y < EY1; y += GAP) {
+      const n = 1 + Math.floor(rnd() * 3);
+      for (let k = 0; k < n; k++) {
+        const bx = x + (rnd() - 0.5) * GAP * 0.62, by = y + (rnd() - 0.5) * GAP * 0.62;
+        if (near(bx, by, 120)) continue;            // keep the real places clear
+        blds.push({ x: bx, y: by, w: 18 + rnd() * 20, h: 16 + rnd() * 42, wall: wallPal[(s >>> 3) % wallPal.length], roof: roofPal[(s >>> 7) % roofPal.length] });
+      }
+    }
+  }
+  blds.sort((a, b) => (a.x + a.y) - (b.x + b.y));    // back-to-front
+  TOWN = { streets, blds };
+}
+
 async function main() {
   await init();
   eng = new WasmEngine(0);
@@ -131,17 +160,21 @@ async function main() {
   gGround = new PIXI.Graphics();
   gPaths = new PIXI.Graphics();
   gPlaces = new PIXI.Graphics();
+  gSky = new PIXI.Graphics();              // sky gradient, distant skyline (backdrop)
+  gAir = new PIXI.Graphics();              // clouds and bird flocks
+  gTown = new PIXI.Graphics();             // the greater town: streets + filler buildings
   gEnv = new PIXI.Graphics();              // cloud shadows, window glow, wet sheen (under actors)
   gActors = new PIXI.Graphics();
   gAmbient = new PIXI.Graphics();          // the day/night wash (over the scene, under labels)
   labelLayer = new PIXI.Container();
   gWeather = new PIXI.Graphics();          // veil + precipitation, on top of all
-  app.stage.addChild(gGround, gPaths, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather);
+  app.stage.addChild(gSky, gAir, gGround, gPaths, gTown, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather);
 
   // a soft tilt-shift: blur the far and near thirds of the frame gently.
   applyTiltShift();
 
   SEASON = SEASONS[cur.season] || SEASON; lastSeason = cur.season;
+  buildFabric();
   computeFit(window.innerWidth, window.innerHeight);
   drawStatic();
   window.addEventListener('resize', () => { computeFit(window.innerWidth, window.innerHeight); drawStatic(); });
@@ -190,17 +223,29 @@ function applyTiltShift() {
 
 // ------------------------------------------------------------- static layers
 function drawStatic() {
-  // ground: one big bright rhombus spanning the projected map, plus a subtle grid.
+  // ground: one big bright rhombus spanning the whole greater town.
   gGround.clear();
-  const corners = [iso(-40, -40), iso(1080, -40), iso(1080, 820), iso(-40, 820)]
+  const corners = [iso(EX0, EY0), iso(EX1, EY0), iso(EX1, EY1), iso(EX0, EY1)]
     .map(([ix, iy]) => [ix * FIT.s + FIT.ox, iy * FIT.s + FIT.oy]);
   gGround.poly(corners.flat()).fill(SEASON.grassBot);
-  // a lighter top sheen
-  const sheen = [iso(-40, -40), iso(1080, -40), iso(560, 390)]
+  const sheen = [iso(EX0, EY0), iso(EX1, EY0), iso((EX0 + EX1) / 2, (EY0 + EY1) / 2)]
     .map(([ix, iy]) => [ix * FIT.s + FIT.ox, iy * FIT.s + FIT.oy]);
   gGround.poly(sheen.flat()).fill({ color: SEASON.grassTop, alpha: 0.5 });
 
-  // paths: the nav edges as inlaid iso lines.
+  // the greater town: streets with sidewalks, then filler buildings (back-to-front).
+  gTown.clear();
+  TOWN.streets.forEach(([x1, y1, x2, y2]) => {
+    const [ax, ay] = project(x1, y1), [bx, by] = project(x2, y2);
+    gTown.moveTo(ax, ay).lineTo(bx, by).stroke({ width: 16 * FIT.s + 5, color: 0xcfcabb, cap: 'round' }); // sidewalk
+    gTown.moveTo(ax, ay).lineTo(bx, by).stroke({ width: 9 * FIT.s + 3, color: 0x8f8b82, cap: 'round' });   // road
+  });
+  TOWN.blds.forEach(b => {
+    const [cx, cy] = project(b.x, b.y);
+    const w = b.w * FIT.s + 3, h = b.h * FIT.s + 4;
+    isoBuilding(gTown, cx, cy, w, w * 0.55, h, b.wall, b.roof);
+  });
+
+  // the district's own paths: the nav edges as inlaid iso lines.
   gPaths.clear();
   WORLD.edges.forEach(([a, b]) => {
     const A = NODES[a], B = NODES[b]; if (!A || !B) return;
@@ -551,6 +596,47 @@ function mix(a, b, t) {
   return ((ar + (br - ar) * t) << 16 | (ag + (bg - ag) * t) << 8 | (ab + (bb - ab) * t)) & 0xffffff;
 }
 
+// ----------------------------------------------------------------- sky & air
+function drawSky() {
+  gSky.clear();
+  const W = app.screen.width;
+  // a hazier band just above the horizon, and a distant skyline silhouette
+  gSky.rect(0, HORIZON - 3 * (app.screen.height / 800) - 2, W, 3).fill({ color: 0xffffff, alpha: 0.06 });
+  gSky.rect(0, HORIZON * 0.62, W, HORIZON * 0.4).fill({ color: 0xffffff, alpha: 0.04 });
+  const sil = mix(LIGHT.sky, 0x33465e, 0.55);
+  let x = 0, s = 20220719;
+  while (x < W) {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    const w = 12 + (s % 24), h = 5 + ((s >>> 5) % 20);
+    gSky.rect(x, HORIZON - h, w, h).fill({ color: sil, alpha: 0.5 });
+    x += w + 3;
+  }
+}
+
+function drawAir() {
+  gAir.clear();
+  const W = app.screen.width, t = tms / 1000;
+  const cloudTint = mix(0xffffff, LIGHT.sky, 0.3);
+  for (let i = 0; i < 6; i++) {
+    const x = ((i * 260 + t * 8) % (W + 320)) - 160;
+    const y = HORIZON * 0.18 + (i * 41) % Math.max(20, HORIZON * 0.5);
+    const r = 40 + (i % 3) * 24;
+    gAir.ellipse(x, y, r, r * 0.48).fill({ color: cloudTint, alpha: 0.55 });
+    gAir.ellipse(x + r * 0.5, y + 5, r * 0.7, r * 0.4).fill({ color: cloudTint, alpha: 0.45 });
+  }
+  // a flock of birds crosses now and then (~ every 40s, over ~12s)
+  const cyc = t % 40;
+  if (cyc < 12) {
+    const p = cyc / 12, fx = -90 + p * (W + 180), fy = HORIZON * 0.42 + Math.sin(t * 0.5) * 10;
+    for (let b = 0; b < 10; b++) {
+      const bx = fx - (b % 4) * 15 - Math.floor(b / 4) * 11;
+      const by = fy + (b % 4) * 7 + Math.floor(b / 4) * 6 + Math.sin(t * 3 + b) * 1.5;
+      const fl = 2 + Math.abs(Math.sin(t * 5 + b)) * 2.5;
+      gAir.moveTo(bx - 3, by).lineTo(bx, by - fl).lineTo(bx + 3, by).stroke({ width: 1.3, color: 0x2a2a30, alpha: 0.8 });
+    }
+  }
+}
+
 // ------------------------------------------------------ lighting & environment
 function drawEnv(fr) {
   gEnv.clear();
@@ -632,6 +718,8 @@ function loop(ticker) {
   // light the world by the clock
   LIGHT = lightingAt((cur.hour + cur.minute / 60) % 24);
   if (app.renderer) app.renderer.background.color = LIGHT.sky;
+  drawSky();
+  drawAir();
   drawEnv(cur);
   drawActors(ents, dt);
   drawAmbient();
