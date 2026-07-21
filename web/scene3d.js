@@ -402,7 +402,7 @@ async function main() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x2f8fe0);
   scene.fog = new THREE.Fog(0xbfe0ea, 150, 660);          // only a light haze far out
-  camera = new THREE.PerspectiveCamera(qf('fov', 34), RW / RH, 0.5, 900);
+  camera = new THREE.PerspectiveCamera(qf('fov', PLATE ? 38 : 34), RW / RH, 0.5, 900);
   buildTextures();
   // a rich vibrant sky — deep blue at the zenith, light near the horizon
   { const cv = document.createElement('canvas'); cv.width = 8; cv.height = 128; const g = cv.getContext('2d');
@@ -454,9 +454,13 @@ async function main() {
 // depth material (near = white, far = black — disparity style for ControlNet
 // and for runtime occlusion) and re-renders. __plateReady flags completion.
 function setupPlate() {
+  // THE CANONICAL PLATE CAMERA (CD-008, locked by Roy 2026-07-21): "W2" —
+  // cinematic wide, whole district in frame, stadium right-of-center, café +
+  // square + river midground, horizon hills, sky ~28%. Aspect 2.4:1. Every
+  // sprite projects through this camera; change only with a new plate.
   const hour = qf('hour', 10.5);
-  camera.position.set(qf('cx', 6), qf('cy', 46), qf('cz', 132));
-  camera.lookAt(qf('tx', -2), qf('ty', 4), qf('tz', -20));
+  camera.position.set(qf('cx', -4), qf('cy', 24), qf('cz', 85));
+  camera.lookAt(qf('tx', -14), qf('ty', 1), qf('tz', -26));
 
   const L = lightingAt(hour);                                 // fixed golden daylight
   scene.background = L.sky; scene.fog.color = L.sky;
