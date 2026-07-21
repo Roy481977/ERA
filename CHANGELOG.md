@@ -8,6 +8,35 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-21 — Micro-POI level of detail + the generative-world architecture — PROPOSED
+
+Direction (Roy): the slice looks good but isn't natural — residents only go
+directly to the next place; the world needs many more mini places of interest,
+sub-locations *within* a place (the dog napping under the stadium's east wing, a
+kid chasing a squirrel mid-street), items with volume, a slightly wider view. And,
+bigger: ERA is not a finite world — it should keep evolving (new districts,
+residents, generations, plants, animals, possessions, seasons, architecture) and
+"mine" new content once in a while.
+
+- **Micro-POI layer** (`world/poi.rs`): a catalogue of points of interest — spots
+  within/around each place (the east wing, benches, the fountain, verges, a den,
+  trees) with a posture hint. A *settled* resident, the dog, or an animal drifts to
+  a spot and takes its posture (the dog naps under the east wing; a child plays by
+  the tree), so a place is inhabited at fine grain rather than a stack of figures on
+  one node. Deterministic (seeded by id + place + day); wired through the behaviour
+  layer; exposed in `world_json`. 90 tests green (5 new).
+- **Slice with volume and air** (`web/slice.js`): buildings and POIs now draw as
+  real isometric volumes (walls + roof, little props), and the camera pulls back so
+  the town reads as a model on a table.
+- **`design/generative-world-system.md`** — the architecture for an ever-evolving
+  world: a deterministic in-sim **World Generator** (the eight evolution dimensions)
+  feeding an AI **Asset Generator** governed by the style guide and canonical
+  library. The crux is determinism-with-evolution: decisions are seeded/procedural
+  (including *which* library asset is used); only art bytes are AI-minted, once, and
+  versioned — so a world replays identically while the library grows across runs.
+  Proposes the `sim/worldgen/` module plan; the micro-POI layer is its first
+  in-flight increment. Still to build: the generator modules themselves.
+
 ## 2026-07-20 — Visual direction, the asset design model, and a Pixi prove-it slice — PROPOSED
 
 Direction (Roy): find a strong visual engine for high-end designs (movement,
