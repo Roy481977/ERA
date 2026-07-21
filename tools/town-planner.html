@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERA — Town Planner</title>
+<style>
+  :root { --ink:#2b3a2a; --panel:#faf6ee; --line:#d9d2c2; --accent:#2f7d46; --terra:#c65a3a; --teal:#3fa9b0; }
+  html,body { margin:0; height:100%; font:13px/1.45 -apple-system, system-ui, sans-serif; color:var(--ink); background:#efe9dc; overflow:hidden; }
+  #wrap { display:flex; height:100%; }
+  #side { width:295px; min-width:295px; background:var(--panel); border-right:1px solid var(--line); padding:12px 14px; overflow-y:auto; }
+  #cnv { flex:1; display:block; cursor:grab; background:#dfe8d2; }
+  h1 { font-size:16px; margin:0 0 2px; } .sub { color:#7a7461; font-size:11px; margin-bottom:10px; }
+  h2 { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#8a8371; margin:14px 0 6px; }
+  .row { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:4px; }
+  button { font:inherit; font-size:12px; border:1px solid var(--line); background:#fff; border-radius:8px; padding:4px 9px; cursor:pointer; color:var(--ink); }
+  button:hover { background:#f0ede2; }
+  button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.warn { color:#a33; }
+  #insp { background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 10px; min-height:60px; font-size:12px; }
+  #insp input[type=text]{ width:96%; font:inherit; border:1px solid var(--line); border-radius:6px; padding:2px 6px; }
+  #insp label{ display:block; margin-top:5px; }
+  textarea { width:96%; height:64px; font:11px monospace; border:1px solid var(--line); border-radius:8px; }
+  .legend div { margin:2px 0; } .sw { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-2px; margin-right:6px; border:1px solid rgba(0,0,0,.15); }
+  .hint { color:#8a8371; font-size:11px; }
+  #toast { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); background:#2b3a2a; color:#fff; padding:6px 14px; border-radius:9px; opacity:0; transition:opacity .3s; pointer-events:none; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <h1>ERA · Town Planner</h1>
+    <div class="sub">design the district — the plate camera view is the wedge. Roy decides; export → Claude applies.</div>
+
+    <h2>Layout preset</h2>
+    <div class="row">
+      <button id="pCur">Current town</button>
+      <button id="pV2">Proposed v2</button>
+    </div>
+
+    <h2>Tool</h2>
+    <div class="row" id="modes">
+      <button data-m="select" class="on">Select / Move</button>
+      <button data-m="road">+ Road</button>
+      <button data-m="lane">+ Lane</button>
+      <button data-m="river">+ River</button>
+      <button data-m="zone">+ Zone</button>
+      <button data-m="loc">+ Place</button>
+    </div>
+    <div class="hint">Draw paths: click points, <b>double-click</b> to finish. Select mode: drag places, path points, zone centres (edge dot resizes), camera dots. <b>Double-click a path edge</b> inserts a point. <b>Backspace</b> deletes selection. Wheel zooms, drag empty space pans.</div>
+
+    <h2>Selected</h2>
+    <div id="insp"><span class="hint">nothing selected</span></div>
+
+    <h2>Camera</h2>
+    <div class="hint" id="camInfo"></div>
+
+    <h2>Legend</h2>
+    <div class="legend">
+      <div><span class="sw" style="background:#2f7d46"></span>sim place (residents live/visit — routines)</div>
+      <div><span class="sw" style="background:#fff;border:2px solid #8a6d3b"></span>set dressing (plate-only, no sim)</div>
+      <div><span class="sw" style="background:#8b9096"></span>road · <span class="sw" style="background:#b9bec4"></span>lane · <span class="sw" style="background:#57c5d8"></span>river</div>
+      <div><span class="sw" style="background:#b7e08a"></span>lush park · <span class="sw" style="background:#e8c9a8"></span>dense homes · <span class="sw" style="background:#f0e0c0"></span>sparse homes</div>
+      <div><span class="sw" style="background:#cfe6a0"></span>orchard · <span class="sw" style="background:#f5d98a"></span>market bustle</div>
+    </div>
+
+    <h2>Data</h2>
+    <div class="row">
+      <button id="exDl">⬇ Export .json</button>
+      <button id="exCp">Copy JSON</button>
+    </div>
+    <textarea id="io" placeholder="paste JSON here to import…"></textarea>
+    <div class="row"><button id="imp">Import from box</button><button id="clr" class="warn">Clear all</button></div>
+  </div>
+  <canvas id="cnv"></canvas>
+</div>
+<div id="toast"></div>
+<script>
+'use strict';
+// ---------- data ----------
+const CURRENT = {
+  meta:{name:'Current town (as simulated + rendered today)'},
+  camera:{x:467,y:1138,tx:383,ty:213,fov:79},
+  zones:[],
+  paths:[
+    ...[-260,-70,120,310,500,690,880,1070,1260].map((x,i)=>({id:'gv'+i,type:'road',w:26,pts:[[x,-170],[x,1010]]})),
+    ...[-170,20,210,400,590,780,970].map((y,i)=>({id:'gh'+i,type:'road',w:26,pts:[[-260,y],[1260,y]]})),
+    {id:'river',type:'river',w:38,pts:[[735,150],[565,300],[470,470],[430,600],[300,760],[110,905]]},
+  ],
+  locations:[
+    {id:'loc_stadium',name:'Stadium',x:500,y:120,sim:true},{id:'loc_school',name:'School',x:300,y:165,sim:true},
+    {id:'loc_museum',name:'Museum',x:840,y:235,sim:true},{id:'loc_bakery',name:'Bakery',x:320,y:315,sim:true},
+    {id:'loc_main_square',name:'Main Square',x:500,y:360,sim:true},{id:'loc_cafe',name:'Café',x:690,y:310,sim:true},
+    {id:'loc_pub',name:'Pub',x:675,y:520,sim:true},{id:'loc_bridge',name:'Old Bridge',x:470,y:480,sim:true},
+    {id:'loc_riverside',name:'Riverside',x:500,y:600,sim:true},{id:'loc_millers_row',name:"Miller's Row",x:270,y:470,sim:true},
+    {id:'loc_high_street',name:'High Street',x:730,y:455,sim:true},{id:'loc_oakside',name:'Oakside (Old Oak)',x:500,y:705,sim:true},
+    {id:'loc_elm_row',name:'Elm Row',x:150,y:250,sim:true},{id:'loc_kiln_yard',name:'Kiln Yard',x:175,y:560,sim:true},
+    {id:'loc_canal_side',name:'Canalside',x:905,y:470,sim:true},{id:'loc_north_gate',name:'North Gate',x:610,y:55,sim:true},
+    {id:'loc_orchard_close',name:'Orchard Close',x:1000,y:215,sim:true},{id:'loc_weavers_lane',name:"Weavers' Lane",x:355,y:785,sim:true},
+  ],
+};
+// Claude's proposed restructure: stadium close right (spilling off frame), lush
+// park in front/beside it, bustle in the middle, lanes receding, station horizon.
+const V2 = {
+  meta:{name:'Proposed v2 — composed for the locked plate camera'},
+  camera:{x:560,y:1050,tx:350,ty:250,fov:79},
+  zones:[
+    {id:'z1',type:'lush',x:600,y:840,rx:260,ry:140},
+    {id:'z2',type:'lush',x:880,y:560,rx:140,ry:120},
+    {id:'z3',type:'market',x:430,y:450,rx:110,ry:70},
+    {id:'z4',type:'dense',x:390,y:280,rx:230,ry:110},
+    {id:'z5',type:'sparse',x:180,y:520,rx:150,ry:160},
+    {id:'z6',type:'orchard',x:1010,y:260,rx:130,ry:90},
+    {id:'z7',type:'dense',x:760,y:220,rx:170,ry:90},
+    {id:'z8',type:'sparse',x:250,y:740,rx:140,ry:90},
+  ],
+  paths:[
+    {id:'ave',type:'road',w:30,pts:[[180,860],[300,700],[380,560],[450,420],[560,400],[680,470],[620,600],[690,720]]},
+    {id:'high',type:'road',w:26,pts:[[140,420],[250,400],[330,440],[450,420],[700,300],[900,260],[1000,215]]},
+    {id:'horiz',type:'road',w:22,pts:[[80,180],[350,80],[700,120],[1000,150]]},
+    {id:'school',type:'lane',w:16,pts:[[450,420],[380,280],[300,165]]},
+    {id:'elm',type:'lane',w:14,pts:[[300,165],[150,250]]},
+    {id:'mill',type:'lane',w:16,pts:[[380,560],[250,600],[150,640]]},
+    {id:'weave',type:'lane',w:14,pts:[[300,700],[330,760]]},
+    {id:'canal',type:'lane',w:16,pts:[[680,470],[780,500]]},
+    {id:'gate',type:'road',w:24,pts:[[620,600],[560,650],[520,700]]},
+    {id:'river',type:'river',w:40,pts:[[100,250],[220,330],[350,480],[470,520],[560,580],[640,660],[700,760],[820,900]]},
+  ],
+  locations:[
+    {id:'loc_stadium',name:'Stadium (70% in frame)',x:690,y:720,sim:true},
+    {id:'loc_north_gate',name:'North Gate (stadium plaza)',x:620,y:600,sim:true},
+    {id:'loc_oakside',name:'Oakside (Old Oak, park)',x:520,y:660,sim:true},
+    {id:'loc_riverside',name:'Riverside',x:500,y:610,sim:true},
+    {id:'loc_bridge',name:'Old Bridge',x:470,y:520,sim:true},
+    {id:'loc_main_square',name:'Main Square',x:450,y:420,sim:true},
+    {id:'loc_cafe',name:'Café',x:560,y:400,sim:true},
+    {id:'loc_pub',name:'Pub',x:640,y:470,sim:true},
+    {id:'loc_bakery',name:'Bakery',x:330,y:440,sim:true},
+    {id:'loc_high_street',name:'High Street',x:250,y:400,sim:true},
+    {id:'loc_museum',name:'Museum',x:700,y:300,sim:true},
+    {id:'loc_school',name:'School',x:300,y:165,sim:true},
+    {id:'loc_elm_row',name:'Elm Row',x:150,y:250,sim:true},
+    {id:'loc_orchard_close',name:'Orchard Close',x:1000,y:215,sim:true},
+    {id:'loc_canal_side',name:'Canalside',x:780,y:500,sim:true},
+    {id:'loc_millers_row',name:"Miller's Row",x:250,y:600,sim:true},
+    {id:'loc_kiln_yard',name:'Kiln Yard',x:150,y:640,sim:true},
+    {id:'loc_weavers_lane',name:"Weavers' Lane",x:330,y:760,sim:true},
+    {id:'d_station',name:'Train Station',x:350,y:80,sim:false},
+    {id:'d_market',name:'Market Hall',x:400,y:470,sim:false},
+    {id:'d_clock',name:'Clock Tower',x:480,y:360,sim:false},
+    {id:'d_boathouse',name:'Boathouse',x:560,y:585,sim:false},
+    {id:'d_mill',name:'Old Mill',x:220,y:330,sim:false},
+  ],
+};
+let D = JSON.parse(JSON.stringify(V2));
+
+// ---------- view ----------
+const cnv = document.getElementById('cnv'), ctx = cnv.getContext('2d');
+let scale = 0.62, ox = 60, oy = 30;   // world → screen: s = w*scale + o
+const W2S = (x,y)=>[x*scale+ox, y*scale+oy], S2W = (x,y)=>[(x-ox)/scale, (y-oy)/scale];
+function resize(){ cnv.width = cnv.clientWidth*devicePixelRatio; cnv.height = cnv.clientHeight*devicePixelRatio; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); draw(); }
+window.addEventListener('resize', resize);
+
+const ZC = { lush:'#b7e08a', dense:'#e8c9a8', sparse:'#f0e0c0', orchard:'#cfe6a0', market:'#f5d98a' };
+const ZTYPES = Object.keys(ZC);
+let mode='select', sel=null, drawing=null, toastT=null;
+
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.opacity=1; clearTimeout(toastT); toastT=setTimeout(()=>t.style.opacity=0,1600); }
+
+function draw(){
+  const w=cnv.clientWidth, h=cnv.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  // grid
+  ctx.strokeStyle='#cfd8c0'; ctx.lineWidth=1; ctx.fillStyle='#9aa38c'; ctx.font='10px sans-serif';
+  for(let gx=-400; gx<=1600; gx+=200){ const [sx]=W2S(gx,0); ctx.beginPath(); ctx.moveTo(sx,0); ctx.lineTo(sx,h); ctx.stroke(); ctx.fillText(gx,sx+3,12); }
+  for(let gy=-400; gy<=1400; gy+=200){ const [,sy]=W2S(0,gy); ctx.beginPath(); ctx.moveTo(0,sy); ctx.lineTo(w,sy); ctx.stroke(); ctx.fillText(gy,4,sy-3); }
+  // zones
+  for(const z of D.zones){ const [zx,zy]=W2S(z.x,z.y);
+    ctx.fillStyle=(ZC[z.type]||'#ddd')+'88'; ctx.strokeStyle=(ZC[z.type]||'#ccc');
+    ctx.beginPath(); ctx.ellipse(zx,zy,z.rx*scale,z.ry*scale,0,0,7); ctx.fill();
+    ctx.setLineDash(sel&&sel.k==='zone'&&sel.o===z?[]:[4,4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#77704f'; ctx.fillText(z.type, zx-12, zy);
+    if(sel&&sel.k==='zone'&&sel.o===z){ ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(zx+z.rx*scale,zy,4,0,7); ctx.fill(); }
+  }
+  // paths
+  for(const p of D.paths){
+    const col = p.type==='river' ? '#57c5d8' : p.type==='lane' ? '#b9bec4' : '#8b9096';
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(2,(p.w||20)*scale*0.5); ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath(); p.pts.forEach((pt,i)=>{ const [x,y]=W2S(pt[0],pt[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+    if(p.type==='road'){ ctx.strokeStyle='#f2efe4'; ctx.lineWidth=1.2; ctx.setLineDash([6,6]); ctx.beginPath();
+      p.pts.forEach((pt,i)=>{ const [x,y]=W2S(pt[0],pt[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); ctx.setLineDash([]); }
+    if(sel&&sel.k==='path'&&sel.o===p){ for(const pt of p.pts){ const [x,y]=W2S(pt[0],pt[1]); ctx.fillStyle='#fff'; ctx.strokeStyle='#333'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(x,y,4.4,0,7); ctx.fill(); ctx.stroke(); } }
+  }
+  if(drawing){ ctx.strokeStyle='#e0733f'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath();
+    drawing.pts.forEach((pt,i)=>{ const [x,y]=W2S(pt[0],pt[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); ctx.setLineDash([]); }
+  // camera wedge
+  const c=D.camera; { const [cx,cy]=W2S(c.x,c.y), [tx,ty]=W2S(c.tx,c.ty);
+    const ang=Math.atan2(c.ty-c.y,c.tx-c.x), half=(c.fov||79)*Math.PI/360, L=1500*scale;
+    ctx.fillStyle='rgba(63,110,160,0.10)'; ctx.strokeStyle='rgba(63,110,160,0.6)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(ang-half)*L, cy+Math.sin(ang-half)*L);
+    ctx.lineTo(cx+Math.cos(ang+half)*L, cy+Math.sin(ang+half)*L);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#3f6ea0'; ctx.beginPath(); ctx.arc(cx,cy,7,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='9px sans-serif'; ctx.fillText('CAM',cx-9,cy+3);
+    ctx.fillStyle='#3f6ea0'; ctx.beginPath(); ctx.arc(tx,ty,5,0,7); ctx.fill();
+    ctx.font='10px sans-serif'; ctx.fillText('aim',tx+7,ty+3);
+  }
+  // locations
+  ctx.font='11px sans-serif';
+  for(const l of D.locations){ const [x,y]=W2S(l.x,l.y);
+    if(l.sim){ ctx.fillStyle = l.id==='loc_stadium' ? '#c65a3a' : '#2f7d46'; ctx.beginPath(); ctx.arc(x,y,l.id==='loc_stadium'?9:6,0,7); ctx.fill(); }
+    else { ctx.fillStyle='#fff'; ctx.strokeStyle='#8a6d3b'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fill(); ctx.stroke(); }
+    if(sel&&sel.k==='loc'&&sel.o===l){ ctx.strokeStyle='#333'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(x,y,10,0,7); ctx.stroke(); }
+    ctx.fillStyle='#2b3a2a'; ctx.fillText(l.name,x+9,y+4);
+  }
+  document.getElementById('camInfo').textContent = `cam (${c.x|0}, ${c.y|0}) → aim (${c.tx|0}, ${c.ty|0}) · hfov ${c.fov}° · wedge ≈ what the plate sees`;
+  inspect();
+}
+
+// ---------- inspector ----------
+function inspect(){
+  const el=document.getElementById('insp');
+  if(!sel){ el.innerHTML='<span class="hint">nothing selected</span>'; return; }
+  if(sel.k==='loc'){ const l=sel.o;
+    el.innerHTML=`<b>Place</b> · <span class="hint">${l.id}</span>
+      <label>name <input type="text" id="iName" value="${l.name.replace(/"/g,'&quot;')}"></label>
+      <label><input type="checkbox" id="iSim" ${l.sim?'checked':''}> sim place (residents visit; needs routines)</label>
+      <div class="hint">(${l.x|0}, ${l.y|0}) — drag to move</div>
+      <div class="row"><button id="iDel" class="warn">delete place</button></div>`;
+    iName.oninput=e=>{ l.name=e.target.value; draw(); };
+    iSim.onchange=e=>{ l.sim=e.target.checked; draw(); };
+    iDel.onclick=()=>{ D.locations=D.locations.filter(x=>x!==l); sel=null; draw(); };
+  } else if(sel.k==='path'){ const p=sel.o;
+    el.innerHTML=`<b>${p.type}</b> · <span class="hint">${p.id} · ${p.pts.length} pts</span>
+      <label>type <button id="iType">${p.type}</button> width <input type="range" id="iW" min="8" max="60" value="${p.w||20}"></label>
+      <div class="hint">drag points · double-click an edge to insert · Backspace deletes ${sel.pi!=null?'point '+sel.pi:'path'}</div>
+      <div class="row"><button id="iDel" class="warn">delete path</button></div>`;
+    iType.onclick=()=>{ p.type = p.type==='road'?'lane':p.type==='lane'?'river':'road'; draw(); };
+    iW.oninput=e=>{ p.w=+e.target.value; draw(); };
+    iDel.onclick=()=>{ D.paths=D.paths.filter(x=>x!==p); sel=null; draw(); };
+  } else if(sel.k==='zone'){ const z=sel.o;
+    el.innerHTML=`<b>Zone</b> · <span class="hint">${z.id}</span>
+      <label>type <button id="iType">${z.type}</button></label>
+      <div class="hint">(${z.x|0}, ${z.y|0}) rx ${z.rx|0} ry ${z.ry|0} — drag centre; right dot resizes; Backspace deletes</div>`;
+    iType.onclick=()=>{ z.type = ZTYPES[(ZTYPES.indexOf(z.type)+1)%ZTYPES.length]; draw(); };
+  } else if(sel.k==='cam'){ el.innerHTML=`<b>Camera</b><div class="hint">drag CAM (position) and aim (look target). The wedge is the plate's ground coverage — keep every sim place inside it.</div>`; }
+}
+
+// ---------- interaction ----------
+let dragging=null, panning=null;
+function pick(mx,my){
+  const R=9;
+  const c=D.camera; for(const [k,px,py] of [['cpos',c.x,c.y],['ctgt',c.tx,c.ty]]){ const [x,y]=W2S(px,py); if(Math.hypot(mx-x,my-y)<R+3) return {k:'cam',cam:k}; }
+  for(const l of D.locations){ const [x,y]=W2S(l.x,l.y); if(Math.hypot(mx-x,my-y)<R) return {k:'loc',o:l}; }
+  if(sel&&sel.k==='zone'){ const z=sel.o; const [zx,zy]=W2S(z.x,z.y); if(Math.hypot(mx-(zx+z.rx*scale),my-zy)<R) return {k:'zone',o:z,h:'r'}; }
+  for(const p of D.paths){ for(let i=0;i<p.pts.length;i++){ const [x,y]=W2S(p.pts[i][0],p.pts[i][1]); if(Math.hypot(mx-x,my-y)<R) return {k:'path',o:p,pi:i}; } }
+  for(const p of D.paths){ for(let i=0;i<p.pts.length-1;i++){ const [x1,y1]=W2S(p.pts[i][0],p.pts[i][1]), [x2,y2]=W2S(p.pts[i+1][0],p.pts[i+1][1]);
+    const t=Math.max(0,Math.min(1,((mx-x1)*(x2-x1)+(my-y1)*(y2-y1))/((x2-x1)**2+(y2-y1)**2||1)));
+    if(Math.hypot(mx-(x1+(x2-x1)*t), my-(y1+(y2-y1)*t)) < Math.max(5,(p.w||20)*scale*0.3)) return {k:'path',o:p,seg:i}; } }
+  for(const z of D.zones){ const [zx,zy]=W2S(z.x,z.y); const dx=(mx-zx)/(z.rx*scale), dy=(my-zy)/(z.ry*scale); if(dx*dx+dy*dy<1) return {k:'zone',o:z}; }
+  return null;
+}
+cnv.addEventListener('mousedown', e=>{
+  const mx=e.offsetX, my=e.offsetY, [wx,wy]=S2W(mx,my);
+  if(mode!=='select'){
+    if(mode==='loc'){ const name=prompt('Place name?','New Place'); if(name){ D.locations.push({id:'d_'+name.toLowerCase().replace(/\W+/g,'_'),name,x:wx|0,y:wy|0,sim:false}); draw(); } return; }
+    if(mode==='zone'){ D.zones.push({id:'z'+(D.zones.length+1+Math.random()*99|0),type:'lush',x:wx|0,y:wy|0,rx:120,ry:90}); sel={k:'zone',o:D.zones[D.zones.length-1]}; draw(); return; }
+    if(!drawing) drawing={id:mode+(D.paths.length+1),type:mode==='road'?'road':mode==='lane'?'lane':'river',w:mode==='road'?26:mode==='lane'?15:38,pts:[]};
+    drawing.pts.push([wx|0,wy|0]); draw(); return;
+  }
+  const hit=pick(mx,my);
+  if(hit){ sel=hit; dragging=hit; draw(); }
+  else { sel=null; panning=[e.clientX,e.clientY,ox,oy]; cnv.style.cursor='grabbing'; draw(); }
+});
+cnv.addEventListener('mousemove', e=>{
+  if(panning){ ox=panning[2]+(e.clientX-panning[0]); oy=panning[3]+(e.clientY-panning[1]); draw(); return; }
+  if(!dragging) return;
+  const [wx,wy]=S2W(e.offsetX,e.offsetY);
+  if(dragging.k==='loc'){ dragging.o.x=wx|0; dragging.o.y=wy|0; }
+  else if(dragging.k==='cam'){ const c=D.camera; if(dragging.cam==='cpos'){c.x=wx|0;c.y=wy|0;} else {c.tx=wx|0;c.ty=wy|0;} }
+  else if(dragging.k==='zone'){ const z=dragging.o; if(dragging.h==='r'){ z.rx=Math.max(30,Math.abs(wx-z.x)|0); z.ry=Math.max(30,(z.ry*z.rx/Math.max(z.rx,1))|0)||z.ry; } else { z.x=wx|0; z.y=wy|0; } }
+  else if(dragging.k==='path'&&dragging.pi!=null){ dragging.o.pts[dragging.pi]=[wx|0,wy|0]; }
+  draw();
+});
+window.addEventListener('mouseup', ()=>{ dragging=null; panning=null; cnv.style.cursor='grab'; });
+cnv.addEventListener('dblclick', e=>{
+  if(drawing){ if(drawing.pts.length>1) D.paths.push(drawing); drawing=null; setMode('select'); draw(); return; }
+  const hit=pick(e.offsetX,e.offsetY);
+  if(hit&&hit.k==='path'&&hit.seg!=null){ const [wx,wy]=S2W(e.offsetX,e.offsetY); hit.o.pts.splice(hit.seg+1,0,[wx|0,wy|0]); sel={k:'path',o:hit.o,pi:hit.seg+1}; draw(); }
+});
+cnv.addEventListener('wheel', e=>{ e.preventDefault();
+  const f=e.deltaY<0?1.12:0.89, [wx,wy]=S2W(e.offsetX,e.offsetY);
+  scale=Math.max(0.15,Math.min(3,scale*f)); ox=e.offsetX-wx*scale; oy=e.offsetY-wy*scale; draw();
+},{passive:false});
+window.addEventListener('keydown', e=>{
+  if(e.key==='Backspace'&&sel&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();
+    if(sel.k==='path'&&sel.pi!=null&&sel.o.pts.length>2){ sel.o.pts.splice(sel.pi,1); sel.pi=null; }
+    else if(sel.k==='path'){ D.paths=D.paths.filter(x=>x!==sel.o); sel=null; }
+    else if(sel.k==='loc'){ D.locations=D.locations.filter(x=>x!==sel.o); sel=null; }
+    else if(sel.k==='zone'){ D.zones=D.zones.filter(x=>x!==sel.o); sel=null; }
+    draw();
+  }
+  if(e.key==='Escape'){ drawing=null; sel=null; setMode('select'); draw(); }
+});
+
+// ---------- modes / presets / io ----------
+function setMode(m){ mode=m; document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); cnv.style.cursor=m==='select'?'grab':'crosshair'; }
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+document.getElementById('pCur').onclick=()=>{ if(confirm('Load CURRENT town? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(CURRENT)); sel=null; draw(); toast('Current town loaded'); } };
+document.getElementById('pV2').onclick=()=>{ if(confirm('Load PROPOSED v2? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(V2)); sel=null; draw(); toast('Proposed v2 loaded'); } };
+document.getElementById('exDl').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:'application/json'})); a.download='era-town-plan.json'; a.click(); toast('exported era-town-plan.json'); };
+document.getElementById('exCp').onclick=async()=>{ document.getElementById('io').value=JSON.stringify(D); try{ await navigator.clipboard.writeText(JSON.stringify(D)); toast('JSON copied — paste it to Claude'); }catch(e){ toast('JSON in the box below — copy it to Claude'); } };
+document.getElementById('imp').onclick=()=>{ try{ const j=JSON.parse(document.getElementById('io').value); if(!j.locations||!j.paths) throw 0; D=j; sel=null; draw(); toast('imported'); }catch(e){ toast('could not parse that JSON'); } };
+document.getElementById('clr').onclick=()=>{ if(confirm('Really clear everything?')){ D={meta:{name:'blank'},camera:D.camera,zones:[],paths:[],locations:[]}; sel=null; draw(); } };
+
+resize(); setMode('select');
+</script>
+</body>
+</html>
