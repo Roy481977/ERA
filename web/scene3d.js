@@ -14,7 +14,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import init, { WasmEngine } from './pkg/era_first_breath.js';
+// The WASM engine is imported dynamically in main() — plate mode renders the
+// static world (world.json) and never loads the sim at all.
 
 const S = 0.12, CX = 500 * S, CZ = 430 * S;           // world→scene scale + centre
 const w2s = (x, y) => [x * S - CX, y * S - CZ];        // (world x,y) → scene (X,Z)
@@ -63,6 +64,15 @@ const TEX = {};
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2, '0');
 const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+// ---- plate mode (CD-008): offline control-rig renders for the master plate ----
+// ?plate=1 turns the scene into a still-image rig: fixed daylight, a camera set
+// from URL params, no DOF/HUD/sim loop, café GLB from local assets, and two
+// passes — the colour blockout and a linear depth map (for depth-ControlNet and
+// runtime sprite occlusion). Driven headlessly; see tools/render_plate.mjs.
+const QS = new URLSearchParams(location.search);
+const PLATE = QS.has('plate');
+const qf = (k, d) => { const v = parseFloat(QS.get(k)); return Number.isFinite(v) ? v : d; };
 
 function box(w, h, d, color, tex) {
   const r = Math.max(0.05, Math.min(w, h, d) * 0.16);          // soft clay edges
@@ -128,8 +138,10 @@ const ASSETS = {
 };
 function loadAsset(spec, sx, sz, town, fallback) {
   let settled = false;
+  window.__pendingAssets = (window.__pendingAssets || 0) + 1;
   gltfLoader.load(spec.file, gltf => {
     settled = true;
+    window.__pendingAssets--;
     const m = gltf.scene;
     m.rotation.y = spec.rotY || 0;
     let bb = new THREE.Box3().setFromObject(m), size = new THREE.Vector3(); bb.getSize(size);
@@ -139,7 +151,7 @@ function loadAsset(spec, sx, sz, town, fallback) {
     m.position.set(sx - c.x, (spec.yOffset || 0) - bb.min.y, sz - c.z);
     m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material) { o.material.metalness = 0; if (o.material.roughness !== undefined) o.material.roughness = Math.max(0.7, o.material.roughness); } } });
     town.add(m);
-  }, undefined, err => { if (!settled) { console.warn('asset load failed, using placeholder:', spec.file, err); fallback(); } });
+  }, undefined, err => { if (!settled) { settled = true; window.__pendingAssets--; console.warn('asset load failed, using placeholder:', spec.file, err); fallback(); } });
 }
 
 function buildTown() {
@@ -170,6 +182,29 @@ function buildTown() {
       const h = 1.6 + rnd() * 5.5, [sx, sz] = w2s(bx, by);
       const b = box(2 + rnd() * 1.6, h, 2 + rnd() * 1.6, wallPal[(s >>> 3) % wallPal.length], TEX.plaster); b.position.set(sx, h / 2, sz); town.add(b);
       const roof = box(2.3, 0.5, 2.3, roofPal[(s >>> 7) % roofPal.length], TEX.tile); roof.position.set(sx, h + 0.25, sz); town.add(roof);
+    }
+  }
+
+  // plate mode: the world must recede into real distance — a far ring of fabric
+  // (blocks, roofs, trees) beyond the core town, and soft hills on the horizon.
+  if (PLATE) {
+    let fs = 24681357; const frnd = () => { fs = (Math.imul(fs, 1664525) + 1013904223) >>> 0; return fs / 4294967296; };
+    for (let x = EX0 - 900; x < EX1 + 900; x += GAP * 1.35) for (let y = EY0 - 1100; y < EY1 + 500; y += GAP * 1.35) {
+      if (x > EX0 - 40 && x < EX1 + 40 && y > EY0 - 40 && y < EY1 + 40) continue;   // core handled above
+      const n = 1 + Math.floor(frnd() * 3);
+      for (let k = 0; k < n; k++) {
+        const bx = x + (frnd() - 0.5) * GAP, by = y + (frnd() - 0.5) * GAP;
+        const h = 1.6 + frnd() * 4.5, [sx, sz] = w2s(bx, by);
+        const b = box(2 + frnd() * 1.8, h, 2 + frnd() * 1.8, wallPal[(fs >>> 3) % wallPal.length], TEX.plaster); b.position.set(sx, h / 2, sz); town.add(b);
+        const roof = box(2.4, 0.5, 2.4, roofPal[(fs >>> 7) % roofPal.length], TEX.tile); roof.position.set(sx, h + 0.25, sz); town.add(roof);
+        if (frnd() < 0.5) town.add(streetTree(sx + 2.4, sz + 1.2));
+      }
+    }
+    for (let i = 0; i < 7; i++) {                                   // horizon hills
+      const [hx, hz] = w2s(-700 + i * 420 + (i % 2) * 140, -1150 - (i % 3) * 260);
+      const hill = new THREE.Mesh(new THREE.SphereGeometry(30 + (i % 3) * 14, 20, 12),
+        new THREE.MeshStandardMaterial({ color: [0x8fb956, 0x7fae4e, 0x9cc161][i % 3], roughness: 1 }));
+      hill.scale.y = 0.16; hill.position.set(hx, 0, hz); town.add(hill);
     }
   }
 
@@ -345,22 +380,29 @@ function renderHud(fr) {
 }
 
 async function main() {
-  await init();
-  eng = new WasmEngine(0);
-  WORLD = JSON.parse(eng.world_json());
+  if (PLATE) {
+    WORLD = await (await fetch('./world.json')).json();      // static stage; no sim
+    ASSETS.loc_cafe.file = './assets/cafe.glb';              // local GLB for the rig
+  } else {
+    const { default: init, WasmEngine } = await import('./pkg/era_first_breath.js');
+    await init();
+    eng = new WasmEngine(0);
+    WORLD = JSON.parse(eng.world_json());
+    cur = JSON.parse(eng.snapshot_json()); prev = cur;
+  }
   WORLD.entities.forEach(e => ROSTER[e.id] = e);
-  cur = JSON.parse(eng.snapshot_json()); prev = cur;
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: PLATE });
+  renderer.setPixelRatio(PLATE ? 1 : (window.devicePixelRatio || 1));
+  const RW = PLATE ? qf('w', 1920) : window.innerWidth, RH = PLATE ? qf('h', 1200) : window.innerHeight;
+  renderer.setSize(RW, RH);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('app').appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x2f8fe0);
   scene.fog = new THREE.Fog(0xbfe0ea, 150, 660);          // only a light haze far out
-  camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.5, 900);
+  camera = new THREE.PerspectiveCamera(qf('fov', 34), RW / RH, 0.5, 900);
   buildTextures();
   // a rich vibrant sky — deep blue at the zenith, light near the horizon
   { const cv = document.createElement('canvas'); cv.width = 8; cv.height = 128; const g = cv.getContext('2d');
@@ -371,7 +413,7 @@ async function main() {
   amb = new THREE.AmbientLight(0xbfae90, 0.38); scene.add(amb);
   sun = new THREE.DirectionalLight(0xfff0d2, 1.28); sun.position.set(60, 80, 40); scene.add(sun);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004;
-  { const c = sun.shadow.camera; c.left = -75; c.right = 75; c.top = 75; c.bottom = -75; c.near = 1; c.far = 320; }
+  { const c = sun.shadow.camera; const e = PLATE ? 115 : 75; c.left = -e; c.right = e; c.top = e; c.bottom = -e; c.near = 1; c.far = PLATE ? 500 : 320; }
 
   buildTown();
 
@@ -383,6 +425,8 @@ async function main() {
     cl.position.set(-95 + i * 26, 48 + (i % 3) * 8, -60 - (i % 4) * 22); cloudGroup.add(cl);
   }
   scene.add(cloudGroup);
+
+  if (PLATE) { setupPlate(); $('loading').remove(); return; }   // still-image rig; no loop
 
   // macro depth of field — the hero sharp, the rest melting to blur (tilt-shift).
   composer = new EffectComposer(renderer);
@@ -403,6 +447,43 @@ async function main() {
   $('loading').remove();
   renderHud(cur);
   requestAnimationFrame(frame);
+}
+
+// The plate rig: fixed daylight, a parameterised still camera, two passes.
+// Colour pass renders on load; __renderDepth() switches the scene to a linear
+// depth material (near = white, far = black — disparity style for ControlNet
+// and for runtime occlusion) and re-renders. __plateReady flags completion.
+function setupPlate() {
+  const hour = qf('hour', 10.5);
+  camera.position.set(qf('cx', 6), qf('cy', 46), qf('cz', 132));
+  camera.lookAt(qf('tx', -2), qf('ty', 4), qf('tz', -20));
+
+  const L = lightingAt(hour);                                 // fixed golden daylight
+  scene.background = L.sky; scene.fog.color = L.sky;
+  hemi.color = L.sky; hemi.intensity = L.hemi; amb.color = L.amb; sun.color = L.sun; sun.intensity = L.sunI;
+  const solar = (hour - 6) / 12, alt = Math.sin(Math.PI * Math.max(0, Math.min(1, solar)));
+  sun.position.set((solar - 0.5) * 150, Math.max(5, alt * 95), 45);
+  skyDome.position.copy(camera.position);
+  if (cloudGroup) cloudGroup.visible = false;   // the image model paints the cumulus
+
+  const depthMat = new THREE.ShaderMaterial({
+    uniforms: { uNear: { value: qf('dnear', 4) }, uFar: { value: qf('dfar', 300) } },
+    vertexShader: 'varying float vD; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vD = -mv.z; gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'varying float vD; uniform float uNear; uniform float uFar; void main(){ float d = clamp((vD - uNear) / (uFar - uNear), 0.0, 1.0); gl_FragColor = vec4(vec3(1.0 - d), 1.0); }',
+  });
+  window.__renderColor = () => renderer.render(scene, camera);
+  window.__renderDepth = () => {
+    skyDome.visible = false; if (cloudGroup) cloudGroup.visible = false;
+    scene.traverse(o => { if (o.isMesh && o.material && (o.material.transparent || o.material.blending === THREE.AdditiveBlending)) o.visible = false; });
+    scene.overrideMaterial = depthMat; scene.fog = null; scene.background = new THREE.Color(0x000000);
+    renderer.render(scene, camera);
+  };
+  (async () => {                                              // wait for the GLB, then render
+    const t0 = Date.now();
+    while ((window.__pendingAssets || 0) > 0 && Date.now() - t0 < 45000) await new Promise(r => setTimeout(r, 200));
+    renderer.render(scene, camera);
+    window.__plateReady = true;
+  })();
 }
 
 function bindControls() {

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ERA — plate control rig</title>
+<style>html,body{margin:0;background:#000}#app canvas{display:block}</style>
+</head>
+<body>
+<!-- Open as plate.html?plate=1&w=...&h=...&cx=... — the harness (tools/render_plate.mjs)
+     always passes plate=1 plus the camera params. Uses locally vendored three
+     (web/vendor/, gitignored) so headless renders don't depend on the CDN. -->
+<div id="loading">rendering…</div>
+<div id="app"></div>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/build/three.module.js",
+  "three/addons/": "./vendor/three/examples/jsm/"
+}}
+</script>
+<script type="module" src="./scene3d.js"></script>
+</body>
+</html>
