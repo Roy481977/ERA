@@ -26,6 +26,13 @@ pub const MAP: &[(&str, f64, f64)] = &[
     ("loc_millers_row", 270.0, 470.0),
     ("loc_high_street", 730.0, 455.0),
     ("loc_oakside", 500.0, 705.0),
+    // The wider town's lanes, out around the district in the greater-town fabric.
+    ("loc_elm_row", 150.0, 250.0),
+    ("loc_kiln_yard", 175.0, 560.0),
+    ("loc_canal_side", 905.0, 470.0),
+    ("loc_north_gate", 610.0, 55.0),
+    ("loc_orchard_close", 1000.0, 215.0),
+    ("loc_weavers_lane", 355.0, 785.0),
 ];
 
 /// A distinct colour per resident, plus the old dog.
@@ -40,6 +47,17 @@ pub const COLORS: &[(&str, &str)] = &[
     ("res_agnes", "#8d99ae"),
     ("res_milo", "#ef8354"),
     ("res_tomas", "#4f9d69"),
+    // The wider town's residents.
+    ("res_petra", "#b5654a"),
+    ("res_bruno", "#5a8a7a"),
+    ("res_dan", "#7a6ab0"),
+    ("res_nadia", "#d47ba0"),
+    ("res_yusuf", "#4a8ac0"),
+    ("res_otto", "#9a8a70"),
+    ("res_lena", "#c99a3a"),
+    ("res_sam", "#5fa85a"),
+    ("res_ines", "#c0609a"),
+    ("res_mara", "#e0915a"),
     ("the_old_dog", "#8b5a2b"),
 ];
 

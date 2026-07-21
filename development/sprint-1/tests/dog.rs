@@ -26,8 +26,8 @@ fn the_dog_keeps_a_daily_rhythm() {
 #[test]
 fn the_dog_is_not_a_resident() {
     let sim = Simulation::new(cast());
-    // He is his own thing — ten residents, and a dog beside them.
-    assert_eq!(sim.residents.len(), 10);
+    // He is his own thing — the town's residents, and a dog beside them.
+    assert_eq!(sim.residents.len(), 20);
     assert!(sim.residents.iter().all(|r| r.id != "the_old_dog"));
 }
 

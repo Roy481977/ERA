@@ -32,6 +32,15 @@ pub const EDGES: &[(LocationId, LocationId, u32)] = &[
     ("loc_museum", "loc_cafe", 1),
     ("loc_pub", "loc_main_square", 1),
     ("loc_pub", "loc_high_street", 1),
+    // The wider town's lanes, each joined to the nearest district node (leaves —
+    // they do not shorten any existing route).
+    ("loc_elm_row", "loc_school", 1),
+    ("loc_elm_row", "loc_bakery", 1),
+    ("loc_kiln_yard", "loc_millers_row", 1),
+    ("loc_canal_side", "loc_high_street", 1),
+    ("loc_north_gate", "loc_stadium", 1),
+    ("loc_orchard_close", "loc_museum", 1),
+    ("loc_weavers_lane", "loc_oakside", 1),
 ];
 
 #[derive(Debug, Clone)]

@@ -4,16 +4,17 @@ use era_first_breath::world::build_world;
 use era_first_breath::world::navigation::NavGraph;
 
 #[test]
-fn twelve_locations_three_residential() {
+fn locations_and_residential_nodes() {
     let world = build_world();
-    assert_eq!(world.locations.len(), 12);
-    // Exactly three residential nodes, each offering HOME.
+    // The district's twelve places plus the wider town's six residential lanes.
+    assert_eq!(world.locations.len(), 18);
+    // Nine residential nodes now, each offering HOME.
     let homes: Vec<_> = world
         .locations
         .iter()
         .filter(|l| l.affordances.contains(&"HOME"))
         .collect();
-    assert_eq!(homes.len(), 3, "expected three residential locations");
+    assert_eq!(homes.len(), 9, "expected nine residential locations");
 }
 
 #[test]

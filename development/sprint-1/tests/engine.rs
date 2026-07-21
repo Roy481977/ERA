@@ -10,8 +10,8 @@ fn a_fresh_engine_starts_at_the_first_breath() {
     assert_eq!(e.day(), 0);
     assert_eq!(e.hour(), 0);
     let snap = e.snapshot();
-    // Eighteen persistent entities: ten residents, the old dog, and seven animals.
-    assert_eq!(snap.entities.len(), 18);
+    // Twenty-eight persistent entities: twenty residents, the old dog, and seven animals.
+    assert_eq!(snap.entities.len(), 28);
     // At the first breath, nothing has happened yet.
     assert!(snap.events.is_empty(), "no events should have fired before the first tick");
 }

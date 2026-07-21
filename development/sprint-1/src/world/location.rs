@@ -124,6 +124,15 @@ pub fn locations() -> Vec<Location> {
             affordances: &["HOME", "REST"],
             hours: None,
         },
+        // The wider town: residential lanes and closes around the district, where
+        // the townsfolk live. Homes only (people work and gather at the district's
+        // public places), so the core stays the heart of the town.
+        Location { id: "loc_elm_row", name: "Elm Row", affordances: &["HOME", "REST"], hours: None },
+        Location { id: "loc_kiln_yard", name: "Kiln Yard", affordances: &["HOME", "REST"], hours: None },
+        Location { id: "loc_canal_side", name: "Canalside", affordances: &["HOME", "REST"], hours: None },
+        Location { id: "loc_north_gate", name: "North Gate", affordances: &["HOME", "REST"], hours: None },
+        Location { id: "loc_orchard_close", name: "Orchard Close", affordances: &["HOME", "REST"], hours: None },
+        Location { id: "loc_weavers_lane", name: "Weavers' Lane", affordances: &["HOME", "REST"], hours: None },
     ]
 }
 

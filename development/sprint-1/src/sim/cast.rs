@@ -79,7 +79,7 @@ fn act_at(
 /// sleeping off the late crowd until 09:00. Homes on the Main Square are narrated
 /// as rooms *beside* the square (no residential node yet — a Sprint-1 reduction).
 pub fn cast() -> Vec<Resident> {
-    vec![
+    let mut residents = vec![
         Resident::new("res_hana", "Hana", 58, "Baker", "loc_millers_row", vec![
             act("hana_sleep", "sleeps on Miller's Row", "HOME", 0, 1, 10, 3),
             act("hana_bake", "fires the ovens before dawn", "WORK_BAKERY_COUNTER", 5, 2, 9, 3).on_weekdays(WORKING_DAYS),
@@ -153,6 +153,79 @@ pub fn cast() -> Vec<Resident> {
             act_at("tomas_play", "plays in the square", "GATHER", "loc_main_square", 11, 3, 5, 3).on_weekdays(WEEKEND),
             act("tomas_oak", "visits the Old Oak", "VISIT_OAK", 15, 3, 7, 2),
             act("tomas_home", "home to Oakside", "HOME", 20, 4, 9, 4),
+        ]),
+    ];
+    residents.extend(townsfolk());
+    residents
+}
+
+/// The wider town's residents — the lanes and closes around the district. They
+/// live out in the greater town and come in to its public places to work, shop
+/// and gather. Simpler routines than the named core, but the same living: they
+/// move, meet, form bonds, dress for the weather, and drift to the spots.
+fn townsfolk() -> Vec<Resident> {
+    vec![
+        Resident::new("res_petra", "Petra", 44, "Grocer", "loc_elm_row", vec![
+            act("petra_sleep", "sleeps on Elm Row", "HOME", 0, 1, 10, 6),
+            act("petra_market", "sets out the grocery stall", "MARKET", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act_at("petra_mid", "the midday square", "GATHER", "loc_main_square", 12, 3, 6, 2),
+            act("petra_home", "home to Elm Row", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_bruno", "Bruno", 37, "Porter", "loc_elm_row", vec![
+            act("bruno_sleep", "sleeps on Elm Row", "HOME", 0, 1, 10, 6),
+            act_at("bruno_am", "hauls crates by the ground", "GATHER", "loc_stadium", 8, 2, 8, 2).on_weekdays(WORKING_DAYS),
+            act_at("bruno_mid", "a breather on the square", "GATHER", "loc_main_square", 12, 3, 6, 2),
+            act("bruno_home", "home to Elm Row", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_dan", "Dan", 31, "Mechanic", "loc_kiln_yard", vec![
+            act("dan_sleep", "sleeps at Kiln Yard", "HOME", 0, 1, 10, 6),
+            act_at("dan_am", "the morning's work on the square", "GATHER", "loc_main_square", 8, 2, 8, 3).on_weekdays(WORKING_DAYS),
+            act_at("dan_pm", "a walk along the river", "WALK", "loc_riverside", 15, 3, 6, 2),
+            act("dan_home", "home to Kiln Yard", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_nadia", "Nadia", 39, "Nurse", "loc_canal_side", vec![
+            act("nadia_sleep", "sleeps at Canalside", "HOME", 0, 1, 10, 5),
+            act_at("nadia_am", "the early round on the square", "GATHER", "loc_main_square", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act("nadia_coffee", "a coffee off shift", "DRINK_COFFEE", 16, 2, 6, 2),
+            act("nadia_home", "home to Canalside", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_yusuf", "Yusuf", 52, "Clerk", "loc_canal_side", vec![
+            act("yusuf_sleep", "sleeps at Canalside", "HOME", 0, 1, 10, 6),
+            act_at("yusuf_am", "the morning's errands", "GATHER", "loc_main_square", 9, 2, 8, 3).on_weekdays(WORKING_DAYS),
+            act("yusuf_coffee", "the afternoon café", "DRINK_COFFEE", 15, 2, 6, 2),
+            act("yusuf_home", "home to Canalside", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_otto", "Otto", 74, "Retired", "loc_north_gate", vec![
+            act("otto_sleep", "wakes slowly at North Gate", "HOME", 0, 1, 10, 6),
+            act("otto_bench", "his morning bench", "SIT_BENCH", 8, 2, 8, 3),
+            act_at("otto_mid", "watches the square go by", "GATHER", "loc_main_square", 12, 3, 6, 2),
+            act_at("otto_oak", "sits a while by the Old Oak", "VISIT_OAK", "loc_riverside", 15, 3, 6, 2),
+            act("otto_home", "home to North Gate", "HOME", 19, 4, 7, 3),
+        ]),
+        Resident::new("res_lena", "Lena", 36, "Teacher", "loc_orchard_close", vec![
+            act("lena_sleep", "sleeps at Orchard Close", "HOME", 0, 1, 10, 5),
+            act("lena_school", "takes the class", "SCHOOL", 9, 1, 9, 4).on_weekdays(MON_FRI),
+            act_at("lena_walk", "a weekend walk to the river", "WALK", "loc_riverside", 12, 3, 6, 2).on_weekdays(WEEKEND),
+            act("lena_home", "home to Orchard Close", "HOME", 18, 4, 6, 3),
+        ]),
+        Resident::new("res_sam", "Sam", 11, "Schoolchild", "loc_orchard_close", vec![
+            act("sam_sleep", "sleeps at Orchard Close", "HOME", 0, 1, 10, 7),
+            act("sam_school", "goes to school", "SCHOOL", 9, 1, 8, 4).on_weekdays(MON_FRI),
+            act_at("sam_play", "plays in the square", "GATHER", "loc_main_square", 11, 3, 6, 3).on_weekdays(WEEKEND),
+            act_at("sam_oak", "runs down to the Old Oak", "VISIT_OAK", "loc_riverside", 15, 3, 6, 2),
+            act("sam_home", "home to Orchard Close", "HOME", 20, 4, 9, 3),
+        ]),
+        Resident::new("res_ines", "Ines", 46, "Seamstress", "loc_weavers_lane", vec![
+            act("ines_sleep", "sleeps on Weavers' Lane", "HOME", 0, 1, 10, 6),
+            act_at("ines_am", "the morning market", "MARKET", "loc_main_square", 8, 2, 8, 3).on_weekdays(WORKING_DAYS),
+            act_at("ines_pm", "a walk along the river", "WALK", "loc_riverside", 15, 3, 6, 2),
+            act("ines_home", "home to Weavers' Lane", "HOME", 19, 4, 6, 3),
+        ]),
+        Resident::new("res_mara", "Mara", 24, "Waitress", "loc_weavers_lane", vec![
+            act("mara_sleep", "sleeps on Weavers' Lane", "HOME", 0, 1, 10, 7),
+            act("mara_open", "opens up the café", "WORK", 8, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act("mara_pm", "the afternoon café", "WORK", 14, 3, 8, 3).on_weekdays(WORKING_DAYS),
+            act("mara_home", "home to Weavers' Lane", "HOME", 21, 3, 6, 2),
         ]),
     ]
 }
