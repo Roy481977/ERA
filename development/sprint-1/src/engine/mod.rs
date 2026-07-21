@@ -67,6 +67,8 @@ pub struct EntityView {
     /// What the resident visibly has on now (coat, umbrella, club_scarf, a
     /// keepsake…) — the possessions layer. Empty for non-residents.
     pub worn: Vec<&'static str>,
+    /// Whether this entity is a child (renderer draws smaller proportions).
+    pub child: bool,
 }
 
 /// The day's weather, as a live reading.
@@ -257,6 +259,7 @@ impl Engine {
                 mood: 0.0,
                 energy: 1.0,
                 worn: Vec::new(),
+                child: false,
             }
         };
 
@@ -286,6 +289,7 @@ impl Engine {
                     .map(|a| a.starts_with("WORK") || a == "KIOSK" || a == "MARKET" || a == "BUSK")
                     .unwrap_or(false));
             ev.worn = sim.possessions.worn_tags(r.id, season, sim.weather, working, is_match);
+            ev.child = r.is_child();
             entities.push(ev);
             // Occupancy counts settled/idle residents at their node.
             if !traveling {

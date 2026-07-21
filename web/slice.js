@@ -84,8 +84,36 @@ function readiness(e) { return socOf(e) + moodOf(e) * 3 + (energyOf(e) - 0.5) * 
 function seedOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return ((h >>> 0) % 1000) / 1000; }
 
 // --------------------------------------------------------------------- Pixi
-let app, gGround, gPaths, gPlaces, gActors, labelLayer, gWeather;
+let app, gGround, gPaths, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather;
 const labels = {};
+
+// day/night lighting — a sky colour, an ambient wash, and a sun elevation, all
+// driven by the world clock. Keyframes across 24h, linearly interpolated.
+const LIGHTKF = [
+  { h: 0, sky: 0x0e1732, amb: 0x101c40, aA: 0.46, sun: 0 },
+  { h: 5, sky: 0x2a3f63, amb: 0x263a66, aA: 0.4, sun: 0.03 },
+  { h: 6.5, sky: 0xe7b088, amb: 0xf2a068, aA: 0.24, sun: 0.16 },
+  { h: 8, sky: 0xbfe0ea, amb: 0xffe8bc, aA: 0.07, sun: 0.5 },
+  { h: 12, sky: 0xa9d6e6, amb: 0xffffff, aA: 0.0, sun: 1.0 },
+  { h: 16, sky: 0xbadfe8, amb: 0xffe8bc, aA: 0.06, sun: 0.62 },
+  { h: 18.5, sky: 0xe89055, amb: 0xf07e38, aA: 0.26, sun: 0.15 },
+  { h: 20, sky: 0x4b3f6e, amb: 0x2c2c5e, aA: 0.4, sun: 0.03 },
+  { h: 22, sky: 0x162038, amb: 0x101c40, aA: 0.44, sun: 0 },
+  { h: 24, sky: 0x0e1732, amb: 0x101c40, aA: 0.46, sun: 0 },
+];
+let LIGHT = { sky: 0xa9d6e6, amb: 0xffffff, aA: 0, sun: 1 };
+function lightingAt(t) {
+  let a = LIGHTKF[0], b = LIGHTKF[LIGHTKF.length - 1];
+  for (let i = 0; i < LIGHTKF.length - 1; i++) { if (t >= LIGHTKF[i].h && t <= LIGHTKF[i + 1].h) { a = LIGHTKF[i]; b = LIGHTKF[i + 1]; break; } }
+  const f = (t - a.h) / Math.max(0.001, b.h - a.h);
+  return { sky: mix(a.sky, b.sky, f), amb: mix(a.amb, b.amb, f), aA: a.aA + (b.aA - a.aA) * f, sun: a.sun + (b.sun - a.sun) * f };
+}
+
+// small per-person palettes (skin, hair, trousers) chosen stably from the id.
+const SKINS = [0xe8c39e, 0xdcae82, 0xc68a5e, 0xa9744a, 0x8a5a3a, 0xf0d3b4];
+const HAIRS = [0x2a2018, 0x4a3526, 0x6b4a2f, 0x30303a, 0xb08a5a, 0x7a3a2a, 0x9a9088];
+const TROUSERS = [0x3a4a63, 0x5a4a3a, 0x44543f, 0x6a4a55, 0x40566a, 0x4a4550];
+function pickFor(arr, id, salt) { let h = 2166136261; for (const c of id + salt) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return arr[(h >>> 0) % arr.length]; }
 
 async function main() {
   await init();
@@ -103,10 +131,12 @@ async function main() {
   gGround = new PIXI.Graphics();
   gPaths = new PIXI.Graphics();
   gPlaces = new PIXI.Graphics();
+  gEnv = new PIXI.Graphics();              // cloud shadows, window glow, wet sheen (under actors)
   gActors = new PIXI.Graphics();
+  gAmbient = new PIXI.Graphics();          // the day/night wash (over the scene, under labels)
   labelLayer = new PIXI.Container();
   gWeather = new PIXI.Graphics();          // veil + precipitation, on top of all
-  app.stage.addChild(gGround, gPaths, gPlaces, gActors, labelLayer, gWeather);
+  app.stage.addChild(gGround, gPaths, gPlaces, gEnv, gActors, gAmbient, labelLayer, gWeather);
 
   // a soft tilt-shift: blur the far and near thirds of the frame gently.
   applyTiltShift();
@@ -205,8 +235,8 @@ function drawStatic() {
       isoBuilding(gPlaces, cx, cy, w, w * 0.55, h, walls, roof);
     }
     const t = new PIXI.Text({ text: l.name, style: { fontFamily: 'system-ui', fontSize: 11,
-      fill: 0x2f4a2a, fontWeight: '500' } });
-    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + 14 * FIT.s + 4; t.alpha = 0.85;
+      fill: 0xf2f6ee, fontWeight: '500', stroke: { color: 0x1a2a14, width: 3, join: 'round' } } });
+    t.anchor.set(0.5, 0); t.x = cx; t.y = cy + 14 * FIT.s + 4; t.alpha = 0.9;
     labelLayer.addChild(t);
   });
 }
@@ -369,6 +399,7 @@ function drawFigure(e, dt, ents) {
   let bodyH = isRes ? 22 : dogK ? 11 : small ? 9 : 8;
   let bodyW = isRes ? 12 : dogK ? 16 : 11;
   bodyH *= FIT.s * 1.1 + 0.55; bodyW *= FIT.s * 1.1 + 0.55;
+  if (isRes && e.child) { bodyH *= 0.72; bodyW *= 0.9; }   // children: shorter, bigger head
 
   let headDrop = 0, lean = 0, widen = 1, bounceScale = 1, tint = null;
   if (isRes) {
@@ -394,7 +425,10 @@ function drawFigure(e, dt, ents) {
 
   const px = x + dx, base = y0 + dy;
 
-  gActors.ellipse(px, base + 1, bodyW * 0.7 * widen, bodyW * 0.32).fill({ color: 0x1a3a12, alpha: 0.18 });
+  // shadow — long and faint at a low sun, tight and dark at noon
+  const sunEl = LIGHT.sun;
+  const shLen = 0.6 + (1 - sunEl) * 1.7, shOff = (1 - sunEl) * bodyW * 0.8;
+  gActors.ellipse(px - shOff * 0.5, base + 1 + shOff * 0.2, bodyW * 0.7 * widen * shLen, bodyW * 0.32 * (0.8 + 0.35 * sunEl)).fill({ color: 0x10240a, alpha: 0.07 + sunEl * 0.14 });
   if (e.id === hoverId) gActors.circle(px, base - bodyH * 0.5, Math.max(bodyW, bodyH) * 0.8).stroke({ width: 2, color: 0xffffff, alpha: 0.9 });
 
   if (bird) {
@@ -422,7 +456,19 @@ function drawFigure(e, dt, ents) {
   const shoulderY = topY + bodyH * 0.34 - hunch;
   const shoulderX = bodyW * (cold ? 0.34 : 0.42) * widen;
 
-  // torso (+ coat overlay)
+  // legs (drawn behind the torso): stand, or step when walking. Two-tone trousers.
+  const trouser = pickFor(TROUSERS, e.id, 'trs');
+  if (e.pose !== 'sit' && e.pose !== 'lie') {
+    const hipY = base - bodyH * 0.24, footY = base, legW = Math.max(2, bodyW * 0.26);
+    for (const side of [-1, 1]) {
+      const hipX = cx + side * bodyW * 0.16;
+      let stepF = 0, lift = 0;
+      if (e.pose === 'walk') { const ph = Math.sin(T * 9 + sd * 6 + (side > 0 ? Math.PI : 0)); stepF = ph * bodyW * 0.3; lift = Math.max(0, ph) * bodyH * 0.1; }
+      limb(hipX, hipY, hipX + stepF, footY - lift, legW, trouser);
+    }
+  }
+
+  // torso (shirt) + coat overlay
   gActors.roundRect(cx - bodyW * 0.5 * widen, topY + bodyH * 0.32, bodyW * widen, bodyH * 0.68, bodyW * 0.42).fill(col);
   if (worn.includes('coat')) gActors.roundRect(cx - bodyW * 0.5 * widen, topY + bodyH * 0.34, bodyW * widen, bodyH * 0.5, bodyW * 0.34).fill(armCol);
 
@@ -451,13 +497,20 @@ function drawFigure(e, dt, ents) {
     gActors.circle(hX, hY, armW * 0.42).fill(mix(col, 0xffffff, 0.04));
   }
 
-  // head (tilts for a listen, tips back for a yawn)
+  // head (skin tone), tilts for a listen, tips back for a yawn
   const tilt = (L.gest === 'headTilt' ? 0.5 : 0) * gp;
   const headBackY = (L.gest === 'yawn' ? -bodyW * 0.18 * gp : 0);
-  gActors.circle(hx + tilt * bodyW * 0.3, hy + headBackY, bodyW * 0.42).fill(mix(col, 0xffffff, 0.06));
+  const hr = bodyW * (e.child ? 0.5 : 0.42);
+  const hcx = hx + tilt * bodyW * 0.3, hcy = hy + headBackY;
+  const skin = pickFor(SKINS, e.id, 'skin');
+  gActors.circle(hcx, hcy, hr).fill(skin);
+  // hair — a cap over the crown, unless a hat is on
+  if (!worn.includes('sunhat') && !worn.includes('cap')) {
+    gActors.ellipse(hcx, hcy - hr * 0.42, hr * 1.0, hr * 0.72).fill(pickFor(HAIRS, e.id, 'hair'));
+  }
 
   // eyes — track the gaze; blink now and then
-  const hr = bodyW * 0.42, gx = Math.cos(L.gaze), gy = Math.sin(L.gaze);
+  const gx = Math.cos(L.gaze), gy = Math.sin(L.gaze);
   const ex = hx + gx * hr * 0.42 + tilt * bodyW * 0.3, ey = hy + gy * hr * 0.3 + headBackY;
   const px2 = -gy, py2 = gx;
   if (L.blinking > 0) {
@@ -485,8 +538,8 @@ function drawFigure(e, dt, ents) {
 
   // name
   let t = labels[e.id];
-  if (!t) { t = new PIXI.Text({ text: meta.name, style: { fontFamily: 'system-ui', fontSize: 10.5, fill: 0x22371a } }); t.anchor.set(0.5, 1); labelLayer.addChild(t); labels[e.id] = t; }
-  t.x = cx; t.y = topY - 6; t.alpha = 0.9;
+  if (!t) { t = new PIXI.Text({ text: meta.name, style: { fontFamily: 'system-ui', fontSize: 10.5, fill: 0xf4f8f0, stroke: { color: 0x1c2a16, width: 3, join: 'round' } } }); t.anchor.set(0.5, 1); labelLayer.addChild(t); labels[e.id] = t; }
+  t.x = cx; t.y = topY - 6; t.alpha = 0.92;
 }
 
 // tiny colour helpers
@@ -496,6 +549,37 @@ function mix(a, b, t) {
   const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
   const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
   return ((ar + (br - ar) * t) << 16 | (ag + (bg - ag) * t) << 8 | (ab + (bb - ab) * t)) & 0xffffff;
+}
+
+// ------------------------------------------------------ lighting & environment
+function drawEnv(fr) {
+  gEnv.clear();
+  const sky = fr.weather ? fr.weather.sky : 'clear';
+  const W = app.screen.width, H = app.screen.height, t = tms / 1000;
+  // drifting cloud shadows on grey days
+  if (sky === 'cloudy' || sky === 'overcast') {
+    const n = sky === 'overcast' ? 4 : 2;
+    for (let i = 0; i < n; i++) { const x = ((i * 330 + t * 24) % (W + 320)) - 160; const y = (i * 150 + 120) % H; gEnv.ellipse(x, y, 160, 72).fill({ color: 0x2a3550, alpha: 0.05 }); }
+  }
+  // a cool wet sheen under rain
+  if (sky === 'rain') gEnv.rect(0, 0, W, H).fill({ color: 0x2a4a66, alpha: 0.05 });
+  // windows warm up once the light drops
+  if (LIGHT.aA > 0.2 && WORLD) {
+    const glow = Math.min(1, (LIGHT.aA - 0.2) / 0.3);
+    WORLD.locations.forEach(l => {
+      if (/river|bridge|oak/.test(l.id) || l.home) return;
+      const [wx, wy] = project(l.x, l.y);
+      const flick = 0.82 + Math.sin(t * 3 + wx * 0.5) * 0.06;
+      gEnv.circle(wx - 4 * FIT.s, wy - 5 * FIT.s, 2.6).fill({ color: 0xffd27a, alpha: glow * flick });
+      gEnv.circle(wx + 5 * FIT.s, wy - 5 * FIT.s, 2.6).fill({ color: 0xffd27a, alpha: glow * flick });
+      gEnv.circle(wx, wy - 5 * FIT.s, 9).fill({ color: 0xffcf6a, alpha: glow * 0.16 });
+    });
+  }
+}
+
+function drawAmbient() {
+  gAmbient.clear();
+  if (LIGHT.aA > 0.001) gAmbient.rect(0, 0, app.screen.width, app.screen.height).fill({ color: LIGHT.amb, alpha: LIGHT.aA });
 }
 
 // ----------------------------------------------------------------- weather
@@ -510,11 +594,12 @@ function drawWeather(fr) {
   else if (sky === 'rain') veil = 0.18;
   else if (sky === 'snow') { veil = 0.12; veilColor = 0xeaf2f6; }
   if (veil > 0) gWeather.rect(0, 0, W, H).fill({ color: veilColor, alpha: veil });
-  const t = tms / 1000;
+  const t = tms / 1000, wind = w.windy ? 1 : 0;
   if (sky === 'rain') {
-    for (let i = 0; i < 90; i++) { const x = (i * 137.5 + t * 620) % W; const y = (i * 89.3 + t * 900) % H; gWeather.moveTo(x, y).lineTo(x - 4, y + 12).stroke({ width: 1, color: 0xbfd8e8, alpha: 0.5 }); }
+    const slant = 4 + wind * 8;
+    for (let i = 0; i < 100; i++) { const x = (i * 137.5 + t * (620 + wind * 260)) % W; const y = (i * 89.3 + t * 900) % H; gWeather.moveTo(x, y).lineTo(x - slant, y + 12).stroke({ width: 1, color: 0xbfd8e8, alpha: 0.5 }); }
   } else if (sky === 'snow') {
-    for (let i = 0; i < 70; i++) { const x = (i * 151.3 + Math.sin(t * 0.6 + i) * 22) % W; const y = (i * 73.1 + t * 90) % H; gWeather.circle(x, y, 1.7).fill({ color: 0xffffff, alpha: 0.85 }); }
+    for (let i = 0; i < 80; i++) { const x = (i * 151.3 + Math.sin(t * 0.6 + i) * (22 + wind * 30) + t * wind * 60) % W; const y = (i * 73.1 + t * 90) % H; gWeather.circle(x, y, 1.7).fill({ color: 0xffffff, alpha: 0.85 }); }
   }
 }
 
@@ -544,7 +629,12 @@ function loop(ticker) {
   const ents = lerpEntities(prev, cur, f);
   // re-dress the static scene when the season turns
   if (cur.season !== lastSeason) { SEASON = SEASONS[cur.season] || SEASON; lastSeason = cur.season; drawStatic(); }
+  // light the world by the clock
+  LIGHT = lightingAt((cur.hour + cur.minute / 60) % 24);
+  if (app.renderer) app.renderer.background.color = LIGHT.sky;
+  drawEnv(cur);
   drawActors(ents, dt);
+  drawAmbient();
   drawWeather(cur);
   if (cur.tick !== lastHudTick) { renderHud(cur); lastHudTick = cur.tick; }
 }
