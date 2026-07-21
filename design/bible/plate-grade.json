@@ -1,0 +1,6 @@
+{
+  "source": "plate-v1.jpeg",
+  "output": "plate-v1-graded.jpeg",
+  "grade": { "saturation": 1.34, "contrast": 1.20, "brightness": 1.02 },
+  "note": "Roy-approved 'punch-strong' colour grade. Apply as a runtime LUT/shader over the plate in the compositor (not baked into the source), so day/night grading can layer on top."
+}
