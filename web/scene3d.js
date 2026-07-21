@@ -67,6 +67,8 @@ function buildTown() {
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x8fae52, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; town.add(ground);
 
+  buildStreets(town);   // roads with sidewalks, markings, trees, lamps and cars
+
   // river — a low blue ribbon of segments
   for (let i = 0; i < RIVER.length - 1; i++) {
     const [x1, y1] = w2s(...RIVER[i]), [x2, y2] = w2s(...RIVER[i + 1]);
@@ -111,6 +113,45 @@ function buildTown() {
   });
   town.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });   // soft clay shadows
   scene.add(town);
+}
+
+function streetTree(x, z) {
+  const g = new THREE.Group();
+  const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 1 })); tr.position.y = 0.7; g.add(tr);
+  const cr = new THREE.Mesh(new THREE.SphereGeometry(0.95, 10, 8), new THREE.MeshStandardMaterial({ color: 0x7fae3a, roughness: 1 })); cr.position.y = 2.0; cr.scale.y = 1.15; g.add(cr);
+  g.position.set(x, 0, z); return g;
+}
+function lamp(x, z) {
+  const g = new THREE.Group();
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.3, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2e })); p.position.y = 1.15; g.add(p);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb347, emissiveIntensity: 0.8 })); head.position.y = 2.3; g.add(head);
+  g.position.set(x, 0, z); return g;
+}
+function car(x, z, ang, color) { const b = box(1.7, 0.55, 0.85, color); b.position.set(x, 0.35, z); b.rotation.y = ang; return b; }
+
+function buildStreets(town) {
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x41454b, roughness: 1 });
+  const walkMat = new THREE.MeshStandardMaterial({ color: 0xd8d0be, roughness: 1 });
+  const lineMat = new THREE.MeshStandardMaterial({ color: 0xe8e2d0, roughness: 1 });
+  const carCols = [0xd1495b, 0xe0a24a, 0x3d84a8, 0xeeeeee, 0x33363a, 0x5fa85a, 0xe8c34a];
+  const lines = [];
+  for (let x = EX0; x <= EX1; x += GAP) lines.push([x, EY0, x, EY1]);
+  for (let y = EY0; y <= EY1; y += GAP) lines.push([EX0, y, EX1, y]);
+  let cs = 42; const rnd = () => { cs = (Math.imul(cs, 1664525) + 1013904223) >>> 0; return cs / 4294967296; };
+  lines.forEach(([x1, y1, x2, y2]) => {
+    const [ax, az] = w2s(x1, y1), [bx, bz] = w2s(x2, y2);
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2, len = Math.hypot(bx - ax, bz - az), ang = -Math.atan2(bz - az, bx - ax);
+    const dirx = (bx - ax) / len, dirz = (bz - az) / len, px_ = -dirz, pz_ = dirx;
+    const walk = new THREE.Mesh(new THREE.BoxGeometry(len, 0.12, 4.6), walkMat); walk.position.set(mx, 0.06, mz); walk.rotation.y = ang; town.add(walk);
+    const road = new THREE.Mesh(new THREE.BoxGeometry(len, 0.14, 2.7), roadMat); road.position.set(mx, 0.08, mz); road.rotation.y = ang; town.add(road);
+    const n = Math.max(1, Math.floor(len / 3));                       // dashed centreline
+    for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, cx = ax + (bx - ax) * t, cz = az + (bz - az) * t; const d = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.02, 0.14), lineMat); d.position.set(cx, 0.17, cz); d.rotation.y = ang; town.add(d); }
+    for (let d = 9; d < len - 9; d += 15) {                            // trees & lamps along the kerb
+      const side = rnd() < 0.5 ? 1 : -1, wx = ax + dirx * d + px_ * 2.8 * side, wz = az + dirz * d + pz_ * 2.8 * side;
+      town.add(rnd() < 0.55 ? streetTree(wx, wz) : lamp(wx, wz));
+    }
+    for (let c = 0; c < 2; c++) { const d = 9 + rnd() * (len - 18); town.add(car(ax + dirx * d + px_ * 0.65, az + dirz * d + pz_ * 0.65, ang, carCols[(cs >>> 3) % carCols.length])); }
+  });
 }
 
 function makePerson(e) {

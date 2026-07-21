@@ -48,6 +48,22 @@ This validates ERA's existing structure exactly: stadium, main square, café, pu
 bakery, museum, school, the river and the Old Bridge, and residential lanes — the
 twelve simulated places plus the wider town's homes.
 
+## Streets (Roy's street references — the street language)
+
+Streets are a lead compositional element, not filler. From the references: **roads
+curve and wind** (not a rigid grid), with a **dashed centre line** and edge markings;
+**raised sidewalks / kerbs** flank every road (paved or cobbled), distinct from the
+asphalt; **crosswalks** (zebra stripes) at intersections; **roundabouts** at the
+square; roads are **tree-and-lamp lined**, with planters and flowering trees along the
+kerb; **cars** parked and moving; and **buildings front directly onto the street**
+with shopfronts, awnings and stoops, the sidewalk between building and road. All under
+the clay/macro-DOF look.
+
+*First pass (3D scene, done):* every road now has asphalt + flanking sidewalks + a
+dashed centre line, with **street trees, lamps (glowing at night) and cars** along the
+kerb. *Next:* make the roads **curve** (spline roads, not the grid), add **crosswalks**
+and a **roundabout** at the square, and front the buildings onto the sidewalks.
+
 ## How the prove-it slice reflects it (first pass)
 
 The Pixi slice now composes toward this: the **square** is a paved plaza with a
