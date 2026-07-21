@@ -121,7 +121,10 @@ function museumBuilding(sx, sz, town) {
 const gltfLoader = new GLTFLoader();
 const ASSETS = {
   // footprint target ~7.5 scene units (café + its terrace); face the street (+Z).
-  loc_cafe: { file: './assets/cafe.glb', target: 7.5, rotY: Math.PI, yOffset: 0 },
+  // Served from the repo via jsDelivr (CORS-ok), pinned to the asset's commit so
+  // the deploy needs no workflow change to ship the GLB. Same-origin ./assets/
+  // also works once pages.yml copies web/assets.
+  loc_cafe: { file: 'https://cdn.jsdelivr.net/gh/Roy481977/ERA@cb9df13b31f8d26c6070edad5c54c56dc1d90b10/web/assets/cafe.glb', target: 7.5, rotY: Math.PI, yOffset: 0 },
 };
 function loadAsset(spec, sx, sz, town, fallback) {
   let settled = false;
