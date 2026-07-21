@@ -1,10 +1,19 @@
 # ERA — Town composition (the basic layout)
 
 **Status: REFERENCE / PROPOSED.** The composition north-star for the town area,
-from Roy's reference image (an aerial isometric miniature town). Sits alongside the
-[Asset Design Model](asset-design-model.md) (the *look*) and the
-[Generative World System](generative-world-system.md) (what grows). This document
-fixes *where the pieces sit and how the town reads*.
+from Roy's reference images. Sits alongside the [Asset Design Model](asset-design-model.md)
+(the *look*) and the [Generative World System](generative-world-system.md) (what
+grows). This document fixes *where the pieces sit and how the town reads*.
+
+> **View decision (Roy) — true 3D perspective with a real horizon.** From Roy's
+> framing sketch: **sky occupies the top ~25–30%** of the frame; the **town recedes to
+> a real horizon** (far objects — a train station, distant houses — get *smaller*, not
+> same-size); the **stadium is large in the foreground**, the **central square** and the
+> **café / lively area** sit mid-ground. This is a **perspective camera**, not flat
+> isometric — distance is real and hazes into the horizon. It supersedes the locked
+> 2:1 iso; see [asset-design-model.md §0.1](asset-design-model.md). A first true-3D
+> prototype (Three.js) is live at `/ERA/scene3d.html`, driven by the same behaviour
+> stream.
 
 ## The reference, in words
 

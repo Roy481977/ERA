@@ -10,6 +10,18 @@ and the renderer thinking in [DS-006](../development/DS-006-live-engine.md) /
 [DS-007](../development/DS-007-behaviour-layer.md). Facts current as of July 2026;
 sources listed at the end.
 
+> **Decision update (Roy) — the real renderer is true 3D perspective.** After
+> prototyping the flat isometric look, Roy chose a **perspective camera with a real
+> horizon** (natural distance falloff; see [town-composition.md](../design/town-composition.md)
+> and [asset-design-model.md §0.1](../design/asset-design-model.md)). So the *real*
+> build targets the **2.5D / 3D perspective path below** — a web 3D engine (**Three.js**
+> or **Babylon.js**), gently-tilted camera, depth fog for the horizon — **not** the
+> PixiJS-2D-isometric recommendation this document reaches. The Rust sim + behaviour
+> stream stay authoritative and unchanged; residents move to **3D meshes / billboards**
+> (glTF; Rive/Spine still viable for billboarded character animation). PixiJS iso was
+> the throwaway prove-it. Read the PixiJS recommendation below as the *2D* answer;
+> the standing decision is the 3D one.
+
 ---
 
 ## 1. What we're deciding, and the three constraints you set

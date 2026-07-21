@@ -37,14 +37,25 @@ Layer 0 wins.
 These are fixed once and rarely changed. Every asset, AI-generated or hand-made,
 obeys all of them.
 
-**0.1 Projection & angle. — LOCKED.** True **2:1 isometric**, camera pitch **≈30°**
-(the "crafted diorama" read; see the board). No perspective convergence — parallel
-projection only. Every asset is authored and rendered at this single angle. *One
-angle, forever.* This is a locked invariant (Roy, decision): a change would obsolete
-every asset, so it changes only by a formal amendment. (If we ever add a second
-camera, it is a new asset set, not a re-projection.)
+**0.1 Projection & camera. — REVISED (Roy): true 3D perspective.** The world is
+rendered by a **perspective camera with a real horizon** — distant things are
+smaller and hazed by depth (the natural view; see
+[town-composition.md](town-composition.md)). This **supersedes the earlier locked
+2:1 isometric decision**: a horizon and vanishing point, not parallel projection.
+The camera is a gently-tilted three-quarter view over the town, orbitable, keeping
+the tilt-shift miniature feel (real tilt-shift shots *are* perspective photos of
+models, so a horizon is consistent with the north-star, not a break from it).
+**Implication for assets:** they become **3D** — models (Blender → glTF) or
+billboards — not fixed-angle isometric sprites; the PixiJS isometric slice is a
+throwaway prototype. Everything else in this model (palette, materials, lighting,
+silhouette law, the behaviour-driven motion & body-language model, the generation
+protocol and gate) carries over unchanged — only the projection and the sprite-vs-3D
+asset *form* change. The engine strategy is updated to match (a 3D/2.5D renderer;
+see [visual-engine-and-design-strategy.md](../research/visual-engine-and-design-strategy.md)).
 
-**0.2 Scale & grid.** The world is a **miniature**. One iso tile = **1×1 world
+**0.2 Scale & grid.** *(Under 3D perspective (0.1), the iso-tile figures below are
+superseded by 3D world units — kept for reference; the miniature proportions still
+hold.)* The world is a **miniature**. One iso tile = **1×1 world
 unit**; base tile footprint **128×64 px** at 1× (authored at 2× / 256×128 for
 retina, downscaled at runtime). A standing adult resident is **~2.6 tiles tall**
 (figurine proportions — slightly large head, sturdy stance, for readability from

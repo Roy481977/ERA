@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERA — the town in 3D (perspective)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #bfe0ea;
+    font: 14px/1.5 -apple-system, system-ui, sans-serif; color: #1f2d1c; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; }
+  .panel { position: fixed; z-index: 3; background: rgba(255,255,255,.86);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,0,0,.08); border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.12); }
+  #hud { top: 12px; left: 12px; padding: 10px 14px; }
+  #hud .clock { font-size: 20px; font-weight: 600; }
+  #hud .sub { color: #4a5a44; font-size: 12px; }
+  #controls { top: 12px; right: 12px; padding: 8px 10px; display: flex; gap: 6px; }
+  #controls button { font: inherit; font-size: 13px; border: 1px solid rgba(0,0,0,.12); background: #fff;
+    border-radius: 8px; padding: 4px 10px; cursor: pointer; color: #1f2d1c; }
+  #controls button:hover { background: #f0f4ee; }
+  #controls .mul.on { background: #2f7d46; color: #fff; border-color: #2f7d46; }
+  #note { bottom: 12px; left: 12px; right: 12px; max-width: 640px; margin: 0 auto; padding: 8px 12px;
+    font-size: 12px; color: #34432b; text-align: center; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #2f4a2a; font-size: 15px; z-index: 5; background: #bfe0ea; }
+</style>
+</head>
+<body>
+<div id="loading">Raising the town…</div>
+<div id="app"></div>
+<div id="hud" class="panel">
+  <div class="clock"><span id="hh">–</span></div>
+  <div class="sub"><span id="wd">–</span> · day <span id="day">–</span> · <span id="wx">–</span></div>
+</div>
+<div id="controls" class="panel">
+  <button id="play">Pause</button>
+  <button class="mul on" data-mul="1">1×</button>
+  <button class="mul" data-mul="4">4×</button>
+  <button class="mul" data-mul="12">12×</button>
+</div>
+<div id="note" class="panel">true 3D perspective — a real horizon, distant things smaller and hazed by depth. drag to orbit, scroll to zoom. placeholder blocks &amp; figures; the same live simulation drives it. this is the natural view.</div>
+<script type="module" src="./scene3d.js"></script>
+</body>
+</html>
