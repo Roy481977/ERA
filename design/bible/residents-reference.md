@@ -34,6 +34,8 @@ the roof shadow. Implement matchday crowds as a generated crowd-texture layer
 (animated by subtle shimmer/wave), with individual sprites only for the front
 rows or zoomed moments.
 
+**Follow-up (Roy):** the dog and other animals need proper design passes — cats, birds with real wing poses, river ducks. Scheduled for the creature part of the character phase; the crops here set material/scale only.
+
 ## Production notes (living layer)
 
 - Sprite sheets per resident archetype: 8 headings × pose cycles (walk/stand/

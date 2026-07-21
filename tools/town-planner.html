@@ -34,8 +34,9 @@
 
     <h2>Layout preset</h2>
     <div class="row">
-      <button id="pCur">Current town</button>
-      <button id="pV2">Proposed v2</button>
+      <button id="pCur">Old town</button>
+      <button id="pV2">v2 (pre-bible)</button>
+      <button id="pV3" class="on">v3 — bible (450×250m)</button>
     </div>
 
     <h2>Tool</h2>
@@ -152,11 +153,67 @@ const V2 = {
     {id:'d_mill',name:'Old Mill',x:220,y:330,sim:false},
   ],
 };
-let D = JSON.parse(JSON.stringify(V2));
+// V3 — traced from the LOCKED composition bible (design/bible/composition-bible.png)
+// onto the wide desktop canvas. Scale canon: 1 world unit = 0.25 m → canvas
+// 1800×1000 wu = 450×250 m. Bible framing = the RIGHT half (ground cropped by
+// the plate's right edge); leftward = residential lanes; top band = horizon.
+const V3 = {
+  meta:{name:'v3 — bible traced onto the 450×250m wide plate canvas (1wu=0.25m)'},
+  camera:{x:1050,y:1400,tx:950,ty:250,fov:79},
+  zones:[
+    {id:'z1',type:'lush',x:1400,y:880,rx:280,ry:110},
+    {id:'z2',type:'lush',x:1680,y:560,rx:120,ry:150},
+    {id:'z3',type:'market',x:1050,y:540,rx:110,ry:70},
+    {id:'z4',type:'dense',x:800,y:380,rx:320,ry:130},
+    {id:'z5',type:'dense',x:520,y:560,rx:220,ry:110},
+    {id:'z6',type:'sparse',x:260,y:300,rx:180,ry:140},
+    {id:'z7',type:'sparse',x:350,y:800,rx:200,ry:110},
+    {id:'z8',type:'orchard',x:1680,y:250,rx:140,ry:90},
+  ],
+  paths:[
+    {id:'ave',type:'road',w:30,pts:[[200,900],[350,760],[450,620],[650,590],[820,610],[950,600],[1120,590],[1300,640],[1420,720],[1500,800]]},
+    {id:'high',type:'road',w:26,pts:[[150,430],[350,460],[560,440],[760,470],[900,480],[1050,520],[1180,470],[1300,420],[1450,380]]},
+    {id:'ring',type:'road',w:22,pts:[[1050,520],[980,560],[1000,620],[1080,640],[1150,600],[1120,540],[1050,520]]},
+    {id:'horiz',type:'road',w:20,pts:[[100,150],[450,110],[800,90],[1150,140],[1400,180],[1700,260]]},
+    {id:'school',type:'lane',w:16,pts:[[560,440],[540,320],[550,200]]},
+    {id:'elm',type:'lane',w:14,pts:[[550,200],[350,300]]},
+    {id:'mill',type:'lane',w:16,pts:[[450,620],[380,680],[250,680]]},
+    {id:'weave',type:'lane',w:14,pts:[[450,620],[560,720],[600,780]]},
+    {id:'canal',type:'lane',w:16,pts:[[1300,420],[1480,430],[1600,430]]},
+    {id:'museum',type:'lane',w:16,pts:[[1180,470],[1230,380],[1250,300]]},
+    {id:'park',type:'lane',w:12,pts:[[1120,590],[1200,700],[1280,820],[1400,880],[1520,900]]},
+    {id:'river',type:'river',w:42,pts:[[120,420],[300,480],[520,540],[720,580],[870,620],[950,660],[1100,720],[1250,800],[1400,900],[1500,980]]},
+  ],
+  locations:[
+    {id:'loc_stadium',name:'Stadium (cropped right)',x:1560,y:760,sim:true},
+    {id:'loc_north_gate',name:'North Gate (stadium plaza)',x:1350,y:660,sim:true},
+    {id:'loc_oakside',name:'Oakside (Old Oak, park)',x:1300,y:850,sim:true},
+    {id:'loc_riverside',name:'Riverside',x:1080,y:700,sim:true},
+    {id:'loc_bridge',name:'Old Bridge',x:950,y:630,sim:true},
+    {id:'loc_main_square',name:'Main Square',x:1060,y:560,sim:true},
+    {id:'loc_cafe',name:'Café',x:1140,y:520,sim:true},
+    {id:'loc_pub',name:'Pub',x:1010,y:600,sim:true},
+    {id:'loc_bakery',name:'Bakery',x:900,y:480,sim:true},
+    {id:'loc_high_street',name:'High Street',x:700,y:460,sim:true},
+    {id:'loc_museum',name:'Museum',x:1250,y:300,sim:true},
+    {id:'loc_school',name:'School',x:550,y:200,sim:true},
+    {id:'loc_elm_row',name:'Elm Row',x:350,y:300,sim:true},
+    {id:'loc_orchard_close',name:'Orchard Close',x:1680,y:250,sim:true},
+    {id:'loc_canal_side',name:'Canalside',x:1600,y:430,sim:true},
+    {id:'loc_millers_row',name:"Miller's Row",x:380,y:660,sim:true},
+    {id:'loc_kiln_yard',name:'Kiln Yard',x:250,y:680,sim:true},
+    {id:'loc_weavers_lane',name:"Weavers' Lane",x:600,y:780,sim:true},
+    {id:'d_station',name:'Train Station',x:800,y:90,sim:false},
+    {id:'d_market',name:'Market Stalls',x:1030,y:545,sim:false},
+    {id:'d_clock',name:'Clock Tower',x:1060,y:530,sim:false},
+    {id:'d_boathouse',name:'Boathouse',x:1000,y:680,sim:false},
+  ],
+};
+let D = JSON.parse(JSON.stringify(V3));
 
 // ---------- view ----------
 const cnv = document.getElementById('cnv'), ctx = cnv.getContext('2d');
-let scale = 0.62, ox = 60, oy = 30;   // world → screen: s = w*scale + o
+let scale = 0.55, ox = 40, oy = 20;   // world → screen: s = w*scale + o
 const W2S = (x,y)=>[x*scale+ox, y*scale+oy], S2W = (x,y)=>[(x-ox)/scale, (y-oy)/scale];
 function resize(){ cnv.width = cnv.clientWidth*devicePixelRatio; cnv.height = cnv.clientHeight*devicePixelRatio; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); draw(); }
 window.addEventListener('resize', resize);
@@ -309,7 +366,8 @@ window.addEventListener('keydown', e=>{
 function setMode(m){ mode=m; document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); cnv.style.cursor=m==='select'?'grab':'crosshair'; }
 document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 document.getElementById('pCur').onclick=()=>{ if(confirm('Load CURRENT town? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(CURRENT)); sel=null; draw(); toast('Current town loaded'); } };
-document.getElementById('pV2').onclick=()=>{ if(confirm('Load PROPOSED v2? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(V2)); sel=null; draw(); toast('Proposed v2 loaded'); } };
+document.getElementById('pV2').onclick=()=>{ if(confirm('Load v2 (pre-bible)? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(V2)); sel=null; draw(); toast('v2 loaded'); } };
+document.getElementById('pV3').onclick=()=>{ if(confirm('Load v3 (bible-traced)? Unsaved edits are lost.')){ D=JSON.parse(JSON.stringify(V3)); sel=null; draw(); toast('v3 — bible layout loaded'); } };
 document.getElementById('exDl').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:'application/json'})); a.download='era-town-plan.json'; a.click(); toast('exported era-town-plan.json'); };
 document.getElementById('exCp').onclick=async()=>{ document.getElementById('io').value=JSON.stringify(D); try{ await navigator.clipboard.writeText(JSON.stringify(D)); toast('JSON copied — paste it to Claude'); }catch(e){ toast('JSON in the box below — copy it to Claude'); } };
 document.getElementById('imp').onclick=()=>{ try{ const j=JSON.parse(document.getElementById('io').value); if(!j.locations||!j.paths) throw 0; D=j; sel=null; draw(); toast('imported'); }catch(e){ toast('could not parse that JSON'); } };
