@@ -13,6 +13,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import init, { WasmEngine } from './pkg/era_first_breath.js';
 
 const S = 0.12, CX = 500 * S, CZ = 430 * S;           // world→scene scale + centre
@@ -111,6 +112,33 @@ function museumBuilding(sx, sz, town) {
   for (let i = 0; i < 5; i++) { const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 3, 10), new THREE.MeshStandardMaterial({ color: 0xf1ece0 })); col.position.set(sx - 1.7 + i * 0.85, 1.5, sz + 1.9); town.add(col); }
 }
 
+// ---- real AI-generated 3D assets (Meshy → glTF), style-gated ----
+// Each place id can point at a glTF/GLB. It is auto-normalised: measured, scaled
+// to a target footprint (scene units), rotated, and dropped onto the ground at the
+// place's coords. If the file is missing/broken we fall back to the procedural
+// builder, so the town always renders. This is the harness for Path B — the look
+// moves from placeholder primitives to sculpted clay assets one landmark at a time.
+const gltfLoader = new GLTFLoader();
+const ASSETS = {
+  // footprint target ~7.5 scene units (café + its terrace); face the street (+Z).
+  loc_cafe: { file: './assets/cafe.glb', target: 7.5, rotY: Math.PI, yOffset: 0 },
+};
+function loadAsset(spec, sx, sz, town, fallback) {
+  let settled = false;
+  gltfLoader.load(spec.file, gltf => {
+    settled = true;
+    const m = gltf.scene;
+    m.rotation.y = spec.rotY || 0;
+    let bb = new THREE.Box3().setFromObject(m), size = new THREE.Vector3(); bb.getSize(size);
+    const s = spec.target / Math.max(size.x, size.z, 0.001); m.scale.setScalar(s);
+    bb = new THREE.Box3().setFromObject(m);
+    const c = new THREE.Vector3(); bb.getCenter(c);
+    m.position.set(sx - c.x, (spec.yOffset || 0) - bb.min.y, sz - c.z);
+    m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material) { o.material.metalness = 0; if (o.material.roughness !== undefined) o.material.roughness = Math.max(0.7, o.material.roughness); } } });
+    town.add(m);
+  }, undefined, err => { if (!settled) { console.warn('asset load failed, using placeholder:', spec.file, err); fallback(); } });
+}
+
 function buildTown() {
   const town = new THREE.Group();
   const nodes = WORLD.locations.map(l => [l.x, l.y]);
@@ -164,7 +192,10 @@ function buildTown() {
       const crown = new THREE.Mesh(new THREE.SphereGeometry(2.6, 12, 10), new THREE.MeshStandardMaterial({ color: 0x3f9a30 })); crown.position.set(sx, 3.3, sz); town.add(crown);
     } else if (l.id === 'loc_bridge' || l.id === 'loc_riverside') {
       const b = box(3.5, 0.4, 3.5, 0xcbb98f); b.position.set(sx, 0.3, sz); town.add(b);
-    } else if (l.id === 'loc_cafe') { cafeBuilding(sx, sz, town); }
+    } else if (l.id === 'loc_cafe') {
+      if (ASSETS[l.id]) loadAsset(ASSETS[l.id], sx, sz, town, () => cafeBuilding(sx, sz, town));
+      else cafeBuilding(sx, sz, town);
+    }
     else if (l.id === 'loc_museum') { museumBuilding(sx, sz, town); }
     else {
       const h = l.home ? 3 : 5;
