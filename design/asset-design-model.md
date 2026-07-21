@@ -119,6 +119,20 @@ charcoal-blue roofs under high-key daylight. **This is the target brightness and
 saturation.** The palette below (1.3) is tuned to it; if in doubt, err brighter and
 more saturated, not muted.
 
+**Definitive style reference (Roy, canonical — LOCKED):** a **soft handmade
+clay/felt diorama, shot macro**. The look, in five pillars: (1) **materials** —
+matte clay & felt: smooth plaster walls, ridged terracotta tiles, flocked pom-pom
+trees, resin water, sculpted stone; soft rounded edges, tiny imperfections, no hard
+lines; (2) **palette** — cream/ivory walls, terracotta roofs, **teal/turquoise**
+shutters·doors·awnings·water, warm yellow-greens, coral flowers; (3) **light** — one
+soft warm sun, gentle ambient occlusion in the crevices, soft shadows; (4) **macro
+depth of field** — foreground *and* background melt to blur, a sharp focal band on
+the close hero (the tilt-shift that makes it feel tiny and real); (5) **density** —
+packed with human-scale props (potted flowers, café tables & umbrellas, a boat, a
+cart, balconies, stairs, chimneys, tiny people). **This is the target level of
+detail.** It supersedes any earlier flatter reading; the palette (1.3) and materials
+(0.3) below follow from it.
+
 **1.2 References (touchstones, not to copy).** Tilt-shift miniature photography;
 architectural-viz "physical model" renders; the diorama warmth of *Monument Valley*
 and *Townscaper*; the painted light of *Gris* and studio-Ghibli backgrounds; the
@@ -425,6 +439,20 @@ Pre-rendered crowd sprites (the non-rigged path) instead provide full **animatio
 cycles** rendered to sheets at the iso angle.
 
 ---
+
+**3.6 Reaching the detail — the AI-3D asset path (with 3D perspective, 0.1).** Now
+that the renderer is 3D perspective, the fastest jump from placeholder forms to the
+clay-diorama detail is **AI image/text→3D**: generate the building and prop kit as
+**glTF models in the locked clay style** and drop them into the scene. The 2026
+tools are mature (Meshy, Tripo, Rodin, Kaedim — image→3D and text→3D to glTF/FBX).
+Flow, still governed by this model: the **canonical style reference** (the clay
+image) + a per-asset prompt → generate a model → **palette/material clamp** to the
+clay look → the acceptance gate (Layer 4) → the **canonical library** (glTF), which
+the Three.js renderer loads. Same funnel, model-agnostic (3.0): the *2D* generators
+of 3.1–3.4 become *3D* generators; reference-locking, the gate and the library are
+unchanged. Macro **depth of field** is a renderer post-process (a bokeh pass), not
+baked. Hero landmarks (stadium, square, key houses) are worth a hand-pass in Blender
+after AI blockout; the crowd of houses and props can be AI-generated at volume.
 
 ## Layer 4 — acceptance tests (the gate)
 

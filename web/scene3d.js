@@ -7,7 +7,12 @@
 // Placeholder blocks and figures — this proves the perspective view and the
 // pipeline. Real 3D/rigged assets (Blender → glTF, or billboards) come later.
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import init, { WasmEngine } from './pkg/era_first_breath.js';
 
 const S = 0.12, CX = 500 * S, CZ = 430 * S;           // world→scene scale + centre
@@ -33,21 +38,25 @@ function lightingAt(t) {
 // ---- greater-town fabric (mirrors the slice's layout, in world coords) ----
 const EX0 = -260, EX1 = 1260, EY0 = -170, EY1 = 1010, GAP = 190;
 const RIVER = [[735, 150], [565, 300], [470, 470], [430, 600], [300, 760], [110, 905]];
-const wallPal = [0xece0c4, 0xeef0ee, 0xdcc8a4, 0xe6d6b8, 0xd8dcd8, 0xcbb89a];
-const roofPal = [0xb5613f, 0xc65a3a, 0x566270, 0x6d7a86, 0xa5502f, 0x7a5a3a];
+// clay-diorama palette (Roy's reference): cream walls, terracotta roofs.
+const wallPal = [0xf1e7d2, 0xefe3cc, 0xeaddc3, 0xf3ecdb, 0xe7dcc6];
+const roofPal = [0xd9743f, 0xcf6838, 0xc65a3a, 0xdc8a4a, 0xcb6a3c];
 
-let renderer, scene, camera, sun, hemi, amb, cloudGroup;
+let renderer, scene, camera, sun, hemi, amb, cloudGroup, composer, bokeh;
 let eng, WORLD, prev = null, cur = null;
 const ROSTER = {}, people = {}, lastPos = {};
 let playing = true, speed = 1, acc = 0, last = null, tms = 0;
 const BASE_TPS = 7 / 6;
-const orbit = { az: 0.7, pol: 1.0, rad: 115, tx: 0, ty: 3, tz: 0 };
+const orbit = { az: 0.7, pol: 1.12, rad: 60, tx: 0, ty: 4, tz: 0 };   // close & low — the hero fills the frame
 
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2, '0');
 const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-function box(w, h, d, color) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color })); }
+function box(w, h, d, color) {
+  const r = Math.max(0.05, Math.min(w, h, d) * 0.16);          // soft clay edges
+  return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, r), new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0 }));
+}
 function near(x, y, list, d) { return list.some(([nx, ny]) => Math.hypot(nx - x, ny - y) < d); }
 
 function buildTown() {
@@ -55,14 +64,14 @@ function buildTown() {
   const nodes = WORLD.locations.map(l => [l.x, l.y]);
 
   // ground
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshLambertMaterial({ color: 0x5aa842 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x8fae52, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; town.add(ground);
 
   // river — a low blue ribbon of segments
   for (let i = 0; i < RIVER.length - 1; i++) {
     const [x1, y1] = w2s(...RIVER[i]), [x2, y2] = w2s(...RIVER[i + 1]);
     const mx = (x1 + x2) / 2, mz = (y1 + y2) / 2, len = Math.hypot(x2 - x1, y2 - y1);
-    const r = box(len + 3, 0.2, 4.2, 0x3f9aa6); r.position.set(mx, 0.1, mz);
+    const r = box(len + 3, 0.2, 4.2, 0x3fc6d0); r.position.set(mx, 0.1, mz);
     r.rotation.y = -Math.atan2(y2 - y1, x2 - x1); town.add(r);
   }
 
@@ -100,6 +109,7 @@ function buildTown() {
       const roof = box(3.6, 0.6, 3.6, l.home ? 0xc65a3a : 0xb5613f); roof.position.set(sx, h + 0.3, sz); town.add(roof);
     }
   });
+  town.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });   // soft clay shadows
   scene.add(town);
 }
 
@@ -158,7 +168,8 @@ function frame(ts) {
   if (cloudGroup) cloudGroup.position.x = ((ts / 1000 * 1.2) % 120) - 60;
 
   if (cur.tick !== frame._t) { renderHud(cur); frame._t = cur.tick; }
-  renderer.render(scene, camera);
+  if (bokeh) bokeh.uniforms['focus'].value = orbit.rad;   // keep focus on the hero (camera→target)
+  composer.render();
   requestAnimationFrame(frame);
 }
 
@@ -178,16 +189,19 @@ async function main() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('app').appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xbfe0ea);
   scene.fog = new THREE.Fog(0xbfe0ea, 55, 240);          // depth haze → the horizon
-  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 800);
+  camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.5, 800);
 
-  hemi = new THREE.HemisphereLight(0xbfe0ea, 0x4a6a3a, 0.9); scene.add(hemi);
-  amb = new THREE.AmbientLight(0x9fb8c0, 0.4); scene.add(amb);
-  sun = new THREE.DirectionalLight(0xfff6e0, 1.1); sun.position.set(60, 80, 40); scene.add(sun);
+  hemi = new THREE.HemisphereLight(0xbfe0ea, 0x6a5a3a, 0.9); scene.add(hemi);
+  amb = new THREE.AmbientLight(0xbfae90, 0.35); scene.add(amb);
+  sun = new THREE.DirectionalLight(0xfff0d2, 1.15); sun.position.set(60, 80, 40); scene.add(sun);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004;
+  { const c = sun.shadow.camera; c.left = -75; c.right = 75; c.top = 75; c.bottom = -75; c.near = 1; c.far = 320; }
 
   buildTown();
 
@@ -199,9 +213,20 @@ async function main() {
   }
   scene.add(cloudGroup);
 
+  // macro depth of field — the hero sharp, the rest melting to blur (tilt-shift).
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bokeh = new BokehPass(scene, camera, { focus: orbit.rad, aperture: 0.0016, maxblur: 0.012 });
+  composer.addPass(bokeh);
+  composer.addPass(new OutputPass());
+
   updateCamera();
   bindControls();
-  window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer && composer.setSize(window.innerWidth, window.innerHeight);
+  });
   $('loading').remove();
   renderHud(cur);
   requestAnimationFrame(frame);

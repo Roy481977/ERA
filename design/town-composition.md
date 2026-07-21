@@ -5,6 +5,15 @@ from Roy's reference images. Sits alongside the [Asset Design Model](asset-desig
 (the *look*) and the [Generative World System](generative-world-system.md) (what
 grows). This document fixes *where the pieces sit and how the town reads*.
 
+> **Style decision (Roy) — the clay/felt macro diorama (LOCKED).** The definitive
+> look is a soft handmade clay/felt miniature shot macro: matte clay & felt
+> materials, cream/terracotta/**teal** palette, soft warm sun with gentle occlusion,
+> strong **macro depth of field** (close hero sharp, the rest blurred), and dense
+> human-scale props. Detail is reached via the **AI-3D asset path** (Meshy/Tripo/
+> Rodin image→3D → glTF, style-gated). See
+> [asset-design-model.md](asset-design-model.md) §1.1/§3.6. Camera: bring the **hero
+> (stadium/square) close and large in the foreground**.
+>
 > **View decision (Roy) — true 3D perspective with a real horizon.** From Roy's
 > framing sketch: **sky occupies the top ~25–30%** of the frame; the **town recedes to
 > a real horizon** (far objects — a train station, distant houses — get *smaller*, not

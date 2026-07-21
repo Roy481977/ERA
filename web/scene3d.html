@@ -39,7 +39,13 @@
   <button class="mul" data-mul="4">4×</button>
   <button class="mul" data-mul="12">12×</button>
 </div>
-<div id="note" class="panel">true 3D perspective — a real horizon, distant things smaller and hazed by depth. drag to orbit, scroll to zoom. placeholder blocks &amp; figures; the same live simulation drives it. this is the natural view.</div>
+<div id="note" class="panel">true 3D perspective, macro depth-of-field — the hero is close &amp; sharp, the rest melts to blur (the clay-diorama feel). drag to orbit, scroll to zoom. placeholder forms, real simulation; detail comes via AI-3D assets next.</div>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
 <script type="module" src="./scene3d.js"></script>
 </body>
 </html>
