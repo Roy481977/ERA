@@ -8,6 +8,34 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-21 — World Generator, part 1: weather, seasons, possessions — PROPOSED
+
+Direction (Roy): start building the generator — possessions and seasonal
+re-dressing first, then weather; and (revised) *no new-district generation* — the
+player is always in this one home district, which only changes slowly in place.
+
+- **Weather** (`sim/weather.rs`): the day's weather (sky, temperature, wind) is a
+  pure function of `(day, season, world seed)` — deterministic, biased by season, a
+  different year per seed. It is consequential, not decoration: a wet or cold day
+  lowers "outdoor appeal", which feeds the spontaneous-social gates so lingering and
+  detours ease off and people head home — the Weather & Season engine's first proof
+  ("a rainy day changes place use without scripted exceptions"), met.
+- **Seasonal re-dressing**: `oak::Season` is now surfaced at the snapshot top level;
+  the slice re-dresses the ground and foliage by season (summer green, autumn gold,
+  winter bare with snow, spring blossom) and renders overcast/rain/snow/fog.
+- **Possessions** (`sim/possessions.rs`): two layers — *owned* keepsakes that accrete
+  weekly (seeded, bounded: the "mining" of new possessions over time) and a *worn*
+  derivation from season + weather + activity + matchday (coat, gloves, boots,
+  umbrella, sun hat, club scarf, apron, plus a signature keepsake). Exposed as `worn`
+  tags per resident; the slice draws them.
+- Behaviour stream now carries `season`, `weather`, and per-resident `worn`. 96 tests
+  green (6 new). Determinism preserved throughout.
+- **Design doc revised** (`generative-world-system.md`): the district dimension is
+  now *slow in-place change to the one home district* — ERA never generates a new
+  district; a player is always placed in this one.
+- Next (Roy's order): spatial naturalness (waypoint routing through the POIs,
+  transient events), after this.
+
 ## 2026-07-21 — Micro-POI level of detail + the generative-world architecture — PROPOSED
 
 Direction (Roy): the slice looks good but isn't natural — residents only go
