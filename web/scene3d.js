@@ -44,7 +44,7 @@ const roofPal = [0xd9743f, 0xcf6838, 0xc65a3a, 0xdc8a4a, 0xcb6a3c];
 
 let renderer, scene, camera, sun, hemi, amb, cloudGroup, composer, bokeh;
 let eng, WORLD, prev = null, cur = null;
-const ROSTER = {}, people = {}, lastPos = {};
+const ROSTER = {}, people = {}, lastPos = {}, lampFx = [];
 let playing = true, speed = 1, acc = 0, last = null, tms = 0;
 const BASE_TPS = 7 / 6;
 const orbit = { az: 0.7, pol: 1.12, rad: 60, tx: 0, ty: 4, tz: 0 };   // close & low — the hero fills the frame
@@ -124,7 +124,11 @@ function streetTree(x, z) {
 function lamp(x, z) {
   const g = new THREE.Group();
   const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.3, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2e })); p.position.y = 1.15; g.add(p);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb347, emissiveIntensity: 0.8 })); head.position.y = 2.3; g.add(head);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xffe0a0, emissive: 0xffb347, emissiveIntensity: 0.05 });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), headMat); head.position.y = 2.3; g.add(head);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffcf6a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); halo.position.y = 2.3; g.add(halo);
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(2.4, 20), new THREE.MeshBasicMaterial({ color: 0xffcf6a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); pool.rotation.x = -Math.PI / 2; pool.position.y = 0.06; g.add(pool);
+  lampFx.push({ head: headMat, halo: halo.material, pool: pool.material });
   g.position.set(x, 0, z); return g;
 }
 function car(x, z, ang, color) { const b = box(1.7, 0.55, 0.85, color); b.position.set(x, 0.35, z); b.rotation.y = ang; return b; }
@@ -193,6 +197,11 @@ function frame(ts) {
   hemi.color = L.sky; hemi.intensity = L.hemi; amb.color = L.amb; sun.color = L.sun; sun.intensity = L.sunI;
   const sa = ((cur.hour + cur.minute / 60) / 24) * Math.PI * 2;
   sun.position.set(Math.cos(sa) * 80, Math.max(6, Math.sin(sa) * 80), 40);
+
+  // street lights switch on as the sun drops — head glows, a halo blooms, a warm
+  // pool falls on the pavement; off by day.
+  const nightF = Math.max(0, Math.min(1, (0.5 - L.sunI) / 0.45));
+  for (const f of lampFx) { f.head.emissiveIntensity = 0.05 + nightF * 1.7; f.halo.opacity = nightF * 0.5; f.pool.opacity = nightF * 0.34; }
 
   // people
   ents.forEach(e => {
