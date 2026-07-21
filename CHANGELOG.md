@@ -8,6 +8,31 @@ Format: `YYYY-MM-DD — summary`, followed by details.
 
 ---
 
+## 2026-07-21 — The prove-it slice comes alive: deep behaviour, light, detail — PROPOSED
+
+Direction (Roy): the figures must *feel alive*, not static; then — lighting,
+night/day, weather, and people all need more detail. Renderer-only work on the
+Pixi slice; the simulation and its determinism are untouched.
+
+- **Per-sprite life layer**: each figure carries a persistent, frame-rate procedural
+  life, decoupled from the sim tick — breathing, blinking (desynced per id), a weight
+  shift, swinging arms, and a gaze system so the eyes track the nearest neighbour, a
+  conversation partner, or the way they're walking. Micro-gestures fire when settled
+  (look-about, head-tilt, check-the-time, adjust, shrug, stretch, yawn, wave, squint),
+  their kind and frequency bent by sociability, mood, energy, the hour and the weather.
+- **Day/night lighting**: a 24h cycle driven by the world clock — sky colour, an
+  ambient wash, and sun elevation; windows warm up at dusk; shadows lengthen and fade
+  at a low sun.
+- **Richer weather**: wind slants the rain and drifts the snow; grey days cast drifting
+  cloud shadows; rain lays a cool sheen.
+- **More detailed people**: per-id skin, hair and trouser tones; a shirt/trouser
+  two-tone; legs that step when walking; a hair cap; and child proportions (a new
+  `child` flag added to the behaviour stream). Labels gained an outline to read on both
+  bright and dark scenes.
+- All of it feeds off the existing behaviour stream (pose, gesture, partner, heading,
+  speed, disposition, worn, child, season, weather) — the same inputs that will drive
+  real Rive/Spine rigs later. 96 tests green.
+
 ## 2026-07-21 — World Generator, part 1: weather, seasons, possessions — PROPOSED
 
 Direction (Roy): start building the generator — possessions and seasonal
