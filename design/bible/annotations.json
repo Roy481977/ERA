@@ -1,48 +1,615 @@
 {
-  "space": "bible image pixels, 1024x1024 (composition-bible.png)",
-  "scale_hint": "pitch length ~90m spans ~330px at its depth; foreground ~200m frame width",
-  "paths": [
-    {"id":"railway","type":"rail","pts":[[0,240],[60,225],[130,205],[200,183],[280,158],[360,135],[440,116],[520,100],[590,92]]},
-    {"id":"high_street","type":"street","pts":[[300,235],[360,262],[430,290],[500,315],[560,335],[620,352],[660,368]]},
-    {"id":"square_ring","type":"street","circle":{"cx":700,"cy":420,"rx":86,"ry":66}},
-    {"id":"bridge_way","type":"street","pts":[[745,478],[722,505],[700,525]]},
-    {"id":"riverside_street","type":"street","pts":[[672,528],[598,551],[519,598],[441,654],[370,717],[307,787],[260,858],[222,929],[200,990]]},
-    {"id":"matchday_way","type":"street","pts":[[778,462],[830,485],[862,502]]},
-    {"id":"north_lane","type":"lane","pts":[[752,352],[806,326],[862,306],[918,292]]},
-    {"id":"allotment_lane","type":"lane","pts":[[112,462],[150,540],[205,615],[255,690],[300,762],[340,835],[378,900],[400,955]]},
-    {"id":"slate_spur","type":"lane","pts":[[205,615],[150,650],[105,680]]},
-    {"id":"river","type":"river","pts":[[592,1012],[600,920],[612,835],[626,748],[642,668],[662,595],[678,545]]},
-    {"id":"park_path_a","type":"park","pts":[[862,502],[846,570],[826,640],[808,712],[796,790]]},
-    {"id":"park_path_b","type":"park","pts":[[958,556],[930,640],[905,720],[910,808],[936,880]]}
-  ],
-  "places": [
-    {"n":1,"px":[712,362],"name":"Clock Tower","role":"dressing"},
-    {"n":2,"px":[662,398],"name":"The Square Café","role":"sim:loc_cafe"},
-    {"n":3,"px":[800,455],"name":"The Turnstile Arms","role":"sim:loc_pub","note":"on the matchday route square→ground"},
-    {"n":4,"px":[505,318],"name":"Bakery","role":"sim:loc_bakery","note":"mid high street"},
-    {"n":5,"px":[838,350],"name":"Museum","role":"sim:loc_museum","note":"the arched-door townhouse NE of square"},
-    {"n":6,"px":[872,440],"name":"Club Offices — ERA FC","role":"system:new","note":"tall cream building adjacent to the stand"},
-    {"n":7,"px":[840,474],"name":"Club Shop","role":"system:new","note":"small unit by the ground approach"},
-    {"n":8,"px":[175,143],"name":"Train Station","role":"dressing","note":"train itself = living layer"},
-    {"n":9,"px":[65,190],"name":"Stationmaster's House","role":"named home"},
-    {"n":10,"px":[590,340],"name":"Corner Grocer","role":"shop:new","note":"bend of high street"},
-    {"n":11,"px":[862,506],"name":"North Gate (ground plaza)","role":"sim:loc_north_gate"},
-    {"n":12,"px":[942,962],"name":"Old Oak — Oakside","role":"sim:loc_oakside","note":"biggest tree in the park"},
-    {"n":13,"px":[160,808],"name":"The Slate House","role":"named home","note":"only slate-roofed detached house"},
-    {"n":14,"px":[235,952],"name":"Miller's Row","role":"sim:loc_millers_row","note":"bottom-left cottages near river"},
-    {"n":15,"px":[252,706],"name":"Kiln Yard","role":"sim:loc_kiln_yard","note":"lane cluster at the allotments"},
-    {"n":16,"px":[340,255],"name":"Elm Row","role":"sim:loc_elm_row","note":"upper terraces near station"},
-    {"n":17,"px":[545,878],"name":"Riverside Row","role":"sim:loc_riverside","note":"river-front terrace, red+blue houses"},
-    {"n":18,"px":[690,528],"name":"Old Bridge","role":"sim:loc_bridge"},
-    {"n":19,"px":[940,556],"name":"The Ground","role":"sim:loc_stadium","note":"pitch+stand cropped by right edge"},
-    {"n":20,"px":[240,612],"name":"Allotments","role":"dressing/future-sim","note":"strong social-sim candidate later"}
-  ],
-  "off_frame": [
-    {"name":"Training Ground + pavilion","role":"system:new","where":"far-left and back (behind/beyond station), per Roy"},
-    {"name":"School","role":"sim:loc_school","where":"left extension, back band"},
-    {"name":"Weavers' Lane","role":"sim:loc_weavers_lane","where":"left extension, mid"},
-    {"name":"Orchard Close","role":"sim:loc_orchard_close","where":"left extension or behind NE terraces"},
-    {"name":"Canalside","role":"sim:loc_canal_side","where":"left extension along a canal spur of the river"},
-    {"name":"High Street","role":"sim:loc_high_street","where":"IN FRAME: the street itself between #4 and #10"}
-  ]
+ "space": "bible image pixels, 1024x1024 (composition-bible.png)",
+ "scale_hint": "pitch length ~90m spans ~330px at its depth; foreground ~200m frame width",
+ "paths": [
+  {
+   "id": "railway",
+   "type": "rail",
+   "pts": [
+    [
+     0,
+     240
+    ],
+    [
+     60,
+     225
+    ],
+    [
+     130,
+     205
+    ],
+    [
+     200,
+     183
+    ],
+    [
+     280,
+     158
+    ],
+    [
+     360,
+     135
+    ],
+    [
+     440,
+     116
+    ],
+    [
+     520,
+     100
+    ],
+    [
+     590,
+     92
+    ]
+   ]
+  },
+  {
+   "id": "high_street",
+   "type": "street",
+   "pts": [
+    [
+     300,
+     235
+    ],
+    [
+     360,
+     262
+    ],
+    [
+     430,
+     290
+    ],
+    [
+     500,
+     315
+    ],
+    [
+     560,
+     335
+    ],
+    [
+     620,
+     352
+    ],
+    [
+     660,
+     368
+    ]
+   ]
+  },
+  {
+   "id": "square_ring",
+   "type": "street",
+   "circle": {
+    "cx": 700,
+    "cy": 420,
+    "rx": 86,
+    "ry": 66
+   }
+  },
+  {
+   "id": "bridge_way",
+   "type": "street",
+   "pts": [
+    [
+     745,
+     478
+    ],
+    [
+     722,
+     505
+    ],
+    [
+     700,
+     525
+    ]
+   ]
+  },
+  {
+   "id": "riverside_street",
+   "type": "street",
+   "pts": [
+    [
+     645,
+     515
+    ],
+    [
+     598,
+     548
+    ],
+    [
+     519,
+     596
+    ],
+    [
+     441,
+     652
+    ],
+    [
+     370,
+     715
+    ],
+    [
+     307,
+     785
+    ],
+    [
+     260,
+     856
+    ],
+    [
+     222,
+     927
+    ],
+    [
+     202,
+     988
+    ]
+   ]
+  },
+  {
+   "id": "matchday_way",
+   "type": "street",
+   "pts": [
+    [
+     778,
+     462
+    ],
+    [
+     830,
+     485
+    ],
+    [
+     862,
+     502
+    ]
+   ]
+  },
+  {
+   "id": "north_lane",
+   "type": "lane",
+   "pts": [
+    [
+     752,
+     352
+    ],
+    [
+     806,
+     326
+    ],
+    [
+     862,
+     306
+    ],
+    [
+     918,
+     292
+    ]
+   ]
+  },
+  {
+   "id": "allotment_lane",
+   "type": "lane",
+   "pts": [
+    [
+     112,
+     462
+    ],
+    [
+     150,
+     540
+    ],
+    [
+     205,
+     615
+    ],
+    [
+     255,
+     690
+    ],
+    [
+     300,
+     762
+    ],
+    [
+     340,
+     835
+    ],
+    [
+     378,
+     900
+    ],
+    [
+     400,
+     955
+    ]
+   ]
+  },
+  {
+   "id": "slate_spur",
+   "type": "lane",
+   "pts": [
+    [
+     205,
+     615
+    ],
+    [
+     150,
+     650
+    ],
+    [
+     105,
+     680
+    ]
+   ]
+  },
+  {
+   "id": "river",
+   "type": "river",
+   "pts": [
+    [
+     592,
+     1012
+    ],
+    [
+     600,
+     920
+    ],
+    [
+     612,
+     835
+    ],
+    [
+     626,
+     748
+    ],
+    [
+     642,
+     668
+    ],
+    [
+     662,
+     595
+    ],
+    [
+     678,
+     545
+    ]
+   ]
+  },
+  {
+   "id": "park_path_a",
+   "type": "park",
+   "pts": [
+    [
+     862,
+     502
+    ],
+    [
+     846,
+     570
+    ],
+    [
+     826,
+     640
+    ],
+    [
+     808,
+     712
+    ],
+    [
+     796,
+     790
+    ]
+   ]
+  },
+  {
+   "id": "park_path_b",
+   "type": "park",
+   "pts": [
+    [
+     958,
+     556
+    ],
+    [
+     930,
+     640
+    ],
+    [
+     905,
+     720
+    ],
+    [
+     910,
+     808
+    ],
+    [
+     936,
+     880
+    ],
+    [
+     940,
+     935
+    ]
+   ],
+   "note": "ends at the Old Oak"
+  },
+  {
+   "id": "park_path_c",
+   "type": "park",
+   "pts": [
+    [
+     702,
+     545
+    ],
+    [
+     718,
+     600
+    ],
+    [
+     734,
+     660
+    ],
+    [
+     746,
+     720
+    ]
+   ],
+   "note": "river-bank walk, east side"
+  }
+ ],
+ "places": [
+  {
+   "n": 1,
+   "px": [
+    712,
+    362
+   ],
+   "name": "Clock Tower",
+   "role": "dressing"
+  },
+  {
+   "n": 2,
+   "px": [
+    662,
+    398
+   ],
+   "name": "The Square Caf\u00e9",
+   "role": "sim:loc_cafe"
+  },
+  {
+   "n": 3,
+   "px": [
+    800,
+    455
+   ],
+   "name": "The Turnstile Arms",
+   "role": "sim:loc_pub",
+   "note": "on the matchday route square\u2192ground"
+  },
+  {
+   "n": 4,
+   "px": [
+    505,
+    318
+   ],
+   "name": "Bakery",
+   "role": "sim:loc_bakery",
+   "note": "mid high street"
+  },
+  {
+   "n": 5,
+   "px": [
+    838,
+    350
+   ],
+   "name": "Museum",
+   "role": "sim:loc_museum",
+   "note": "the arched-door townhouse NE of square"
+  },
+  {
+   "n": 6,
+   "px": [
+    872,
+    440
+   ],
+   "name": "Club Offices \u2014 ERA FC",
+   "role": "system:new",
+   "note": "tall cream building adjacent to the stand"
+  },
+  {
+   "n": 7,
+   "px": [
+    840,
+    474
+   ],
+   "name": "Club Shop",
+   "role": "system:new",
+   "note": "small unit by the ground approach"
+  },
+  {
+   "n": 8,
+   "px": [
+    175,
+    143
+   ],
+   "name": "Train Station",
+   "role": "dressing",
+   "note": "train itself = living layer"
+  },
+  {
+   "n": 9,
+   "px": [
+    65,
+    190
+   ],
+   "name": "Stationmaster's House",
+   "role": "named home"
+  },
+  {
+   "n": 10,
+   "px": [
+    590,
+    340
+   ],
+   "name": "Corner Grocer",
+   "role": "shop:new",
+   "note": "bend of high street"
+  },
+  {
+   "n": 11,
+   "px": [
+    862,
+    506
+   ],
+   "name": "North Gate (ground plaza)",
+   "role": "sim:loc_north_gate"
+  },
+  {
+   "n": 12,
+   "px": [
+    942,
+    962
+   ],
+   "name": "Old Oak \u2014 Oakside",
+   "role": "sim:loc_oakside",
+   "note": "biggest tree in the park"
+  },
+  {
+   "n": 13,
+   "px": [
+    160,
+    808
+   ],
+   "name": "The Slate House",
+   "role": "named home",
+   "note": "only slate-roofed detached house"
+  },
+  {
+   "n": 14,
+   "px": [
+    235,
+    952
+   ],
+   "name": "Miller's Row",
+   "role": "sim:loc_millers_row",
+   "note": "bottom-left cottages near river"
+  },
+  {
+   "n": 15,
+   "px": [
+    252,
+    706
+   ],
+   "name": "Kiln Yard",
+   "role": "sim:loc_kiln_yard",
+   "note": "lane cluster at the allotments"
+  },
+  {
+   "n": 16,
+   "px": [
+    340,
+    255
+   ],
+   "name": "Elm Row",
+   "role": "sim:loc_elm_row",
+   "note": "upper terraces near station"
+  },
+  {
+   "n": 17,
+   "px": [
+    545,
+    878
+   ],
+   "name": "Riverside Row",
+   "role": "sim:loc_riverside",
+   "note": "river-front terrace, red+blue houses"
+  },
+  {
+   "n": 18,
+   "px": [
+    690,
+    528
+   ],
+   "name": "Old Bridge",
+   "role": "sim:loc_bridge"
+  },
+  {
+   "n": 19,
+   "px": [
+    940,
+    556
+   ],
+   "name": "The Ground",
+   "role": "sim:loc_stadium",
+   "note": "pitch+stand cropped by right edge"
+  },
+  {
+   "n": 20,
+   "px": [
+    240,
+    612
+   ],
+   "name": "Allotments",
+   "role": "dressing/future-sim",
+   "note": "strong social-sim candidate later"
+  }
+ ],
+ "off_frame": [
+  {
+   "name": "Training Ground + pavilion",
+   "role": "system:new",
+   "where": "far-left and back (behind/beyond station), per Roy"
+  },
+  {
+   "name": "School",
+   "role": "sim:loc_school",
+   "where": "left extension, back band"
+  },
+  {
+   "name": "Weavers' Lane",
+   "role": "sim:loc_weavers_lane",
+   "where": "left extension, mid"
+  },
+  {
+   "name": "Orchard Close",
+   "role": "sim:loc_orchard_close",
+   "where": "left extension or behind NE terraces"
+  },
+  {
+   "name": "Canalside",
+   "role": "sim:loc_canal_side",
+   "where": "left extension along a canal spur of the river"
+  },
+  {
+   "name": "High Street",
+   "role": "sim:loc_high_street",
+   "where": "IN FRAME: the street itself between #4 and #10"
+  }
+ ],
+ "crossings": [
+  {
+   "id": "xw_bridge",
+   "px": [
+    712,
+    512
+   ],
+   "on": "bridge_way"
+  },
+  {
+   "id": "xw_matchday",
+   "px": [
+    795,
+    476
+   ],
+   "on": "matchday_way"
+  }
+ ],
+ "network_notes": [
+  "Square ring has exactly 4 arms: HS (NW), BW (S), RS (SW via the plaza-south bend), MW (E). No west exit.",
+  "No back street through the upper terraces \u2014 they back onto gardens and the railway hedge (verified).",
+  "Every path doubles as a sim nav route: residents walk these exact curves (CD canon: no straight lines).",
+  "Inferred/off-frame: station approach (hidden by hedge), NL beyond frame, RS beyond frame, service way behind the stand."
+ ]
 }
