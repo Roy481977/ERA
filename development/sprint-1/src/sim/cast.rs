@@ -105,6 +105,7 @@ pub fn cast() -> Vec<Resident> {
         Resident::new("res_victor", "Victor", 63, "Retired footballer", "loc_high_street", vec![
             act("victor_sleep", "wakes slowly in the High Street rooms", "HOME", 0, 1, 10, 6),
             act("victor_walk", "a slow walk past the stadium", "GATHER", 8, 2, 6, 2),
+            act_at("victor_coach", "coaches the youth at the training ground", "TRAIN", "loc_training_ground", 10, 2, 7, 2).on_weekdays(&[1, 3]),
             act("victor_corner", "holds court in his café corner", "LEGENDS_CORNER", 12, 3, 8, 2),
             act("victor_pub", "a pint at the Anchor", "DRINK", 18, 1, 6, 1).on_weekdays(FRIDAY),
             act("victor_home", "home for the evening", "HOME", 20, 4, 7, 3),
@@ -137,6 +138,7 @@ pub fn cast() -> Vec<Resident> {
             act_at("agnes_mid", "watches the square", "GATHER", "loc_main_square", 11, 3, 5, 2),
             act("agnes_oak", "visits the old oak", "VISIT_OAK", 15, 3, 7, 2).on_weekdays(&[0, 1, 3, 6]),
             act("agnes_museum", "revisits the club museum", "VISIT_MUSEUM", 14, 3, 7, 2).on_weekdays(&[2, 4]),
+            act_at("agnes_shop", "browses the club shop for a new scarf", "BUY_KIT", "loc_club_shop", 13, 3, 6, 2).on_weekdays(&[5]),
             act("agnes_home", "home before dark", "HOME", 20, 4, 9, 3),
         ]),
         Resident::new("res_milo", "Milo", 22, "Street musician", "loc_high_street", vec![
@@ -167,8 +169,9 @@ fn townsfolk() -> Vec<Resident> {
     vec![
         Resident::new("res_petra", "Petra", 44, "Grocer", "loc_elm_row", vec![
             act("petra_sleep", "sleeps on Elm Row", "HOME", 0, 1, 10, 6),
-            act("petra_market", "sets out the grocery stall", "MARKET", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
+            act_at("petra_open", "opens the corner grocer", "BUY_GROCERIES", "loc_corner_grocer", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
             act_at("petra_mid", "the midday square", "GATHER", "loc_main_square", 12, 3, 6, 2),
+            act_at("petra_pm", "the afternoon grocer", "BUY_GROCERIES", "loc_corner_grocer", 15, 3, 8, 3).on_weekdays(WORKING_DAYS),
             act("petra_home", "home to Elm Row", "HOME", 19, 4, 6, 3),
         ]),
         Resident::new("res_bruno", "Bruno", 37, "Porter", "loc_elm_row", vec![
@@ -191,16 +194,16 @@ fn townsfolk() -> Vec<Resident> {
         ]),
         Resident::new("res_yusuf", "Yusuf", 52, "Clerk", "loc_canal_side", vec![
             act("yusuf_sleep", "sleeps at Canalside", "HOME", 0, 1, 10, 6),
-            act_at("yusuf_am", "the morning's errands", "GATHER", "loc_main_square", 9, 2, 8, 3).on_weekdays(WORKING_DAYS),
+            act_at("yusuf_club", "the club-office ledgers", "CLUB_ADMIN", "loc_club_offices", 9, 2, 9, 4).on_weekdays(WORKING_DAYS),
             act("yusuf_coffee", "the afternoon café", "DRINK_COFFEE", 15, 2, 6, 2),
             act("yusuf_home", "home to Canalside", "HOME", 19, 4, 6, 3),
         ]),
         Resident::new("res_otto", "Otto", 74, "Retired", "loc_slate_house", vec![
-            act("otto_sleep", "wakes slowly at North Gate", "HOME", 0, 1, 10, 6),
+            act("otto_sleep", "wakes slowly at the Slate House", "HOME", 0, 1, 10, 6),
             act("otto_bench", "his morning bench", "SIT_BENCH", 8, 2, 8, 3),
             act_at("otto_mid", "watches the square go by", "GATHER", "loc_main_square", 12, 3, 6, 2),
             act_at("otto_oak", "sits a while by the Old Oak", "VISIT_OAK", "loc_riverside", 15, 3, 6, 2),
-            act("otto_home", "home to North Gate", "HOME", 19, 4, 7, 3),
+            act("otto_home", "home to the Slate House", "HOME", 19, 4, 7, 3),
         ]),
         Resident::new("res_lena", "Lena", 36, "Teacher", "loc_orchard_close", vec![
             act("lena_sleep", "sleeps at Orchard Close", "HOME", 0, 1, 10, 5),
