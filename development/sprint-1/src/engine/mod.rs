@@ -64,6 +64,19 @@ pub struct EntityView {
     pub mood: f64,
     /// Current energy, ~0.05..1. 1 for non-residents.
     pub energy: f64,
+    /// What the resident visibly has on now (coat, umbrella, club_scarf, a
+    /// keepsake…) — the possessions layer. Empty for non-residents.
+    pub worn: Vec<&'static str>,
+}
+
+/// The day's weather, as a live reading.
+#[derive(Debug, Clone)]
+pub struct WeatherView {
+    pub sky: &'static str,
+    pub temp: &'static str,
+    pub wet: bool,
+    pub windy: bool,
+    pub phrase: &'static str,
 }
 
 /// The Old Oak, as a live reading.
@@ -104,6 +117,10 @@ pub struct Snapshot {
     pub minute: u64,
     pub weekday: &'static str,
     pub phase: &'static str,
+    /// The season the world is dressed in right now.
+    pub season: &'static str,
+    /// The day's weather.
+    pub weather: WeatherView,
     pub entities: Vec<EntityView>,
     pub occupancy: BTreeMap<LocationId, u32>,
     pub busiest: Option<(LocationId, &'static str, u32)>,
@@ -239,8 +256,13 @@ impl Engine {
                 soc: 0,
                 mood: 0.0,
                 energy: 1.0,
+                worn: Vec::new(),
             }
         };
+
+        // Season and matchday are the same for everyone this tick — compute once.
+        let season = crate::sim::oak::Season::for_day(day);
+        let is_match = matchday::is_matchday(sim.clock.weekday());
 
         for r in &sim.residents {
             let traveling = matches!(r.status, Status::Traveling { .. });
@@ -259,6 +281,11 @@ impl Engine {
             ev.soc = r.sociability;
             ev.mood = r.mood as f64;
             ev.energy = r.energy as f64;
+            let working = matches!(&r.status, Status::Performing { activity, .. }
+                if r.affordance_of(activity)
+                    .map(|a| a.starts_with("WORK") || a == "KIOSK" || a == "MARKET" || a == "BUSK")
+                    .unwrap_or(false));
+            ev.worn = sim.possessions.worn_tags(r.id, season, sim.weather, working, is_match);
             entities.push(ev);
             // Occupancy counts settled/idle residents at their node.
             if !traveling {
@@ -367,6 +394,14 @@ impl Engine {
             minute,
             weekday,
             phase: Self::phase_of_day(hour),
+            season: season.name(),
+            weather: WeatherView {
+                sky: sim.weather.sky.tag(),
+                temp: sim.weather.temp.tag(),
+                wet: sim.weather.is_wet(),
+                windy: sim.weather.windy,
+                phrase: sim.weather.sky.phrase(),
+            },
             entities,
             occupancy,
             busiest,

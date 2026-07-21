@@ -26,6 +26,15 @@ const C = {
   open: 0x2f7d46, closed: 0x6d7a86, warm: 0xe0a24a,
 };
 
+// seasonal dressing — the ground, the foliage and a few extras change by season.
+const SEASONS = {
+  Summer: { grassTop: 0x63b64d, grassBot: 0x4c9c39, canopy: [0x3f8a30, 0x66bd53, 0x57ab46], bare: false, blossom: false, snow: false },
+  Autumn: { grassTop: 0x9caa4a, grassBot: 0x84772f, canopy: [0xc4702f, 0xd8963a, 0xb5893a], bare: false, blossom: false, snow: false },
+  Winter: { grassTop: 0xdbe4e6, grassBot: 0xbcc8ca, canopy: [0x8a9aa0, 0x9fb0b4, 0x7f9095], bare: true, blossom: false, snow: true },
+  Spring: { grassTop: 0x74c25a, grassBot: 0x5aa842, canopy: [0x6fc253, 0x8ed06a, 0x57ab46], bare: false, blossom: true, snow: false },
+};
+let SEASON = SEASONS.Summer, lastSeason = 'Summer';
+
 // ---------------------------------------------------------------- engine glue
 let eng, WORLD, prev = null, cur = null;
 const NODES = {}, ROSTER = {};
@@ -75,7 +84,7 @@ function readiness(e) { return socOf(e) + moodOf(e) * 3 + (energyOf(e) - 0.5) * 
 function seedOf(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return ((h >>> 0) % 1000) / 1000; }
 
 // --------------------------------------------------------------------- Pixi
-let app, gGround, gPaths, gPlaces, gActors, labelLayer;
+let app, gGround, gPaths, gPlaces, gActors, labelLayer, gWeather;
 const labels = {};
 
 async function main() {
@@ -96,11 +105,13 @@ async function main() {
   gPlaces = new PIXI.Graphics();
   gActors = new PIXI.Graphics();
   labelLayer = new PIXI.Container();
-  app.stage.addChild(gGround, gPaths, gPlaces, gActors, labelLayer);
+  gWeather = new PIXI.Graphics();          // veil + precipitation, on top of all
+  app.stage.addChild(gGround, gPaths, gPlaces, gActors, labelLayer, gWeather);
 
   // a soft tilt-shift: blur the far and near thirds of the frame gently.
   applyTiltShift();
 
+  SEASON = SEASONS[cur.season] || SEASON; lastSeason = cur.season;
   computeFit(window.innerWidth, window.innerHeight);
   drawStatic();
   window.addEventListener('resize', () => { computeFit(window.innerWidth, window.innerHeight); drawStatic(); });
@@ -153,11 +164,11 @@ function drawStatic() {
   gGround.clear();
   const corners = [iso(-40, -40), iso(1080, -40), iso(1080, 820), iso(-40, 820)]
     .map(([ix, iy]) => [ix * FIT.s + FIT.ox, iy * FIT.s + FIT.oy]);
-  gGround.poly(corners.flat()).fill(C.grassBot);
+  gGround.poly(corners.flat()).fill(SEASON.grassBot);
   // a lighter top sheen
   const sheen = [iso(-40, -40), iso(1080, -40), iso(560, 390)]
     .map(([ix, iy]) => [ix * FIT.s + FIT.ox, iy * FIT.s + FIT.oy]);
-  gGround.poly(sheen.flat()).fill({ color: C.grassTop, alpha: 0.5 });
+  gGround.poly(sheen.flat()).fill({ color: SEASON.grassTop, alpha: 0.5 });
 
   // paths: the nav edges as inlaid iso lines.
   gPaths.clear();
@@ -220,9 +231,17 @@ function isoBuilding(g, cx, cy, rx, ry, h, walls, roof) {
 
 function tree(g, cx, cy, r) {
   g.rect(cx - r * 0.08, cy - r * 0.5, r * 0.16, r * 0.5).fill(0x7a5a3a);
-  g.ellipse(cx, cy - r * 0.55, r * 0.7, r * 0.5).fill(0x3f8a30);
-  g.ellipse(cx - r * 0.22, cy - r * 0.75, r * 0.42, r * 0.34).fill(0x66bd53);
-  g.ellipse(cx + r * 0.2, cy - r * 0.68, r * 0.36, r * 0.3).fill(0x57ab46);
+  if (SEASON.bare) {
+    g.moveTo(cx, cy - r * 0.2).lineTo(cx - r * 0.3, cy - r * 0.72).stroke({ width: 2, color: 0x6a4a33 });
+    g.moveTo(cx, cy - r * 0.3).lineTo(cx + r * 0.28, cy - r * 0.76).stroke({ width: 2, color: 0x6a4a33 });
+    g.ellipse(cx, cy - r * 0.55, r * 0.5, r * 0.34).fill({ color: 0xeef2f4, alpha: 0.5 }); // dusting of snow
+    return;
+  }
+  g.ellipse(cx, cy - r * 0.55, r * 0.7, r * 0.5).fill(SEASON.canopy[0]);
+  g.ellipse(cx - r * 0.22, cy - r * 0.75, r * 0.42, r * 0.34).fill(SEASON.canopy[1]);
+  g.ellipse(cx + r * 0.2, cy - r * 0.68, r * 0.36, r * 0.3).fill(SEASON.canopy[2]);
+  if (SEASON.blossom) { for (let i = 0; i < 6; i++) { const a = i * 1.05; g.circle(cx + Math.cos(a) * r * 0.5, cy - r * 0.6 + Math.sin(a) * r * 0.3, r * 0.06).fill(0xf2b8d0); } }
+  if (SEASON.snow) { g.ellipse(cx, cy - r * 0.82, r * 0.5, r * 0.18).fill({ color: 0xffffff, alpha: 0.6 }); }
 }
 
 function drawPoiProp(g, kind, cx, cy) {
@@ -343,6 +362,19 @@ function drawFigure(e) {
     gActors.circle(hx, hy, bodyW * 0.42).fill(mix(col, 0xffffff, 0.06));
     // facing nub
     gActors.circle(hx + Math.cos(e.h) * bodyW * 0.5, hy + Math.sin(e.h) * bodyW * 0.28, 1.8).fill({ color: 0xffffff, alpha: 0.85 });
+    // what they've got on — the possessions layer (coat, scarf, hat, umbrella…)
+    const worn = e.worn || [];
+    if (worn.length) {
+      const neckY = hy + bodyW * 0.5;
+      if (worn.includes('coat')) gActors.roundRect(px - bodyW * 0.5 * widen, topY + bodyH * 0.34, bodyW * widen, bodyH * 0.44, bodyW * 0.34).fill(shade(col, -0.2));
+      if (worn.includes('club_scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(0xd1495b);
+      else if (worn.includes('scarf')) gActors.rect(hx - bodyW * 0.4, neckY, bodyW * 0.8, 2.6).fill(hex(meta.color));
+      if (worn.includes('sunhat')) gActors.ellipse(hx, hy - bodyW * 0.36, bodyW * 0.58, bodyW * 0.2).fill(0xe8d9a0);
+      else if (worn.includes('cap')) gActors.ellipse(hx, hy - bodyW * 0.34, bodyW * 0.46, bodyW * 0.2).fill(0x5a7d86);
+      if (worn.includes('umbrella')) { gActors.rect(hx - 0.6, hy - bodyW * 1.05, 1.2, bodyW * 0.95).fill(0x555555); gActors.ellipse(hx, hy - bodyW * 1.05, bodyW * 0.85, bodyW * 0.34).fill(0x3d84a8); }
+      if (worn.includes('basket') || worn.includes('satchel')) gActors.circle(px + bodyW * 0.55 * widen, base - bodyH * 0.42, 2.6).fill(0xb5834a);
+      if (worn.includes('flower')) gActors.circle(hx + bodyW * 0.42, hy, 1.8).fill(0xe36a9a);
+    }
     // gesture spark
     if (e.pose === 'talk') gActors.arc(hx, hy - bodyW * 0.7, 3 + Math.sin(T * 4 + sd * 6) * 1.3, Math.PI * 0.1, Math.PI * 0.9).stroke({ width: 1.4, color: 0xffe6b0, alpha: 0.9 });
   }
@@ -364,12 +396,34 @@ function mix(a, b, t) {
   return ((ar + (br - ar) * t) << 16 | (ag + (bg - ag) * t) << 8 | (ab + (bb - ab) * t)) & 0xffffff;
 }
 
+// ----------------------------------------------------------------- weather
+function drawWeather(fr) {
+  gWeather.clear();
+  const w = fr.weather || { sky: 'clear' }, sky = w.sky;
+  const W = app.screen.width, H = app.screen.height;
+  let veil = 0, veilColor = 0x3a4653;
+  if (sky === 'cloudy') veil = 0.06;
+  else if (sky === 'overcast') veil = 0.14;
+  else if (sky === 'fog') { veil = 0.26; veilColor = 0xdfe6ea; }
+  else if (sky === 'rain') veil = 0.18;
+  else if (sky === 'snow') { veil = 0.12; veilColor = 0xeaf2f6; }
+  if (veil > 0) gWeather.rect(0, 0, W, H).fill({ color: veilColor, alpha: veil });
+  const t = tms / 1000;
+  if (sky === 'rain') {
+    for (let i = 0; i < 90; i++) { const x = (i * 137.5 + t * 620) % W; const y = (i * 89.3 + t * 900) % H; gWeather.moveTo(x, y).lineTo(x - 4, y + 12).stroke({ width: 1, color: 0xbfd8e8, alpha: 0.5 }); }
+  } else if (sky === 'snow') {
+    for (let i = 0; i < 70; i++) { const x = (i * 151.3 + Math.sin(t * 0.6 + i) * 22) % W; const y = (i * 73.1 + t * 90) % H; gWeather.circle(x, y, 1.7).fill({ color: 0xffffff, alpha: 0.85 }); }
+  }
+}
+
 // --------------------------------------------------------------------- HUD
+const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
 function renderHud(fr) {
   $('hh').textContent = pad(fr.hour) + ':' + pad(fr.minute);
   $('wd').textContent = fr.weekday;
   $('day').textContent = fr.day;
   $('phase').textContent = fr.phase;
+  if (fr.weather) { const w = fr.weather; $('wx').textContent = `${fr.season} · ${cap(w.sky)}${w.windy ? ', windy' : ''} · ${w.temp}`; }
 }
 
 // -------------------------------------------------------------------- loop
@@ -386,7 +440,10 @@ function loop(ticker) {
   }
   const f = playing ? Math.min(acc, 1) : 0;
   const ents = lerpEntities(prev, cur, f);
+  // re-dress the static scene when the season turns
+  if (cur.season !== lastSeason) { SEASON = SEASONS[cur.season] || SEASON; lastSeason = cur.season; drawStatic(); }
   drawActors(ents);
+  drawWeather(cur);
   if (cur.tick !== lastHudTick) { renderHud(cur); lastHudTick = cur.tick; }
 }
 

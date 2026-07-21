@@ -132,6 +132,17 @@ impl Snapshot {
             self.tick, self.day, self.hour, self.minute, self.weekday, esc(self.phase)
         ));
 
+        // season and today's weather — the world's dressing.
+        out.push_str(&format!(
+            ",\"season\":\"{}\",\"weather\":{{\"sky\":\"{}\",\"temp\":\"{}\",\"wet\":{},\"windy\":{},\"phrase\":\"{}\"}}",
+            esc(self.season),
+            self.weather.sky,
+            self.weather.temp,
+            self.weather.wet,
+            self.weather.windy,
+            esc(self.weather.phrase)
+        ));
+
         // live entities — position and *behaviour*: heading (facing), speed, pose,
         // a momentary gesture, and who they attend to. This is what the renderer
         // draws; identity/colour come from the static roster.
@@ -144,10 +155,20 @@ impl Snapshot {
                 Some(p) => format!("\"{p}\""),
                 None => "null".to_string(),
             };
+            let mut worn = String::from("[");
+            for (k, t) in e.worn.iter().enumerate() {
+                if k > 0 {
+                    worn.push(',');
+                }
+                worn.push('"');
+                worn.push_str(t);
+                worn.push('"');
+            }
+            worn.push(']');
             out.push_str(&format!(
                 "{{\"id\":\"{}\",\"x\":{:.1},\"y\":{:.1},\"h\":{:.2},\"spd\":{:.2},\"ph\":{:.2},\
                  \"pose\":\"{}\",\"gest\":\"{}\",\"partner\":{},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{},\
-                 \"soc\":{},\"mood\":{:.2},\"energy\":{:.2}}}",
+                 \"soc\":{},\"mood\":{:.2},\"energy\":{:.2},\"worn\":{}}}",
                 e.id,
                 e.x,
                 e.y,
@@ -162,7 +183,8 @@ impl Snapshot {
                 e.traveling,
                 e.soc,
                 e.mood,
-                e.energy
+                e.energy,
+                worn
             ));
         }
         out.push(']');

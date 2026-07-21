@@ -9,11 +9,13 @@ use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, MINUTES_PER_TICK, TICKS_PER_D
 use crate::sim::dog::Dog;
 use crate::sim::intention;
 use crate::sim::matchday::{self, MatchResult};
-use crate::sim::oak::{OakEvent, OakEventKind, OldOak};
+use crate::sim::oak::{OakEvent, OakEventKind, OldOak, Season};
+use crate::sim::possessions::Possessions;
 use crate::sim::resident::{Memory, Resident, Status};
 use crate::sim::rng::Rng;
 use crate::sim::routine::Routine;
 use crate::sim::social::{self, Bonds, Relationships};
+use crate::sim::weather::Weather;
 use crate::sim::wildlife::Wildlife;
 use crate::world::location::LocationId;
 use crate::world::navigation::NavGraph;
@@ -43,6 +45,11 @@ pub struct Simulation {
     /// different one. Residents do not draw from it and stay deterministic.
     pub rng: Rng,
     pub world_seed: u64,
+    /// Today's weather — deterministic in (day, season, seed). Re-dressed at each
+    /// day roll. A wet or cold day dampens outdoor dawdling.
+    pub weather: Weather,
+    /// What residents own and, by derivation, wear — evolving over the seasons.
+    pub possessions: Possessions,
     pub log: Vec<Event>,
     /// Ambient life — the town's routines, micro-life, and residents' small
     /// moments. A layer over the behavioural log (Sprint 3 — density).
@@ -71,6 +78,7 @@ fn hours_to_ticks(hours: u32) -> u32 {
 fn linger_with_friend(
     r: &Resident,
     hour: u64,
+    weather_appeal: i32,
     presence: &[intention::Presence],
     rels: &Relationships,
     world: &World,
@@ -78,8 +86,8 @@ fn linger_with_friend(
     if hour >= 18 || r.lingered_today >= LINGER_CAP {
         return None;
     }
-    // Someone tired or not in the mood for company doesn't dawdle.
-    if r.social_readiness() < 0 {
+    // Someone tired, out of sorts, or caught in poor weather doesn't dawdle.
+    if r.social_readiness() + weather_appeal < 0 {
         return None;
     }
     if world.location(r.place).map(|l| l.is_residential()).unwrap_or(true) {
@@ -192,6 +200,8 @@ impl Simulation {
             wildlife: Wildlife::new(),
             rng: Rng::new(seed),
             world_seed: seed,
+            weather: Weather::for_day(0, Season::for_day(0), seed),
+            possessions: Possessions::new(),
             log: Vec::new(),
             ambient: Vec::new(),
             interactions: Vec::new(),
@@ -221,7 +231,18 @@ impl Simulation {
             }
             self.social_seen_today.clear();
             self.last_day = day;
+            // Re-dress the world for the new day: today's weather; and, at the
+            // start of each week, any lasting keepsakes residents have gathered.
+            let season = Season::for_day(day);
+            self.weather = Weather::for_day(day, season, self.world_seed);
+            if day % DAYS_PER_WEEK == 0 {
+                let ids: Vec<&'static str> = self.residents.iter().map(|r| r.id).collect();
+                self.possessions.accrete(&ids, day / DAYS_PER_WEEK, self.world_seed);
+            }
         }
+        // How inviting it is to be outdoors today — folds into the spontaneous
+        // outdoor-social gates below, so a wet day changes how the town moves.
+        let weather_appeal = self.weather.outdoor_appeal();
 
         // Disposition drifts a little each tick before anyone decides anything:
         // energy wanes or recovers with where they are, mood eases toward neutral.
@@ -275,7 +296,7 @@ impl Simulation {
                     Status::Performing { activity, left, start_day } => {
                         if left > 1 {
                             r.status = Status::Performing { activity, left: left - 1, start_day };
-                        } else if let Some(friend) = linger_with_friend(r, hour, &presence, relationships, world) {
+                        } else if let Some(friend) = linger_with_friend(r, hour, weather_appeal, &presence, relationships, world) {
                             r.lingered_today += 1;
                             r.status = Status::Performing { activity, left: LINGER_TICKS, start_day };
                             log.push(Event {
@@ -353,7 +374,7 @@ impl Simulation {
             if dest == r.home {
                 // First: a friend is here now (join them). Else: our usual place
                 // (go there on the memory of past meetings, expecting them).
-                let readiness = r.social_readiness();
+                let readiness = r.social_readiness() + weather_appeal;
                 let dev = intention::consider_social_detour(
                     r, hour, self.clock.tick, &presence, &self.relationships, &self.world, &self.world.nav, readiness,
                 )

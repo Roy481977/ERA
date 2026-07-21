@@ -1,8 +1,9 @@
 # ERA — Generative World & Asset System
 
-*How ERA grows: a deterministic World Generator that mints new districts, residents,
+*How ERA grows: a deterministic World Generator that mints new residents,
 generations, plants, animals, possessions, seasons and buildings from seed and
-history — and an Asset Generator, governed by the style guide, that dresses each new
+history — and slowly reshapes the one home district in place (it never spawns a new
+district) — while an Asset Generator, governed by the style guide, dresses each new
 thing on-style by reusing the canonical library first and generating only what is
 genuinely new.*
 
@@ -26,7 +27,8 @@ architecture it should slot into.
 ## The core principle: grown, not authored — and still deterministic
 
 ERA's world is not a finite, authored set of places and people that the player
-exhausts. It is meant to *keep becoming*. Districts appear; residents are born, age,
+exhausts. It is meant to *keep becoming*. The one home district reshapes slowly in
+place (it never spawns a second); residents are born, age,
 court, raise children, grow old and die; trees put on rings and drop their leaves;
 foxes den and litter; a resident who was cold last winter is wearing a scarf this
 one; a season re-dresses everything at once; and every so often the town mines
@@ -139,7 +141,7 @@ the design lives.
 
 | Dimension | Cadence (typical) | Bound per period | Asset path (common → rare) |
 |---|---|---|---|
-| Districts | years | ≤1 district | new tile/prop kit combination → AI for a novel typology |
+| The district (in place) | years, very slow | change *within* the one district | rearrange the existing kit → AI for a novel typology |
 | Residents (arrivals) | weeks–months | ≤1–2 arrivals | recolour generic body → AI for a new archetype |
 | Generations (lineage) | life-timed | births rare, deaths rarer | inherited-palette recolour; age-band swap |
 | Plants (flora) | seasonal + slow | bounded spread | growth-stage + seasonal skin from library |
@@ -148,15 +150,18 @@ the design lives.
 | Seasons | fixed quarterly | whole world, at once | runtime grade + per-species skins (no new bytes) |
 | Architecture | months–years | ≤1 build in progress / district | prop kit → AI for a new building form |
 
-**Districts.** The town gains a new district when history warrants it — population
-pressure, a matchday economy that has outgrown its square, a generation that needs
-homes. A new district is a layout of tiles, paths, POIs and building plots, generated
-from the seed and the town's accumulated state, not hand-placed. Cadence is *years*,
-bounded to at most one district in flight, so the map grows the way a real town does —
-slowly, at the edges, along the roads that already exist. Asset-wise a district is
-mostly *arrangement* of the existing modular kit (the visual-engine strategy already
-argues for a kit "so the town can grow without bespoke art per building"); only a
-genuinely new typology reaches AI.
+**The district — one home, changing slowly in place (Roy, revised).** ERA does *not*
+generate new districts. A player is always placed in *this* one district; it is the
+home, and it stays the home. What it does is change *within itself*, very slowly — a
+new bench, a grown tree, a market pitch that becomes a permanent stall, a building
+plot that breaks ground and, months on, a new frontage where a gap used to be. So the
+"district" dimension is really slow **in-place change**: rearrangement and accretion
+of the existing modular kit at the district's own edges and corners, on a cadence of
+*years*, never a second district. Asset-wise it is mostly *arrangement* of the modular
+kit (the visual-engine strategy already argues for a kit "so the town can grow without
+bespoke art per building"); only a genuinely new building typology reaches AI. This
+folds together with **Architecture** below — they are the same slow hand reshaping the
+one place, not a map that sprawls into new tiles.
 
 **Residents (arrivals).** People move to town, not only are born into it. An arrival
 is minted with an id, an archetype, a stable `sociability` derived from its bytes
@@ -347,7 +352,7 @@ src/
     worldgen/       # NEW: the World Generator
       mod.rs        #   Generator: run(world, history, time, seed) on cadence
       cadence.rs    #   the generation-tick schedule; bounds; seeded streams
-      districts.rs  #   new districts (layout of tiles/POIs/plots)
+      district.rs   #   slow in-place change to the ONE district (no new districts)
       residents.rs  #   arrivals; ids, sociability, mini-palette
       generations.rs#   aging, courtship→birth, inheritance, eldering, death
       flora.rs       #   growth stages, seasonal skins, seeded spread
