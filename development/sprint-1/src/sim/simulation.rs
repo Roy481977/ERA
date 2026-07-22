@@ -7,6 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::sim::ambient::{self, Ambient, AmbientKind};
 use crate::sim::clock::{WorldClock, DAYS_PER_WEEK, MINUTES_PER_TICK, TICKS_PER_DAY, TICKS_PER_HOUR, TRAVEL_TICKS_PER_WEIGHT};
 use crate::sim::dog::Dog;
+use crate::sim::festival;
 use crate::sim::intention;
 use crate::sim::matchday::{self, MatchResult};
 use crate::sim::oak::{OakEvent, OakEventKind, OldOak, Season};
@@ -275,6 +276,21 @@ impl Simulation {
             }
         }
 
+        // Monday-night festival buildup — a separate town event from the football.
+        if festival::is_festival_day(weekday) && self.clock.on_the_hour() {
+            let note = match hour {
+                17 => Some("Tonight the town gathers in the Main Square — music and dancing after dark.".to_string()),
+                h if h == festival::START_HOUR => Some("The Monday-night gathering begins in the Main Square.".to_string()),
+                h if h == festival::END_HOUR => Some("The gathering winds up; the town drifts home.".to_string()),
+                _ => None,
+            };
+            if let Some(message) = note {
+                self.log.push(Event {
+                    tick: self.clock.tick, day, hour, resident: "Festival", message,
+                });
+            }
+        }
+
         // Snapshot of where everyone is at the start of the tick (for the
         // intention layer to read without borrowing residents mutably).
         let presence: Vec<crate::sim::intention::Presence> = self
@@ -363,6 +379,10 @@ impl Simulation {
                     idx: i, aid: "dev_shared_plan", purpose: "a while together",
                     dur, dest, deviation: true, reason,
                 });
+                continue;
+            }
+            if let Some(fa) = festival::consider(r, weekday, hour) {
+                intents.push(Intent { idx: i, aid: fa.id, purpose: fa.purpose, dur: hours_to_ticks(fa.duration), dest: fa.dest, deviation: false, reason: None });
                 continue;
             }
             if let Some(m) = matchday::consider(r, weekday, hour, match_result) {
@@ -904,6 +924,9 @@ impl Simulation {
                 return false;
             }
             if matchday::consider(r, weekday, hour, match_result).is_some() {
+                return false;
+            }
+            if festival::consider(r, weekday, hour).is_some() {
                 return false;
             }
             match r.select(hour, weekday, &self.world) {

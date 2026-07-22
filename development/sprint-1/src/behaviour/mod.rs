@@ -36,6 +36,7 @@ pub enum Pose {
     Lie,
     Sniff,
     Play,
+    Dance,
     Perch,
     Forage,
     Groom,
@@ -53,6 +54,7 @@ impl Pose {
             Pose::Lie => "lie",
             Pose::Sniff => "sniff",
             Pose::Play => "play",
+            Pose::Dance => "dance",
             Pose::Perch => "perch",
             Pose::Forage => "forage",
             Pose::Groom => "groom",
@@ -237,6 +239,29 @@ impl Choreographer {
         convo: Option<&Convo>,
     ) -> (Pose, Gesture, Option<&'static str>, Option<f64>) {
         use crate::world::poi::Posture;
+        // Monday-night festival: the square is a dancing crowd. Most of the gathered
+        // residents dance; a minority keep a conversation going at the edges. This runs
+        // ahead of the usual conversation/bench logic so nobody just sits it out.
+        if crate::sim::festival::is_festival_time(sim.clock.weekday(), sim.clock.hour()) {
+            if let Some(r) = sim.residents.iter().find(|r| r.id == id) {
+                if !moving && r.place == "loc_main_square" {
+                    if let Some(c) = convo {
+                        if seed_hash(&[id, "festchat"], tick) % 100 < 30 {
+                            let partner = if c.a == id { c.b } else { c.a };
+                            let face = pos.get(partner).and_then(|&(px, py)| pos.get(id).map(|&(x, y)| (py - y).atan2(px - x)));
+                            return (Pose::Talk, Gesture::Gesture, Some(partner), face);
+                        }
+                    }
+                    let g = match seed_hash(&[id, "fest"], tick) % 100 {
+                        0..=34 => Gesture::Gesture,
+                        35..=54 => Gesture::Laugh,
+                        55..=72 => Gesture::Nod,
+                        _ => Gesture::Glance,
+                    };
+                    return (Pose::Dance, g, None, None);
+                }
+            }
+        }
         // A conversation overrides everything: turn to face the partner and talk.
         if let Some(c) = convo {
             let partner = if c.a == id { c.b } else { c.a };

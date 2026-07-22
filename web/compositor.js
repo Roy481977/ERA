@@ -450,6 +450,7 @@ function draw() {
   // around them — everything else falls into real darkness.
   if (night > 0) applyLightMap(night, lit, f);
   drawFloodBeams(flood);   // beam shafts + head flares over the lit scene
+  drawFestival(festivalOn(f), f);   // strung lanterns + music over the square
 
   if (state.showPins) drawPins();
   drawHUD(f);
@@ -628,7 +629,8 @@ function drawFigure(fig, f) {
   const openness = clamp(((e.soc != null ? e.soc : 0) + 1) / 4, 0, 1);            // introvert … extrovert
   const pose = e.pose || 'stand';
   const sit = pose === 'sit' || pose === 'lie';
-  const working = pose === 'work', talking = pose === 'talk', playing = pose === 'play';
+  const working = pose === 'work', talking = pose === 'talk', playing = pose === 'play', dancing = pose === 'dance';
+  const dancePh = dancing ? state.t * 3.6 + ph : 0;
   const worn = e.worn || [];
   const gest = e.gest || 'none';
   const ink = 'rgba(30,22,16,.6)';
@@ -647,14 +649,16 @@ function drawFigure(fig, f) {
   const slump = ((1 - vigor) * 0.6 + (1 - cheer) * 0.35) * U;                     // tired/low-mood shoulders drop
   const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) + ph);
   const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * (0.32 + openness * 0.4) * U;
-  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U : (playing ? playHop * 1.7 * U : idle * 0.22 * U);
+  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U
+    : (playing ? playHop * 1.7 * U : dancing ? (0.4 + Math.abs(Math.sin(dancePh))) * 1.2 * U : idle * 0.22 * U);
   const lean = working ? faceS * 0.9 * U : 0;                                     // stoop over the work
+  const danceSway = dancing ? Math.sin(dancePh * 0.5) * 1.7 * U : 0;              // hips side to side
   const hipY = y - legH + bob, shoulderY = hipY - torsoH + slump;
   const nod = gest === 'nod' ? Math.abs(Math.sin(state.t * 3.2 + ph)) * 0.7 * U : 0;      // agreeing
   const glance = gest === 'glance' ? Math.sin(state.t * 1.3 + ph) * 0.9 * U : 0;          // looking about
   const headDroop = (1 - cheer) * 0.5 * U;                                        // low mood: head dips
   const headCY = shoulderY - headR * 1.05 + idle * 0.15 * U + nod + headDroop;
-  x += sway + lean;
+  x += sway + lean + danceSway;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 
   // ground shadow
@@ -668,7 +672,7 @@ function drawFigure(fig, f) {
   if (sit) {
     ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + faceS * 3.6 * U, hipY + 0.4 * U); ctx.stroke();
   } else {
-    const st = moving ? wph * strideAmp * 2.7 * U : (playing ? Math.sin(state.t * 3.2 + ph) * 1.5 * U : 0.8 * U);
+    const st = moving ? wph * strideAmp * 2.7 * U : (playing ? Math.sin(state.t * 3.2 + ph) * 1.5 * U : dancing ? Math.sin(dancePh) * 1.7 * U : 0.8 * U);
     ctx.beginPath(); ctx.moveTo(hipL, hipY); ctx.lineTo(hipL + st * faceS, y + bob); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(hipR, hipY); ctx.lineTo(hipR - st * faceS, y + bob); ctx.stroke();
   }
@@ -718,6 +722,10 @@ function drawFigure(fig, f) {
     const pw = Math.sin(state.t * 3.2 + ph) * 1.5 * U;                            // arms up, waving with the hop
     ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - 1.3 * U + pw, armY - 2.7 * U); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(shR, armY); ctx.lineTo(shR + 1.3 * U - pw, armY - 2.7 * U); ctx.stroke();
+  } else if (dancing) {
+    const d1 = Math.sin(dancePh) * 1.7 * U, d2 = Math.sin(dancePh + Math.PI) * 1.7 * U;   // arms up, alternating
+    ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - 1.4 * U + d1, armY - 2.9 * U - Math.abs(d1) * 0.6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(shR, armY); ctx.lineTo(shR + 1.4 * U + d2, armY - 2.9 * U - Math.abs(d2) * 0.6); ctx.stroke();
   } else {
     const aSwing = moving ? wph * strideAmp * 1.8 * U : 0;
     const rest = moving ? 0 : (0.6 + openness * 0.9) * U;                          // open posture = arms held out
@@ -912,6 +920,52 @@ function drawFloodBeams(on) {
   ctx.restore();
 }
 
+// Monday-night town festival: the square is lit warm and festive for the gathering
+// (19:00→22:00), matched to the sim's festival window. Returns 0..1.
+function festivalOn(f) {
+  if (f.weekday !== 'Mon') return 0;
+  const h = f.hour + f.minute / 60, on = 19, off = 22, ramp = 1 / 6;
+  if (h < on || h >= off) return 0;
+  if (h < on + ramp) return (h - on) / ramp;
+  if (h > off - ramp) return (off - h) / ramp;
+  return 1;
+}
+// A festive canopy over the square: strings of little coloured lanterns strung above the
+// crowd, drawn over the lit scene (additive), plus a few musical notes drifting up.
+function drawFestival(on, f) {
+  if (on <= 0) return;
+  const sq = state.map.places && state.map.places.loc_main_square; if (!sq) return;
+  const [cx, cy] = P2S(sq.x, sq.y), sc = scaleAt(sq.y) * view.s, T = state.anim || 0;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const cols = ['255,120,90', '255,210,110', '120,200,255', '150,255,150', '255,150,220'];
+  // three strung lines of bulbs arcing over the square
+  for (let s = 0; s < 3; s++) {
+    const span = (70 + s * 18) * sc, x0 = cx - span, x1 = cx + span, yTop = cy - (34 + s * 8) * sc, sag = (10 + s * 3) * sc;
+    const N = 10 + s * 2;
+    for (let i = 0; i <= N; i++) {
+      const u = i / N, bx = x0 + (x1 - x0) * u, by = yTop + Math.sin(u * Math.PI) * -sag + Math.sin(u * Math.PI) * sag * 2;
+      const twinkle = 0.55 + 0.45 * Math.sin(T * 2.5 + i * 1.3 + s);
+      const c = cols[(i + s) % cols.length];
+      ctx.fillStyle = `rgba(${c},${on * twinkle * 0.9})`;
+      ctx.beginPath(); ctx.arc(bx, by, 1.5 * sc, 0, 7); ctx.fill();
+    }
+  }
+  // a few musical notes drifting up over the crowd
+  ctx.strokeStyle = `rgba(255,246,220,${on * 0.7})`; ctx.fillStyle = `rgba(255,246,220,${on * 0.7})`;
+  ctx.lineWidth = Math.max(0.6, 0.8 * sc);
+  for (let k = 0; k < 5; k++) {
+    const hx = ((k + 1) * 2654435761) >>> 0;
+    const rise = ((hx % 1000) / 1000 + T * 0.06) % 1;
+    const nx = cx + ((hx >> 10) % 160 - 80) * sc * 0.9, ny = cy - 20 * sc - rise * 46 * sc;
+    const a = on * (1 - rise) * 0.8;
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(nx, ny, 1.2 * sc, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(nx + 1.1 * sc, ny); ctx.lineTo(nx + 1.1 * sc, ny - 4 * sc); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
 // A resident whose feet fall inside an obscured region (a passage the camera
 // can't see past, marked in the plate-mapper) is hidden.
 function obscured(px, py) {
@@ -1020,6 +1074,13 @@ function applyLightMap(n, lit, f) {
       lamp(cx, cy, 150 * sc, `rgba(226,238,255,${0.62 * flood})`, `rgba(206,224,255,${0.3 * flood})`);
     }
     lamp(aim.x * view.s, aim.y * view.s, 250 * asc, `rgba(230,240,255,${0.5 * flood})`, `rgba(210,226,255,${0.22 * flood})`); // whole-pitch wash
+  }
+  // Monday festival: a strong warm-gold wash over the square for the gathering
+  const fest = festivalOn(f), sq = state.map.places && state.map.places.loc_main_square;
+  if (fest > 0 && sq && sq.x > 0 && sq.x < PLATE_W) {
+    const sc = scaleAt(sq.y) * view.s, lx = sq.x * view.s, ly = (sq.y - 4) * view.s;
+    lamp(lx, ly, 200 * sc, `rgba(255,196,120,${0.6 * fest})`, `rgba(255,168,96,${0.28 * fest})`);   // warm crowd wash
+    lamp(lx, ly, 95 * sc, `rgba(255,214,150,${0.85 * fest})`, `rgba(255,188,120,${0.4 * fest})`);    // brighter core
   }
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';

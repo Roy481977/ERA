@@ -5,6 +5,7 @@ pub mod cast;
 pub mod clock;
 pub mod dog;
 pub mod intention;
+pub mod festival;
 pub mod matchday;
 pub mod oak;
 pub mod possessions;

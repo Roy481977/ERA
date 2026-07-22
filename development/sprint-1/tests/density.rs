@@ -47,9 +47,11 @@ fn ambient_life_is_deterministic() {
 #[test]
 fn ambient_does_not_disturb_the_behavioural_world() {
     // The density layer is texture: it must not change positions, endings, or the
-    // deterministic behavioural log.
+    // deterministic behavioural log. Checked at the end of an ordinary day — day 1
+    // (Tuesday), since day 0 (Monday) is the town festival, where residents may still
+    // be out past midnight by design.
     let mut sim = Simulation::new(cast());
-    sim.run(1);
+    sim.run(2);
     for r in &sim.residents {
         assert_eq!(r.place, r.home, "{} not home — ambient layer disturbed movement", r.name);
     }
