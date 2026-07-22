@@ -304,6 +304,18 @@ function hashId(id) { let h = 2166136261; for (let i = 0; i < id.length; i++) { 
 const skinOf = id => SKINS[hashId(id) % SKINS.length];
 const hairOf = id => HAIRS[(hashId(id) >> 3) % HAIRS.length];
 
+// A resident's visible role right now, from what they're doing / where they are.
+// Drives work clothing (apron, cap, jacket) so people read at a glance.
+function roleOf(e) {
+  const d = (e.doing || '').toLowerCase(), p = e.place;
+  if (/bread|bakery|bakes|loaf|bun/.test(d) || p === 'loc_bakery') return 'baker';
+  if (/grocer|groceries|greengroc/.test(d) || p === 'loc_corner_grocer') return 'grocer';
+  if (/coach|training|groundskeep|grounds|pitch|mows|the old oak/.test(d) || p === 'loc_training_ground') return 'keeper';
+  if (/ledger|club-office|club office|admin/.test(d) || p === 'loc_club_offices') return 'clerk';
+  if (/kit|club shop/.test(d) || p === 'loc_club_shop') return 'shop';
+  return null;
+}
+
 function drawFigure(fig, f) {
   const { e, meta } = fig;
   let [x, y] = P2S(fig.px, fig.py);
@@ -324,52 +336,76 @@ function drawFigure(fig, f) {
   const gest = e.gest || 'none';
   const ink = 'rgba(30,22,16,.6)';
 
+  const role = roleOf(e);
+
+  // proportions — broader shoulders than hips, a touch less lollipop
+  const legH = (sit ? 2.4 : 5.4) * U, torsoH = (sit ? 6 : 8) * U;
+  const shoulderW = 7 * U, hipW = 5.4 * U, headR = 3.0 * U * (e.child ? 1.2 : 1);
+  const idle = moving ? 0 : Math.sin(state.t * 1.5 + (hs % 628) / 100);
+  const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * 0.5 * U;
+  const bob = moving ? Math.abs(wph) * 0.7 * U : idle * 0.25 * U;
+  const hipY = y - legH + bob, shoulderY = hipY - torsoH, headCY = shoulderY - headR * 1.05 + idle * 0.15 * U;
+  x += sway;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
   // ground shadow
   ctx.fillStyle = 'rgba(0,0,0,.20)';
   ctx.beginPath(); ctx.ellipse(x, y, 7 * U, 2.6 * U, 0, 0, 7); ctx.fill();
 
-  const legH = (sit ? 2.2 : 5) * U, torsoH = (sit ? 6 : 8) * U, torsoW = 6 * U;
-  const headR = 3.2 * U * (e.child ? 1.14 : 1);
-  // idle life: a slow breathing bob + faint sway when standing about
-  const idle = moving ? 0 : Math.sin(state.t * 1.5 + (hs % 628) / 100);
-  const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * 0.5 * U;
-  const bob = moving ? Math.abs(wph) * 0.6 * U : idle * 0.25 * U;
-  const hipY = y - legH + bob, shoulderY = hipY - torsoH, headCY = shoulderY - headR * 0.9 + idle * 0.15 * U;
-  x += sway;
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-
-  // legs
-  ctx.strokeStyle = shade(col, 0.7); ctx.lineWidth = 2.2 * U;
+  // legs — opposite swing; role-tinted trousers
+  const trouser = role === 'keeper' ? '#3f4a37' : role === 'clerk' ? '#33384a' : shade(col, 0.6);
+  ctx.strokeStyle = trouser; ctx.lineWidth = 2.3 * U;
+  const hipL = x - hipW * 0.28, hipR = x + hipW * 0.28;
   if (sit) {
-    ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + faceS * 3.4 * U, hipY + 0.4 * U); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + faceS * 3.6 * U, hipY + 0.4 * U); ctx.stroke();
   } else {
-    const stride = moving ? wph * 2.6 * U : 1.0 * U;
-    ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + stride * faceS, y + bob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x - stride * faceS, y + bob); ctx.stroke();
+    const st = moving ? wph * 2.8 * U : 0.8 * U;
+    ctx.beginPath(); ctx.moveTo(hipL, hipY); ctx.lineTo(hipL + st * faceS, y + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hipR, hipY); ctx.lineTo(hipR - st * faceS, y + bob); ctx.stroke();
   }
 
-  // torso — clay-shaded capsule, colour = identity
+  // torso — clay-shaded trapezoid, colour = identity
   const g = ctx.createLinearGradient(0, shoulderY, 0, hipY);
-  g.addColorStop(0, shade(col, 1.12)); g.addColorStop(1, shade(col, 0.85));
+  g.addColorStop(0, shade(col, 1.14)); g.addColorStop(1, shade(col, 0.84));
   ctx.fillStyle = g;
-  roundRect(x - torsoW / 2, shoulderY, torsoW, torsoH + (sit ? 0 : U), 3 * U); ctx.fill();
+  const torsoPath = () => {
+    ctx.beginPath();
+    ctx.moveTo(x - shoulderW / 2 + U, shoulderY);
+    ctx.lineTo(x + shoulderW / 2 - U, shoulderY);
+    ctx.quadraticCurveTo(x + shoulderW / 2, shoulderY, x + shoulderW / 2 - 0.4 * U, shoulderY + 1.6 * U);
+    ctx.lineTo(x + hipW / 2, hipY);
+    ctx.lineTo(x - hipW / 2, hipY);
+    ctx.lineTo(x - shoulderW / 2 + 0.4 * U, shoulderY + 1.6 * U);
+    ctx.quadraticCurveTo(x - shoulderW / 2, shoulderY, x - shoulderW / 2 + U, shoulderY);
+    ctx.closePath();
+  };
+  torsoPath(); ctx.fill();
   ctx.lineWidth = Math.max(0.5, 0.7 * U); ctx.strokeStyle = ink; ctx.stroke();
 
-  // arms (front arm raises on a gesture)
-  ctx.strokeStyle = shade(col, 0.95); ctx.lineWidth = 2.0 * U;
-  const armY = shoulderY + 2.2 * U, raise = (gest === 'gesture' || gest === 'laugh');
-  ctx.beginPath(); ctx.moveTo(x - torsoW * 0.35, armY);
-  ctx.lineTo(x - torsoW * 0.35 - faceS * (moving ? -wph * 1.6 * U : 1.1 * U), armY + (sit ? 2 : 3.2) * U); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x + torsoW * 0.35, armY);
-  if (raise) ctx.lineTo(x + torsoW * 0.35 + faceS * 1.6 * U, armY - 3.2 * U);
-  else ctx.lineTo(x + torsoW * 0.35 + faceS * (moving ? wph * 1.6 * U : 1.1 * U), armY + (sit ? 2 : 3.2) * U);
+  // work jacket (clerk) / coat overlay (worn) darkens the torso
+  if (role === 'clerk') { ctx.fillStyle = 'rgba(40,46,66,.55)'; torsoPath(); ctx.fill(); }
+  if (worn.includes('coat')) { ctx.fillStyle = 'rgba(60,50,40,.5)'; torsoPath(); ctx.fill(); }
+
+  // apron (baker / grocer / shop) — lighter block over the lower front, with straps
+  if (role === 'baker' || role === 'grocer' || role === 'shop') {
+    const apron = role === 'baker' ? 'rgba(246,243,236,.94)' : role === 'grocer' ? 'rgba(122,96,60,.92)' : 'rgba(198,204,214,.92)';
+    const aTop = shoulderY + torsoH * 0.4;
+    ctx.fillStyle = apron; roundRect(x - hipW * 0.42, aTop, hipW * 0.84, hipY - aTop + 0.5 * U, 1.1 * U); ctx.fill();
+    ctx.strokeStyle = apron; ctx.lineWidth = 0.9 * U;
+    ctx.beginPath(); ctx.moveTo(x - hipW * 0.26, aTop); ctx.lineTo(x - hipW * 0.12, shoulderY + 1.4 * U);
+    ctx.moveTo(x + hipW * 0.26, aTop); ctx.lineTo(x + hipW * 0.12, shoulderY + 1.4 * U); ctx.stroke();
+  }
+
+  // arms — swing opposite the legs; front arm raises on a gesture
+  ctx.strokeStyle = shade(col, 0.98); ctx.lineWidth = 2.0 * U;
+  const armY = shoulderY + 1.7 * U, aSwing = moving ? wph * 1.9 * U : 0, rest = moving ? 0 : 1.0 * U;
+  const shL = x - shoulderW * 0.42, shR = x + shoulderW * 0.42;
+  ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - aSwing * faceS - rest, armY + 3.4 * U); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(shR, armY);
+  if (gest === 'gesture' || gest === 'laugh') ctx.lineTo(shR + faceS * 1.8 * U, armY - 3.4 * U);
+  else ctx.lineTo(shR + aSwing * faceS + rest, armY + 3.4 * U);
   ctx.stroke();
 
-  // coat overlay (worn)
-  if (worn.includes('coat')) {
-    ctx.fillStyle = 'rgba(60,50,40,.5)';
-    roundRect(x - torsoW / 2, shoulderY + 1 * U, torsoW, torsoH, 3 * U); ctx.fill();
-  }
   // scarf
   if (worn.includes('club_scarf') || worn.includes('scarf')) {
     ctx.strokeStyle = '#c9463d'; ctx.lineWidth = 1.7 * U;
@@ -377,18 +413,34 @@ function drawFigure(fig, f) {
     ctx.beginPath(); ctx.moveTo(x + 0.8 * U, shoulderY + 0.6 * U); ctx.lineTo(x + 1.5 * U * faceS, shoulderY + 3 * U); ctx.stroke();
   }
 
-  // head + hair
+  // head + hair + a hint of a face on the facing side
+  const hcx = x + faceS * 0.4 * U;
   ctx.fillStyle = skinOf(e.id);
-  ctx.beginPath(); ctx.arc(x + faceS * 0.4 * U, headCY, headR, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(hcx, headCY, headR, 0, 7); ctx.fill();
   ctx.lineWidth = Math.max(0.5, 0.7 * U); ctx.strokeStyle = ink; ctx.stroke();
   ctx.fillStyle = hairOf(e.id);
-  ctx.beginPath(); ctx.arc(x + faceS * 0.4 * U, headCY - headR * 0.22, headR * 0.94, Math.PI * 1.04, Math.PI * 2.06); ctx.fill();
+  ctx.beginPath(); ctx.arc(hcx, headCY - headR * 0.24, headR * 0.96, Math.PI * 1.02, Math.PI * 2.08); ctx.fill();
+  // face: a soft lit cheek + a brow dot, toward the direction faced
+  ctx.fillStyle = 'rgba(255,252,245,.12)';
+  ctx.beginPath(); ctx.ellipse(hcx + faceS * headR * 0.34, headCY + headR * 0.12, headR * 0.5, headR * 0.62, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(40,28,20,.5)';
+  ctx.beginPath(); ctx.arc(hcx + faceS * headR * 0.5, headCY - headR * 0.02, Math.max(0.5, 0.4 * U), 0, 7); ctx.fill();
 
-  // hats / umbrella
+  // role headwear
+  if (role === 'baker') {
+    ctx.fillStyle = 'rgba(248,246,240,.96)';
+    ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.7, headR * 1.05, headR * 0.85, 0, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.55, headR * 1.15, headR * 0.3, 0, 0, 7); ctx.fill();
+  } else if (role === 'keeper') {
+    ctx.fillStyle = '#2f3a2a';
+    ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.5, headR * 1.15, headR * 0.55, 0, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hcx + faceS * headR * 0.85, headCY - headR * 0.45, headR * 0.7, headR * 0.28, 0, 0, 7); ctx.fill();
+  }
+  // worn hats
   if (worn.includes('sunhat')) {
     ctx.fillStyle = '#e6d49a';
-    ctx.beginPath(); ctx.ellipse(x + faceS * 0.4 * U, headCY - headR * 0.45, headR * 1.6, headR * 0.55, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x + faceS * 0.4 * U, headCY - headR * 0.8, headR * 0.75, headR * 0.55, 0, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.45, headR * 1.6, headR * 0.55, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.8, headR * 0.75, headR * 0.55, 0, Math.PI, 0); ctx.fill();
   }
   if (worn.includes('umbrella')) {
     ctx.fillStyle = 'rgba(45,65,95,.92)';
@@ -396,7 +448,6 @@ function drawFigure(fig, f) {
     ctx.strokeStyle = 'rgba(45,65,95,.92)'; ctx.lineWidth = 0.8 * U;
     ctx.beginPath(); ctx.moveTo(x, headCY - headR * 2.6); ctx.lineTo(x, headCY + headR * 0.5); ctx.stroke();
   }
-  // laugh spark
   if (gest === 'laugh') { ctx.fillStyle = 'rgba(255,240,180,.95)'; ctx.beginPath(); ctx.arc(x + faceS * 3 * U, headCY - 2 * U, 1.3 * U, 0, 7); ctx.fill(); }
 
   if (state.showNames) {
