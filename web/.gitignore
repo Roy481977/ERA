@@ -8,3 +8,8 @@ world.json
 # generated blockout inputs (derived from design/bible + sim)
 world-coords.json
 world.json
+
+# compositor runtime assets (regenerable: dump_replay + bundle_compositor)
+assets/replay.json
+assets/plate-v1-graded.jpeg
+assets/era-plate-map.json
