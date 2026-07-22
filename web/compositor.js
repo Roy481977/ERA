@@ -76,8 +76,20 @@ async function boot() {
     'loc_corner_grocer', 'loc_north_gate', 'loc_museum', 'loc_club_shop', 'loc_bridge'];
   for (const id of CENTER) {
     const p = map.places[id];
-    if (p && p.x > 0 && p.x < PLATE_W) state.lamps.push({ x: p.x, y: p.y + 6, center: true });
+    if (p && p.x > 0 && p.x < PLATE_W) state.lamps.push({ x: p.x, y: p.y + 6 });
   }
+  // hand-placed extras: the train station (back-left) + the dark back of the
+  // centre behind the clock tower.
+  const EXTRA = [
+    { x: 300, y: 240, small: true }, { x: 264, y: 244, small: true },   // train station platform
+    { x: 905, y: 322 }, { x: 968, y: 326 }, { x: 1012, y: 340 },         // behind the clock, back terraces
+    { x: 878, y: 305 },
+  ];
+  for (const e of EXTRA) state.lamps.push(e);
+  // the ground is dark at night (no match): drop any lamp that fell on the pitch
+  // or the stand, so it stops lighting oddly.
+  const inPitch = (x, y) => x > 990 && x < 1362 && y > 420 && y < 560;
+  state.lamps = state.lamps.filter(L => !inPitch(L.x, L.y));
 
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
@@ -169,8 +181,9 @@ function draw() {
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
   const night = nightFactor(f.hour, f.minute);
+  const lit = lampsOn(f.hour, f.minute);
 
-  drawLampPosts(night);
+  drawLampPosts(lit);
 
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
@@ -191,7 +204,7 @@ function draw() {
   // night lighting: multiply a warm light map over the whole composed scene, so
   // lamps and lit windows genuinely illuminate the buildings, ground and people
   // around them — everything else falls into real darkness.
-  if (night > 0) applyLightMap(night, f);
+  if (night > 0) applyLightMap(night, lit, f);
 
   if (state.showPins) drawPins();
   drawHUD(f);
@@ -368,13 +381,23 @@ function roundRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
-// 0 = full day, 1 = deep night, ramped through dawn/dusk.
+// 0 = full day, 1 = deep night, ramped through dawn/dusk (drives sky darkness).
 function nightFactor(hour, minute) {
   const h = hour + minute / 60;
   if (h >= 7 && h < 17) return 0;
   if (h >= 5 && h < 7) return clamp(1 - (h - 5) / 2, 0, 1);     // dawn fade out
   if (h >= 17 && h < 20.5) return clamp((h - 17) / 3.5, 0, 1);  // dusk fade in
   return 1;                                                     // night
+}
+
+// Street/window lights on their own switch: ON at 19:20, OFF at 5:20, with a
+// short ramp so they fade rather than snap. Independent of sky darkness.
+function lampsOn(hour, minute) {
+  const h = hour + minute / 60;
+  if (h >= 19 + 20 / 60 && h < 19 + 40 / 60) return (h - (19 + 20 / 60)) / (20 / 60); // ramp up 19:20→19:40
+  if (h >= 19 + 40 / 60 || h < 5) return 1;                                            // full on overnight
+  if (h >= 5 && h < 5 + 20 / 60) return 1 - (h - 5) / (20 / 60);                        // ramp down 5:00→5:20
+  return 0;                                                                             // daytime, off
 }
 
 // A resident whose feet fall inside an obscured region (a passage the camera
@@ -397,21 +420,21 @@ function pointInPoly(x, y, poly) {
 // Visible lamp posts: a slim post with a lantern head, standing in the scene.
 // Faint by day, with the lantern lit warm at night. The light pools themselves
 // come from applyLightMap; this is the physical fixture.
-function drawLampPosts(night) {
+function drawLampPosts(lit) {
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const [x, y] = P2S(L.x, L.y);
     const sc = scaleAt(L.y) * view.s;
-    const ph = 14 * sc, hx = x, hy = y - ph;
+    const ph = (L.small ? 10 : 14) * sc, hx = x, hy = y - ph;
     ctx.lineCap = 'round';
     // post
-    ctx.strokeStyle = `rgba(38,40,36,${0.5 + 0.35 * night})`;
+    ctx.strokeStyle = 'rgba(40,42,38,0.65)';
     ctx.lineWidth = Math.max(0.8, 1.3 * sc);
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(hx, hy + 1.5 * sc); ctx.stroke();
-    // lantern head
-    ctx.fillStyle = night > 0.15 ? `rgba(255,224,150,${0.6 + 0.4 * night})` : 'rgba(60,60,54,0.8)';
+    // lantern head — lit warm only when the lamps are on
+    ctx.fillStyle = lit > 0.12 ? `rgba(255,224,150,${0.6 + 0.4 * lit})` : 'rgba(58,58,52,0.85)';
     ctx.strokeStyle = 'rgba(30,30,26,0.7)'; ctx.lineWidth = Math.max(0.5, 0.6 * sc);
-    ctx.beginPath(); ctx.arc(hx, hy, 1.9 * sc, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy, (L.small ? 1.5 : 1.9) * sc, 0, 7); ctx.fill(); ctx.stroke();
   }
 }
 
@@ -419,7 +442,7 @@ function drawLampPosts(night) {
 // warm pools at every lamp and lit window) in an offscreen canvas, then MULTIPLY
 // it over the whole composed scene — so lamps and windows actually illuminate
 // the buildings, ground and people near them, and unlit areas fall dark.
-function applyLightMap(n, f) {
+function applyLightMap(n, lit, f) {
   const R = Math.ceil(PLATE_W * view.s), H = Math.ceil(PLATE_H * view.s);
   let lc = state.lc;
   if (!lc) lc = state.lc = document.createElement('canvas');
@@ -430,6 +453,7 @@ function applyLightMap(n, f) {
   g.fillStyle = `rgb(${Math.round(lerp(255, 18, n))},${Math.round(lerp(255, 26, n))},${Math.round(lerp(255, 54, n))})`;
   g.fillRect(0, 0, R, H);
   g.globalCompositeOperation = 'lighter';
+  n = lit;  // light sources follow the on/off switch, not the sky
   const lamp = (lx, ly, rad, c0, c1) => {
     if (!isFinite(lx) || !isFinite(ly) || !isFinite(rad) || rad <= 0) return;
     const rg = g.createRadialGradient(lx, ly, 0, lx, ly, rad);
