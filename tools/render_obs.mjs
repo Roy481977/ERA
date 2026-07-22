@@ -10,11 +10,10 @@ await p.waitForFunction('window.__ready===true', null, { timeout: 60000 });
 await p.evaluate(() => {
   window.__seek(144);
   window.__state.showPins = true;
-  window.__debugDraw({ obscured: false, routes: [['loc_riverside', 'loc_cafe', '#ffd000'], ['loc_main_square', 'loc_stadium', '#00e5ff'], ['loc_oakside', 'loc_bakery', '#ff3bd0'], ['loc_millers_row', 'loc_pub', '#7cff3b']] });
+  window.__debugDraw({ paths: true, routes: [['loc_main_square', 'loc_stadium', '#ff2020'], ['loc_riverside', 'loc_cafe', '#ffe000']] });
 });
 await p.waitForTimeout(80);
-await p.screenshot({ path: '/tmp/routes_clean.png' });
-// zoom center
-await p.screenshot({ path: '/tmp/routes_center.png', clip: { x: 640, y: 300, width: 560, height: 320 } });
-console.log('wrote routes_clean + routes_center');
+await p.screenshot({ path: '/tmp/net_full.png' });
+await p.screenshot({ path: '/tmp/net_stadium.png', clip: { x: 780, y: 300, width: 500, height: 280 } });
+console.log('wrote net_full + net_stadium');
 await b.close();

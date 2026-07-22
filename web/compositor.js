@@ -188,27 +188,46 @@ function buildPlateGraph(map) {
     // true off-frame coord, so they simply leave sight.)
     const cx = clamp(p.x, 6, PLATE_W - 6), cy = clamp(p.y, 6, PLATE_H - 6);
     const pi = addV(cx, cy); pinIdx[id] = pi;
-    if (id === 'loc_stadium') continue;   // the ground's only way out is the north gate (below)
     // Join the pin to the network at the NEAREST POINT ON A PATH (a short perpendicular
     // step onto the lane) rather than striking a straight line to a far vertex that
     // would cut across the buildings between them. Split the path segment at that foot
-    // so travel then follows the traced ways only.
+    // so travel then follows the traced ways only. Every place — the stadium included —
+    // reaches the network through Roy's traced approach paths, never a straight stub.
     const f = nearestOnPath(cx, cy);
     if (f) { const fi = addV(f.x, f.y); link(fi, f.a); link(fi, f.b); link(pi, fi); }
   }
-  // the stadium reaches the street network only through the north gate (its real
-  // entrance) — never straight out through the south wall.
-  if (pinIdx['loc_stadium'] != null && pinIdx['loc_north_gate'] != null) link(pinIdx['loc_stadium'], pinIdx['loc_north_gate']);
   return { V, adj, pinIdx };
 }
 
-// Shortest route between two place pins as a polyline with cumulative lengths.
+// Turn a raw polyline into a route {pts, cum, len}.
+function polyRoute(pts) {
+  const P = pts.map(([x, y]) => ({ x, y }));
+  const cum = [0];
+  for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y));
+  return { pts: P, cum, len: cum[cum.length - 1], explicit: true };
+}
+// An explicitly traced A->B way: a path tagged with from/to place ids. This IS the
+// route for that journey — followed exactly, no graph, no shortcuts. Reversed when
+// the entity travels B->A.
+function explicitPath(fromId, toId) {
+  for (const p of (state.map.paths || [])) {
+    if (p.type === 'river' || !p.from || !p.to || p.pts.length < 2) continue;
+    if (p.from === fromId && p.to === toId) return polyRoute(p.pts);
+    if (p.from === toId && p.to === fromId) return polyRoute(p.pts.slice().reverse());
+  }
+  return null;
+}
+
+// Route between two places: an explicit A->B traced way if one exists, otherwise the
+// shortest route on the shared network (fallback for pairs Roy hasn't drawn yet).
 function getRoute(fromId, toId) {
-  const g = state.graph; if (!g) return null;
-  const s = g.pinIdx[fromId], t = g.pinIdx[toId];
-  if (s == null || t == null) return null;
   const ck = fromId + '|' + toId;
   if (state.routeCache[ck] !== undefined) return state.routeCache[ck];
+  const ex = explicitPath(fromId, toId);
+  if (ex) { state.routeCache[ck] = ex; return ex; }
+  const g = state.graph; if (!g) return (state.routeCache[ck] = null);
+  const s = g.pinIdx[fromId], t = g.pinIdx[toId];
+  if (s == null || t == null) return (state.routeCache[ck] = null);
   const n = g.V.length, dist = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1);
   const seen = new Uint8Array(n);
   dist[s] = 0;
@@ -369,6 +388,11 @@ function draw() {
 }
 function drawDebugOverlay(routes) {
   const g = state.graph; if (!g) return;
+  if (routes.paths) {   // raw traced path polylines in green — compare against the cyan graph
+    ctx.save(); ctx.strokeStyle = 'rgba(40,255,90,.9)'; ctx.lineWidth = 3;
+    for (const p of (state.map.paths || [])) { if (p.type === 'river') continue; ctx.beginPath(); p.pts.forEach((pt, i) => { const [x, y] = P2S(pt[0], pt[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); }
+    ctx.restore();
+  }
   if (routes.obscured) {
     ctx.save(); ctx.fillStyle = 'rgba(255,40,40,.28)'; ctx.strokeStyle = 'rgba(255,60,60,.7)'; ctx.lineWidth = 1;
     for (const o of (state.map.obscured || [])) { const pts = o.pts || o; ctx.beginPath(); pts.forEach((p, i) => { const [x, y] = P2S(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill(); ctx.stroke(); }
