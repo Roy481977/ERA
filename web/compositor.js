@@ -264,8 +264,13 @@ const P2S = (x, y) => [view.ox + x * view.s, view.oy + y * view.s];
 
 // --- draw ---
 function draw() {
-  const f = state.frames[Math.floor(state.t)];
+  const fi = Math.floor(state.t);
+  const f = state.frames[fi];
   if (!f) return;
+  const frac = state.t - fi;                                  // sub-tick progress
+  const fB = state.frames[(fi + 1) % state.frames.length] || f;
+  const nextById = {};
+  for (const e of fB.entities) nextById[e.id] = e;
   ctx.clearRect(0, 0, cnv.width, cnv.height);
   // backdrop
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
@@ -282,7 +287,12 @@ function draw() {
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
     if (meta.kind === 'resident' && !e.moving && state.indoor.has(e.place)) continue; // indoors
-    const [px, py] = placeEntity(e);
+    let [px, py] = placeEntity(e);
+    const eN = nextById[e.id];                                 // glide toward next tick's position
+    if (eN && frac > 0) {
+      const [nx, ny] = placeEntity(eN);
+      if (Math.hypot(nx - px, ny - py) < 130) { px += (nx - px) * frac; py += (ny - py) * frac; }
+    }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
     if (obscured(px, py)) continue; // behind a building the camera can't see past
     figs.push({ e, meta, px, py });
