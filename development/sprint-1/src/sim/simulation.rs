@@ -569,6 +569,7 @@ impl Simulation {
             place: LocationId,
             kind: social::InteractionKind,
             reason: &'static str,
+            festival: bool,
         }
         let mut applies: Vec<Apply> = Vec::new();
         let mut busy = vec![false; self.residents.len()];
@@ -586,9 +587,14 @@ impl Simulation {
                     }
                     let rel = self.relationships.get(pair.0, pair.1);
                     let familiarity = self.bonds.meetings(pair.0, pair.1);
+                    // The Monday festival is a bonding occasion: co-located in the square,
+                    // dancing and talking, people connect far more freely and it counts for
+                    // more (applied to the consequence below).
+                    let at_festival = festival::is_festival_time(self.clock.weekday(), self.clock.hour()) && *place == "loc_main_square";
                     // Both people's current readiness for company shifts the odds.
                     let social_lift =
-                        (self.residents[ia].social_readiness() + self.residents[ib].social_readiness()) * 2;
+                        (self.residents[ia].social_readiness() + self.residents[ib].social_readiness()) * 2
+                        + if at_festival { 32 } else { 0 };
                     if let Some(outcome) =
                         social::decide(pair.0, pair.1, place, tick, rel, familiarity, social_lift)
                     {
@@ -600,6 +606,7 @@ impl Simulation {
                             place,
                             kind: outcome.kind,
                             reason: outcome.reason,
+                            festival: at_festival,
                         });
                     }
                 }
@@ -608,7 +615,12 @@ impl Simulation {
 
         // Phase 2 — apply consequences through the owners.
         for ap in applies {
-            let (d_aff, d_trust) = ap.kind.deltas();
+            let (mut d_aff, mut d_trust) = ap.kind.deltas();
+            // A warm moment at the festival lands harder — the night people remember.
+            if ap.festival && d_aff >= 0 {
+                d_aff += 1;
+                d_trust += 1;
+            }
             let (before, after) = self.relationships.adjust(ap.a, ap.b, d_aff, d_trust);
             let a_name = self.name_of(ap.a);
             let b_name = self.name_of(ap.b);
