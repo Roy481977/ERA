@@ -144,7 +144,7 @@ cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W
     const nxt=LOCS.find(l=>!places[l.id]);if(nxt)sel0.value=nxt.id;toast('placed '+(LOCS.find(l=>l.id===id).name));draw();return}
   if(mode==='path'){if(!drawing){pushUndo();drawing={id:'p'+(pid++),type:kind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='obscure'){if(!drawing){pushUndo();drawing={type:'obscure',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
-  if(mode==='lamp'){pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
+  if(mode==='lamp'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
   const hp=pickPlace(mx,my)||pickPath(mx,my)||pickObs(mx,my)||pickLamp(mx,my);
   if(hp){sel=hp;dragging=hp;draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
 });
