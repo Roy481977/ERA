@@ -14,7 +14,7 @@ Author: previous session (Claude). Owner/final authority: **Roy** (roy@rain.one)
 2. **You cannot `git push` from the cloud container.** The injected token is read-only. All pushes go through Roy on his machine via a bundle. See **§2**. Do not waste time retrying pushes — bundle + hand to Roy.
 3. **Build sanity check:** `cd development/sprint-1 && /root/.cargo/bin/cargo build` (~11s native). wasm32 is blocked by the proxy — don't attempt it.
 4. **Render/preview:** serve `web/` and open `compositor.html` (see **§4**). The living-plate compositor is the main deliverable.
-5. **Where work was left:** the **weather visual layer** was just built and committed (`0baa32b`). It renders correctly under forced-wet frames but **the shipped replay is all-dry** — the last remaining weather step is generating a wet day into the replay. See **§6 (Weather)** and **§7**.
+5. **Where work was left:** the **weather visual layer** is built and the shipped replay now **contains real weather** — the canonical compositor seed is **88** (`tools/regen_replay.sh`), rolling a Summer arc of day0 Fair → day1 Cloudy → day2 windy **Rain**, with **Monday-festival (day0)** and **game-night (day1)** preserved. Rain reads clearly (dramatic at night; subtler at midday against the bright plate). Snow/overcast are season-gated (winter = day 56+) so they need a longer multi-season replay — see **§6 (Weather)** and **§7**.
 
 ---
 
@@ -83,7 +83,7 @@ This project stores a **base64-encoded incremental git bundle** so any new chat 
 
 - `web/compositor.js` — **the main deliverable.** Canvas-2D compositor: draws the plate, the walkable path graph, occlusion, night lighting, behaviour-driven clay figures, floodlights, festival, game-night crowd, and now weather. ~1400 lines.
 - `web/compositor.html` — the viewer shell (clock, scrubber, inspector, pins/names toggles).
-- `web/assets/replay.json` — the deterministic replay the compositor plays (864 ticks = 3 days). **Currently all-dry weather.**
+- `web/assets/replay.json` — the deterministic replay the compositor plays (864 ticks = 3 days). **Seed 88: Fair → Cloudy → windy Rain** (git-ignored/regenerable; `tools/regen_replay.sh` is the source of truth for the seed).
 - `web/assets/era-plate-map.json` (mirror: `design/bible/era-plate-map.json`) — the hand-authored map: paths, obscured zones, lamps, water areas, stands. Current version tag inside: **`eraplatemap 11`** (22 paths, 44 obscured zones, 2 stands, 54 lamps).
 - `development/sprint-1/` — the Rust sim crate `era_first_breath`. Subfolders: `src/sim/` (simulation.rs, weather.rs, festival.rs, matchday.rs…), `src/behaviour/`, `examples/dump_replay.rs`, `tests/`.
 - `tools/` — helper scripts: `plate-mapper-template.html` (the map editor), `bundle_compositor.py`, `offpath.mjs` (routing audit), `wxtest.mjs` (weather smoke-render).
@@ -100,10 +100,13 @@ cd development/sprint-1 && /root/.cargo/bin/cargo build
 
 **Regenerate the replay** (after any sim change):
 ```bash
+bash tools/regen_replay.sh          # canonical: seed 88, 864 ticks (wet Wednesday)
+# equivalently, by hand:
 cd development/sprint-1
-/root/.cargo/bin/cargo run --example dump_replay 864 0 > ../../web/assets/replay.json
+/root/.cargo/bin/cargo run --example dump_replay 864 88 > ../../web/assets/replay.json
 # 864 ticks = 3 days. day0 = Monday, day1 = Tuesday, day2 = Wednesday.
 # 288 ticks/day, 5 min/tick. tick t -> (t+1)*5 minutes of the day.
+# seed 88 -> day0 Fair, day1 Cloudy, day2 windy Rain (festival & game-night intact).
 ```
 
 **Serve + render.** The dev server must run in the **same shell** as whatever uses it (background `&` jobs die when a Bash tool call returns):
@@ -176,7 +179,7 @@ Template = `matchday.rs`: a `consider(me, …) -> Option<Act>` returns a synthet
 - **Umbrellas**: anyone drawn out in the rain (`f.weather.wet && !sit`) raises an umbrella (the umbrella art already existed, keyed on `worn`; now also triggered by wet weather so it needs no sim change).
 - Smoke-test: `tools/wxtest.mjs` force-renders rain/snow/overcast/fog and screenshots to `/tmp/wx-*.png`. **No JS errors; all four read correctly.**
 
-**The one remaining weather step:** the shipped `replay.json` is **all-dry** (`wet:false` everywhere; only "bright"/"grey" phrases). `weather.rs` is deterministic per `(day, season, seed)` — Summer rains only 8%/day, and the current 3-day seed-0 replay rolled dry. To see weather in normal playback you must **get a wet day into the replay**: either regenerate with a seed/length whose early days include rain/overcast, or (cleaner) confirm you still preserve **Monday festival on day0** and **game-night on day1** when you pick the new seed/length. Test by forcing a wet frame first (wxtest), then verify the real replay shows it.
+**Weather in the replay — DONE (seed 88).** `weather.rs` is deterministic per `(day, season, seed)`; weekday and season are functions of the day index alone, so **any** seed keeps Monday-festival on day0 and game-night on day1 — only the weather roll changes. Seed 88 was chosen (search: `tools/regen_replay.sh` header) to roll a Summer arc of **day0 Fair → day1 Cloudy → day2 windy Rain**. Verified by real-playback render (`tools/wxreal.mjs`): festival gathers in the square under fair sky (day0), floodlights + crowd fill the stands (day1), and day2 shows rain streaks, umbrellas, and a wet-street sheen — dramatic at night, subtler at midday against the bright plate. **Open follow-ups:** (a) if Roy wants the midday rain grade stronger, bump the desaturation/wash in `drawWeatherGrade`; (b) snow + a heavy overcast need a **longer, multi-season replay** (winter starts day 56) — a separate showcase, not this 3-day summer one.
 
 ---
 
