@@ -117,6 +117,7 @@ async function boot() {
   window.__state = state; window.__draw = draw; window.__ready = true;
   window.__seek = (frame) => { state.playing = false; state.t = frame; draw(); };
   window.__getRoute = getRoute;
+  window.__debugDraw = (routes) => { state.__dbg = { routes }; draw(); };
   requestAnimationFrame(loop);
 }
 
@@ -167,10 +168,15 @@ function buildPlateGraph(map) {
     }
   const pinIdx = {};
   for (const [id, p] of Object.entries(map.places || {})) {
-    if (p.x < 0 || p.x > PLATE_W) continue;
-    const pi = addV(p.x, p.y); pinIdx[id] = pi;
+    // Places off the frame (the school, training ground, canal side, …) are real
+    // destinations townsfolk walk out to. Anchor their ROUTE node at the frame edge
+    // nearest their true spot so a journey there follows the streets to the edge and
+    // then walks off-view — rather than snapping. (Their settled render still uses the
+    // true off-frame coord, so they simply leave sight.)
+    const cx = clamp(p.x, 6, PLATE_W - 6), cy = clamp(p.y, 6, PLATE_H - 6);
+    const pi = addV(cx, cy); pinIdx[id] = pi;
     if (id === 'loc_stadium') continue;   // the ground's only way out is the north gate (below)
-    const near = pathVerts.map(v => ({ i: v.i, d: (v.x - p.x) ** 2 + (v.y - p.y) ** 2 })).sort((a, b) => a.d - b.d).slice(0, 2);
+    const near = pathVerts.map(v => ({ i: v.i, d: (v.x - cx) ** 2 + (v.y - cy) ** 2 })).sort((a, b) => a.d - b.d).slice(0, 2);
     for (const nb of near) link(pi, nb.i);
   }
   // the stadium reaches the street network only through the north gate (its real
@@ -298,16 +304,29 @@ function draw() {
   const figs = [];
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
-    if ((meta.kind === 'resident' || meta.kind === 'dog') && !e.moving && state.indoor.has(e.place)) continue; // indoors — people & the dog off the rooftops
-    let [px, py] = placeEntity(e);
-    const eN = nextById[e.id];                                 // glide toward next tick's position
+    const eN = nextById[e.id];                                 // next tick's state, for continuous motion
+    // A "hop": the sim records some journeys (notably the dog & wildlife) as an
+    // instantaneous change of place rather than a moving leg. Walk them along the
+    // real street/path network between the two places so nothing teleports or
+    // slides across a roof.
+    const hop = !!(eN && frac > 0 && !e.moving && e.place && eN.place && e.place !== eN.place);
+    const hopRoute = hop ? getRoute(e.place, eN.place) : null;
+    const walking = (e.moving && (e.spd || 0) > 0.03) || (hop && hopRoute && hopRoute.len > 4);
+    if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) continue; // indoors — people & the dog off the rooftops
+    let [px, py] = placeEntity(e); let hd = null;
     if (eN && frac > 0) {
-      const [nx, ny] = placeEntity(eN);
-      if (Math.hypot(nx - px, ny - py) < 130) { px += (nx - px) * frac; py += (ny - py) * frac; }
+      if (hopRoute && hopRoute.len > 4) {                      // glide along the network
+        [px, py] = pointAlong(hopRoute, frac);
+        const [ax, ay] = pointAlong(hopRoute, Math.min(1, frac + 0.03));
+        hd = (ax - px) >= 0 ? 0 : Math.PI;                     // face travel direction
+      } else {
+        const [nx, ny] = placeEntity(eN);
+        if (Math.hypot(nx - px, ny - py) < 130) { px += (nx - px) * frac; py += (ny - py) * frac; }
+      }
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
-    if (!e.moving && obscured(px, py)) continue; // hide only settled folk behind buildings — walkers stay on their path (no flicker)
-    figs.push({ e, meta, px, py });
+    if (!walking && obscured(px, py)) continue; // hide only settled folk behind buildings — walkers stay on their path (no flicker)
+    figs.push({ e, meta, px, py, walking, hd });
   }
   figs.sort((a, b) => a.py - b.py);
   // remember screen positions for click-to-inspect
@@ -329,6 +348,26 @@ function draw() {
 
   if (state.showPins) drawPins();
   drawHUD(f);
+  if (state.__dbg) drawDebugOverlay(state.__dbg);
+}
+function drawDebugOverlay(routes) {
+  const g = state.graph; if (!g) return;
+  ctx.save();
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(80,200,255,.35)';
+  for (let a = 0; a < g.adj.length; a++) for (const [b] of g.adj[a]) if (b > a) {
+    const [ax, ay] = P2S(g.V[a].x, g.V[a].y), [bx, by] = P2S(g.V[b].x, g.V[b].y);
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(80,200,255,.7)';
+  for (const v of g.V) { const [x, y] = P2S(v.x, v.y); ctx.fillRect(x - 1.5, y - 1.5, 3, 3); }
+  for (const [fromId, toId, col] of (routes.routes || [])) {
+    const r = getRoute(fromId, toId); if (!r) continue;
+    ctx.strokeStyle = col || '#ff3b3b'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    r.pts.forEach((p, i) => { const [x, y] = P2S(p.x, p.y); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // Drifting clouds over the plate's sky band — very soft, so they sit on top of
@@ -445,9 +484,9 @@ function drawFigure(fig, f) {
   const hs = hashId(e.id);
   const k = e.child ? 0.74 : 1.0;
   const U = sc * k;
-  const hd = e.h || 0;
+  const hd = fig.hd != null ? fig.hd : (e.h || 0);
   const faceS = Math.cos(hd) >= 0 ? 1 : -1;
-  const moving = e.moving && (e.spd || 0) > 0.05;
+  const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
   const wph = moving ? Math.sin(state.t * 3.4 + (hs % 628) / 100) : 0;
   const pose = e.pose || 'stand';
   const sit = pose === 'sit' || pose === 'lie';
@@ -577,12 +616,14 @@ function drawFigure(fig, f) {
 
 function drawAnimal(fig, f, x, y, sc) {
   const { e, meta } = fig; const col = meta.color || '#b98a5a'; const k = sc * 1.25; const kind = meta.kind;
+  const trot = fig.walking ? state.t * 5.5 + (hashId(e.id) % 628) / 100 : null;   // leg-swing phase while walking
+  const legSwing = (i) => trot != null ? Math.sin(trot + i * 1.7) * 1.7 * k : 0;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.beginPath(); ctx.ellipse(x, y, 5 * k, 1.8 * k, 0, 0, 7); ctx.fill();
 
   if (kind === 'cat') {
     ctx.strokeStyle = shade(col, 0.75); ctx.lineWidth = 1.1 * k;
-    for (const dx of [-2, -0.5, 0.5, 2]) { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 2.4 * k); ctx.lineTo(x + dx * k, y); ctx.stroke(); }
+    [-2, -0.5, 0.5, 2].forEach((dx, i) => { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 2.4 * k); ctx.lineTo(x + dx * k + legSwing(i), y); ctx.stroke(); });
     ctx.fillStyle = col; roundRect(x - 3.2 * k, y - 5 * k, 6.4 * k, 2.9 * k, 1.5 * k); ctx.fill();
     ctx.beginPath(); ctx.arc(x + 3.4 * k, y - 5.4 * k, 1.7 * k, 0, 7); ctx.fill();
     // ears
@@ -595,7 +636,7 @@ function drawAnimal(fig, f, x, y, sc) {
   }
   if (kind === 'dog' || kind === 'fox') {
     ctx.strokeStyle = shade(col, 0.7); ctx.lineWidth = 1.3 * k;
-    for (const dx of [-2.5, -1, 1, 2.5]) { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 3 * k); ctx.lineTo(x + dx * k, y); ctx.stroke(); }
+    [-2.5, -1, 1, 2.5].forEach((dx, i) => { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 3 * k); ctx.lineTo(x + dx * k + legSwing(i), y); ctx.stroke(); });
     ctx.fillStyle = col; roundRect(x - 4 * k, y - 6 * k, 8 * k, 3.4 * k, 1.7 * k); ctx.fill();
     ctx.beginPath(); ctx.arc(x + 4.2 * k, y - 6.2 * k, 2 * k, 0, 7); ctx.fill();
     ctx.strokeStyle = col; ctx.lineWidth = 1.3 * k;
