@@ -602,24 +602,41 @@ function drawFigure(fig, f) {
   const U = sc * k;
   const hd = fig.hd != null ? fig.hd : (e.h || 0);
   const faceS = Math.cos(hd) >= 0 ? 1 : -1;
-  const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
-  const wph = moving ? Math.sin(state.t * 3.4 + (hs % 628) / 100) : 0;
+  const ph = (hs % 628) / 100;
+  // behaviour → motion parameters (all straight from the deterministic stream)
+  const spd = e.spd || 0;
+  const vigor = clamp(((e.energy != null ? e.energy : 0.8) - 0.4) / 0.6, 0, 1);   // tired … lively
+  const cheer = clamp(e.mood != null ? e.mood : 0.6, 0, 1);                        // low … bright mood
+  const openness = clamp(((e.soc != null ? e.soc : 0) + 1) / 4, 0, 1);            // introvert … extrovert
   const pose = e.pose || 'stand';
   const sit = pose === 'sit' || pose === 'lie';
+  const working = pose === 'work', talking = pose === 'talk', playing = pose === 'play';
   const worn = e.worn || [];
   const gest = e.gest || 'none';
   const ink = 'rgba(30,22,16,.6)';
-
   const role = roleOf(e);
 
-  // proportions — broader shoulders than hips, a touch less lollipop
+  const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
+  const gaitRate = 3.0 + spd * 2.4 + vigor * 0.7;                                  // hurry & vigour quicken the step
+  const wph = moving ? Math.sin(state.t * gaitRate + ph) : 0;
+  const strideAmp = 0.55 + spd * 1.0 + vigor * 0.25;                              // stride length
+  const workPhase = working ? Math.sin(state.t * 2.6 + ph) : 0;                    // rhythmic task
+  const playHop = playing ? Math.abs(Math.sin(state.t * 3.2 + ph)) : 0;           // child's hop
+
+  // proportions — broader shoulders than hips
   const legH = (sit ? 2.4 : 5.4) * U, torsoH = (sit ? 6 : 8) * U;
   const shoulderW = 7 * U, hipW = 5.4 * U, headR = 3.0 * U * (e.child ? 1.2 : 1);
-  const idle = moving ? 0 : Math.sin(state.t * 1.5 + (hs % 628) / 100);
-  const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * 0.5 * U;
-  const bob = moving ? Math.abs(wph) * 0.7 * U : idle * 0.25 * U;
-  const hipY = y - legH + bob, shoulderY = hipY - torsoH, headCY = shoulderY - headR * 1.05 + idle * 0.15 * U;
-  x += sway;
+  const slump = ((1 - vigor) * 0.6 + (1 - cheer) * 0.35) * U;                     // tired/low-mood shoulders drop
+  const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) + ph);
+  const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * (0.32 + openness * 0.4) * U;
+  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U : (playing ? playHop * 1.7 * U : idle * 0.22 * U);
+  const lean = working ? faceS * 0.9 * U : 0;                                     // stoop over the work
+  const hipY = y - legH + bob, shoulderY = hipY - torsoH + slump;
+  const nod = gest === 'nod' ? Math.abs(Math.sin(state.t * 3.2 + ph)) * 0.7 * U : 0;      // agreeing
+  const glance = gest === 'glance' ? Math.sin(state.t * 1.3 + ph) * 0.9 * U : 0;          // looking about
+  const headDroop = (1 - cheer) * 0.5 * U;                                        // low mood: head dips
+  const headCY = shoulderY - headR * 1.05 + idle * 0.15 * U + nod + headDroop;
+  x += sway + lean;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 
   // ground shadow
@@ -633,7 +650,7 @@ function drawFigure(fig, f) {
   if (sit) {
     ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + faceS * 3.6 * U, hipY + 0.4 * U); ctx.stroke();
   } else {
-    const st = moving ? wph * 2.8 * U : 0.8 * U;
+    const st = moving ? wph * strideAmp * 2.7 * U : (playing ? Math.sin(state.t * 3.2 + ph) * 1.5 * U : 0.8 * U);
     ctx.beginPath(); ctx.moveTo(hipL, hipY); ctx.lineTo(hipL + st * faceS, y + bob); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(hipR, hipY); ctx.lineTo(hipR - st * faceS, y + bob); ctx.stroke();
   }
@@ -670,15 +687,30 @@ function drawFigure(fig, f) {
     ctx.moveTo(x + hipW * 0.26, aTop); ctx.lineTo(x + hipW * 0.12, shoulderY + 1.4 * U); ctx.stroke();
   }
 
-  // arms — swing opposite the legs; front arm raises on a gesture
+  // arms — behaviour-driven: work at a surface, play arms-up, or swing/gesture
   ctx.strokeStyle = shade(col, 0.98); ctx.lineWidth = 2.0 * U;
-  const armY = shoulderY + 1.7 * U, aSwing = moving ? wph * 1.9 * U : 0, rest = moving ? 0 : 1.0 * U;
+  const armY = shoulderY + 1.7 * U;
   const shL = x - shoulderW * 0.42, shR = x + shoulderW * 0.42;
-  ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - aSwing * faceS - rest, armY + 3.4 * U); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(shR, armY);
-  if (gest === 'gesture' || gest === 'laugh') ctx.lineTo(shR + faceS * 1.8 * U, armY - 3.4 * U);
-  else ctx.lineTo(shR + aSwing * faceS + rest, armY + 3.4 * U);
-  ctx.stroke();
+  if (working) {
+    // both hands out front at the counter/task, moving with the rhythm
+    const wx = faceS * (2.6 + Math.abs(workPhase) * 0.7) * U, wy = armY + (2.4 + workPhase * 0.9) * U;
+    ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(x + wx - 0.7 * U, wy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(shR, armY); ctx.lineTo(x + wx + 0.7 * U, wy); ctx.stroke();
+  } else if (playing) {
+    const pw = Math.sin(state.t * 3.2 + ph) * 1.5 * U;                            // arms up, waving with the hop
+    ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - 1.3 * U + pw, armY - 2.7 * U); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(shR, armY); ctx.lineTo(shR + 1.3 * U - pw, armY - 2.7 * U); ctx.stroke();
+  } else {
+    const aSwing = moving ? wph * strideAmp * 1.8 * U : 0;
+    const rest = moving ? 0 : (0.6 + openness * 0.9) * U;                          // open posture = arms held out
+    ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - aSwing * faceS - rest, armY + 3.4 * U); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(shR, armY);
+    if (gest === 'gesture' || gest === 'laugh' || (talking && gest !== 'none')) {
+      const gm = Math.sin(state.t * 4 + ph) * 0.6;                                // hand moves while making a point
+      ctx.lineTo(shR + faceS * (1.4 + openness) * U, armY - (2.5 + gm) * U);
+    } else ctx.lineTo(shR + aSwing * faceS + rest, armY + 3.4 * U);
+    ctx.stroke();
+  }
 
   // scarf
   if (worn.includes('club_scarf') || worn.includes('scarf')) {
@@ -687,8 +719,8 @@ function drawFigure(fig, f) {
     ctx.beginPath(); ctx.moveTo(x + 0.8 * U, shoulderY + 0.6 * U); ctx.lineTo(x + 1.5 * U * faceS, shoulderY + 3 * U); ctx.stroke();
   }
 
-  // head + hair + a hint of a face on the facing side
-  const hcx = x + faceS * 0.4 * U;
+  // head + hair + a hint of a face on the facing side (glance shifts it side to side)
+  const hcx = x + faceS * 0.4 * U + glance;
   ctx.fillStyle = skinOf(e.id);
   ctx.beginPath(); ctx.arc(hcx, headCY, headR, 0, 7); ctx.fill();
   ctx.lineWidth = Math.max(0.5, 0.7 * U); ctx.strokeStyle = ink; ctx.stroke();
