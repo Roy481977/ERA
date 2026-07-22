@@ -160,7 +160,27 @@ function buildPlateGraph(map) {
     let prev = null;
     for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); if (prev != null) { link(prev, i); segs.push([prev, i]); } prev = i; }
   }
-  const TH2 = 26 * 26;                                    // junction-stitch threshold
+  // Make the paths one continuous web. (1) where two path segments actually CROSS,
+  // drop a shared junction node at the crossing and wire it to both segments' ends, so
+  // a route can turn from one path onto the other exactly at the intersection — all on
+  // the drawn lines. (2) stitch path vertices that nearly touch (a small gap where Roy
+  // meant two ways to meet).
+  const segInt = (p1, p2, p3, p4) => {
+    const d1x = p2.x - p1.x, d1y = p2.y - p1.y, d2x = p4.x - p3.x, d2y = p4.y - p3.y;
+    const den = d1x * d2y - d1y * d2x; if (Math.abs(den) < 1e-9) return null;
+    const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / den;
+    const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / den;
+    if (t <= 0.001 || t >= 0.999 || u <= 0.001 || u >= 0.999) return null;
+    return { x: p1.x + t * d1x, y: p1.y + t * d1y };
+  };
+  for (let i = 0; i < segs.length; i++)
+    for (let j = i + 1; j < segs.length; j++) {
+      const [a1, b1] = segs[i], [a2, b2] = segs[j];
+      if (a1 === a2 || a1 === b2 || b1 === a2 || b1 === b2) continue;   // already share a node
+      const P = segInt(V[a1], V[b1], V[a2], V[b2]);
+      if (P) { const vi = addV(P.x, P.y); link(vi, a1); link(vi, b1); link(vi, a2); link(vi, b2); }
+    }
+  const TH2 = 16 * 16;                                    // near-touch stitch (real intersections handled above)
   for (let a = 0; a < pathVerts.length; a++)
     for (let b = a + 1; b < pathVerts.length; b++) {
       const dx = pathVerts[a].x - pathVerts[b].x, dy = pathVerts[a].y - pathVerts[b].y;
