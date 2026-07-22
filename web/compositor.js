@@ -59,42 +59,41 @@ async function boot() {
   state.graph = buildPlateGraph(map);
   state.routeCache = {};
 
-  // streetlamps: drop a lamp every ~95px along the streets and lanes
-  state.lamps = [];
-  for (const p of (map.paths || [])) {
-    if (p.type !== 'street' && p.type !== 'lane') continue;
-    let acc = 0, next = 40;
-    for (let i = 1; i < p.pts.length; i++) {
-      const [ax, ay] = p.pts[i - 1], [bx, by] = p.pts[i];
-      const segLen = Math.hypot(bx - ax, by - ay);
-      if (segLen < 1e-3) continue;
-      while (acc + segLen >= next) {
-        const t = (next - acc) / segLen;
-        state.lamps.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
-        next += 95;
+  // lamps: use the ones placed in the mapper if present; otherwise auto-place
+  // (sample along streets/lanes + a few centre and back-of-town extras).
+  if (map.lamps && map.lamps.length) {
+    state.lamps = map.lamps.map(l => ({ x: l.x, y: l.y, small: !!l.small }));
+  } else {
+    state.lamps = [];
+    for (const p of (map.paths || [])) {
+      if (p.type !== 'street' && p.type !== 'lane') continue;
+      let acc = 0, next = 40;
+      for (let i = 1; i < p.pts.length; i++) {
+        const [ax, ay] = p.pts[i - 1], [bx, by] = p.pts[i];
+        const segLen = Math.hypot(bx - ax, by - ay);
+        if (segLen < 1e-3) continue;
+        while (acc + segLen >= next) {
+          const t = (next - acc) / segLen;
+          state.lamps.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
+          next += 95;
+        }
+        acc += segLen;
       }
-      acc += segLen;
     }
+    const CENTER = ['loc_main_square', 'loc_cafe', 'loc_pub', 'loc_bakery', 'loc_high_street',
+      'loc_corner_grocer', 'loc_north_gate', 'loc_museum', 'loc_club_shop', 'loc_bridge'];
+    for (const id of CENTER) {
+      const p = map.places[id];
+      if (p && p.x > 0 && p.x < PLATE_W) state.lamps.push({ x: p.x, y: p.y + 6 });
+    }
+    const EXTRA = [
+      { x: 300, y: 240, small: true }, { x: 264, y: 244, small: true },
+      { x: 905, y: 322 }, { x: 968, y: 326 }, { x: 1012, y: 340 }, { x: 878, y: 305 },
+    ];
+    for (const e of EXTRA) state.lamps.push(e);
+    const inPitch = (x, y) => x > 990 && x < 1362 && y > 420 && y < 560;
+    state.lamps = state.lamps.filter(L => !inPitch(L.x, L.y));
   }
-  // extra lamps around the town centre — the heart wants more light
-  const CENTER = ['loc_main_square', 'loc_cafe', 'loc_pub', 'loc_bakery', 'loc_high_street',
-    'loc_corner_grocer', 'loc_north_gate', 'loc_museum', 'loc_club_shop', 'loc_bridge'];
-  for (const id of CENTER) {
-    const p = map.places[id];
-    if (p && p.x > 0 && p.x < PLATE_W) state.lamps.push({ x: p.x, y: p.y + 6 });
-  }
-  // hand-placed extras: the train station (back-left) + the dark back of the
-  // centre behind the clock tower.
-  const EXTRA = [
-    { x: 300, y: 240, small: true }, { x: 264, y: 244, small: true },   // train station platform
-    { x: 905, y: 322 }, { x: 968, y: 326 }, { x: 1012, y: 340 },         // behind the clock, back terraces
-    { x: 878, y: 305 },
-  ];
-  for (const e of EXTRA) state.lamps.push(e);
-  // the ground is dark at night (no match): drop any lamp that fell on the pitch
-  // or the stand, so it stops lighting oddly.
-  const inPitch = (x, y) => x > 990 && x < 1362 && y > 420 && y < 560;
-  state.lamps = state.lamps.filter(L => !inPitch(L.x, L.y));
 
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
@@ -501,6 +500,7 @@ function pointInPoly(x, y, poly) {
 function drawLampPosts(lit) {
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
+    if (obscured(L.x, L.y)) continue;   // behind a building: hide the post (light still spills in applyLightMap)
     const [x, y] = P2S(L.x, L.y);
     const sc = scaleAt(L.y) * view.s;
     const ph = (L.small ? 10 : 14) * sc, hx = x, hy = y - ph;
