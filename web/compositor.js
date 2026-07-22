@@ -54,6 +54,11 @@ async function boot() {
   // feet fall inside is hidden. Authored in the plate-mapper's obscure tool.
   state.obscured = (map.obscured || []).map(z => z.pts || z);
 
+  // plate-space path network, so walkers follow the streets instead of straight
+  // pin-to-pin lines (which cut across the river and buildings).
+  state.graph = buildPlateGraph(map);
+  state.routeCache = {};
+
   // streetlamps: drop a lamp every ~95px along the streets and lanes
   state.lamps = [];
   for (const p of (map.paths || [])) {
@@ -97,6 +102,7 @@ async function boot() {
   // headless capture hooks
   window.__state = state; window.__draw = draw; window.__ready = true;
   window.__seek = (frame) => { state.playing = false; state.t = frame; draw(); };
+  window.__getRoute = getRoute;
   requestAnimationFrame(loop);
 }
 
@@ -123,11 +129,83 @@ function worldToPlate(wx, wy) {
 // Entity -> plate pixel. While traveling, walk the street network leg-by-leg
 // between adjacent place pins (no water-cutting); when settled, use the accurate
 // near-pin IDW position (which preserves the sim's fine drift to benches/shade).
+// Build a walkable graph in plate pixels: path polylines (streets/lanes/foot-
+// paths, never the river) linked at junctions, with each place pin joined to its
+// nearest path points. Routes computed on this follow the streets.
+function buildPlateGraph(map) {
+  const V = [], adj = [];
+  const addV = (x, y) => { const i = V.length; V.push({ x, y }); adj.push([]); return i; };
+  const link = (a, b) => {
+    if (a === b) return; const w = Math.hypot(V[a].x - V[b].x, V[a].y - V[b].y);
+    adj[a].push([b, w]); adj[b].push([a, w]);
+  };
+  const pathVerts = [];
+  for (const p of (map.paths || [])) {
+    if (p.type === 'river') continue;                    // river is not walkable
+    let prev = null;
+    for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); if (prev != null) link(prev, i); prev = i; }
+  }
+  const TH2 = 26 * 26;                                    // junction-stitch threshold
+  for (let a = 0; a < pathVerts.length; a++)
+    for (let b = a + 1; b < pathVerts.length; b++) {
+      const dx = pathVerts[a].x - pathVerts[b].x, dy = pathVerts[a].y - pathVerts[b].y;
+      if (dx * dx + dy * dy <= TH2) link(pathVerts[a].i, pathVerts[b].i);
+    }
+  const pinIdx = {};
+  for (const [id, p] of Object.entries(map.places || {})) {
+    if (p.x < 0 || p.x > PLATE_W) continue;
+    const pi = addV(p.x, p.y); pinIdx[id] = pi;
+    const near = pathVerts.map(v => ({ i: v.i, d: (v.x - p.x) ** 2 + (v.y - p.y) ** 2 })).sort((a, b) => a.d - b.d).slice(0, 2);
+    for (const nb of near) link(pi, nb.i);
+  }
+  return { V, adj, pinIdx };
+}
+
+// Shortest route between two place pins as a polyline with cumulative lengths.
+function getRoute(fromId, toId) {
+  const g = state.graph; if (!g) return null;
+  const s = g.pinIdx[fromId], t = g.pinIdx[toId];
+  if (s == null || t == null) return null;
+  const ck = fromId + '|' + toId;
+  if (state.routeCache[ck] !== undefined) return state.routeCache[ck];
+  const n = g.V.length, dist = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1);
+  const seen = new Uint8Array(n);
+  dist[s] = 0;
+  // simple O(n^2) Dijkstra (n is small)
+  for (let k = 0; k < n; k++) {
+    let u = -1, best = Infinity;
+    for (let i = 0; i < n; i++) if (!seen[i] && dist[i] < best) { best = dist[i]; u = i; }
+    if (u < 0 || u === t) break;
+    seen[u] = 1;
+    for (const [v, w] of g.adj[u]) if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+  }
+  let route = null;
+  if (dist[t] < Infinity) {
+    const pts = []; for (let u = t; u !== -1; u = prev[u]) pts.push(g.V[u]); pts.reverse();
+    const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    route = { pts, cum, len: cum[cum.length - 1] };
+  }
+  state.routeCache[ck] = route;
+  return route;
+}
+
+function pointAlong(route, t) {
+  const target = t * route.len, cum = route.cum, pts = route.pts;
+  if (route.len < 1e-6) return [pts[0].x, pts[0].y];
+  let i = 1; while (i < cum.length && cum[i] < target) i++;
+  if (i >= pts.length) return [pts[pts.length - 1].x, pts[pts.length - 1].y];
+  const seg = cum[i] - cum[i - 1] || 1, f = (target - cum[i - 1]) / seg;
+  return [lerp(pts[i - 1].x, pts[i].x, f), lerp(pts[i - 1].y, pts[i].y, f)];
+}
+
 function placeEntity(e) {
   const P = state.map.places;
   if (e.moving && e.from && e.to && P[e.from] && P[e.to]) {
-    const a = P[e.from], b = P[e.to], t = clamp(e.et || 0, 0, 1);
+    const t = clamp(e.et || 0, 0, 1);
+    const route = getRoute(e.from, e.to);
     const [jx, jy] = jitterPx(e.id, 2);
+    if (route) { const [x, y] = pointAlong(route, t); return [x + jx, y + jy]; }
+    const a = P[e.from], b = P[e.to];       // fallback: straight leg
     return [lerp(a.x, b.x, t) + jx, lerp(a.y, b.y, t) + jy];
   }
   // stadium: spectators/gatherers stand in the STANDS, not on the pitch. Only
