@@ -69,6 +69,13 @@ pub struct EntityView {
     pub worn: Vec<&'static str>,
     /// Whether this entity is a child (renderer draws smaller proportions).
     pub child: bool,
+    // --- travel routing (for a renderer that walks the street network) ---
+    /// While traveling: the nav node this leg starts from / heads to, and the
+    /// fraction 0..1 along that leg. `None`/0 when settled. Lets a renderer place
+    /// the figure on the actual path between two places, not a straight blend.
+    pub from: Option<LocationId>,
+    pub to: Option<LocationId>,
+    pub edge_t: f64,
 }
 
 /// The day's weather, as a live reading.
@@ -260,6 +267,9 @@ impl Engine {
                 energy: 1.0,
                 worn: Vec::new(),
                 child: false,
+                from: None,
+                to: None,
+                edge_t: 0.0,
             }
         };
 
@@ -290,6 +300,13 @@ impl Engine {
                     .unwrap_or(false));
             ev.worn = sim.possessions.worn_tags(r.id, season, sim.weather, working, is_match);
             ev.child = r.is_child();
+            if let layout::Pos::OnEdge { from, to, t, .. } =
+                layout::entity_pos(&sim.world, r.place, &r.status)
+            {
+                ev.from = Some(from);
+                ev.to = Some(to);
+                ev.edge_t = t;
+            }
             entities.push(ev);
             // Occupancy counts settled/idle residents at their node.
             if !traveling {
@@ -303,7 +320,13 @@ impl Engine {
         ));
         for a in &sim.wildlife.animals {
             let place_name = sim.world.location(a.place).map(|l| l.name).unwrap_or(a.place);
-            entities.push(make(a.id, a.name, a.species.tag(), a.color, a.place, place_name, a.doing()));
+            let mut ev = make(a.id, a.name, a.species.tag(), a.color, a.place, place_name, a.doing());
+            if let Some(t) = a.trip {
+                ev.from = Some(t.from);
+                ev.to = Some(t.to);
+                ev.edge_t = if t.total == 0 { 0.0 } else { (t.total - t.left) as f64 / t.total as f64 };
+            }
+            entities.push(ev);
         }
 
         // ---- busiest place ----
