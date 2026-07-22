@@ -117,7 +117,7 @@ async function boot() {
   window.__state = state; window.__draw = draw; window.__ready = true;
   window.__seek = (frame) => { state.playing = false; state.t = frame; draw(); };
   window.__getRoute = getRoute;
-  window.__debugDraw = (routes) => { state.__dbg = { routes }; draw(); };
+  window.__debugDraw = (arg) => { state.__dbg = Array.isArray(arg) ? { routes: arg } : arg; draw(); };
   requestAnimationFrame(loop);
 }
 
@@ -154,11 +154,11 @@ function buildPlateGraph(map) {
     if (a === b) return; const w = Math.hypot(V[a].x - V[b].x, V[a].y - V[b].y);
     adj[a].push([b, w]); adj[b].push([a, w]);
   };
-  const pathVerts = [];
+  const pathVerts = [], segs = [];                       // segs: consecutive path edges [a,b]
   for (const p of (map.paths || [])) {
     if (p.type === 'river') continue;                    // river is not walkable
     let prev = null;
-    for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); if (prev != null) link(prev, i); prev = i; }
+    for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); if (prev != null) { link(prev, i); segs.push([prev, i]); } prev = i; }
   }
   const TH2 = 26 * 26;                                    // junction-stitch threshold
   for (let a = 0; a < pathVerts.length; a++)
@@ -166,6 +166,19 @@ function buildPlateGraph(map) {
       const dx = pathVerts[a].x - pathVerts[b].x, dy = pathVerts[a].y - pathVerts[b].y;
       if (dx * dx + dy * dy <= TH2) link(pathVerts[a].i, pathVerts[b].i);
     }
+  // nearest point on the path network to (x,y): project onto every path segment,
+  // keep the closest foot. Returns {x,y,a,b} — the foot and the segment it lies on.
+  const nearestOnPath = (x, y) => {
+    let best = Infinity, res = null;
+    for (const [a, b] of segs) {
+      const ax = V[a].x, ay = V[a].y, bx = V[b].x, by = V[b].y;
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+      let t = ((x - ax) * dx + (y - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const fx = ax + t * dx, fy = ay + t * dy, d = (x - fx) ** 2 + (y - fy) ** 2;
+      if (d < best) { best = d; res = { x: fx, y: fy, a, b }; }
+    }
+    return res;
+  };
   const pinIdx = {};
   for (const [id, p] of Object.entries(map.places || {})) {
     // Places off the frame (the school, training ground, canal side, …) are real
@@ -176,8 +189,12 @@ function buildPlateGraph(map) {
     const cx = clamp(p.x, 6, PLATE_W - 6), cy = clamp(p.y, 6, PLATE_H - 6);
     const pi = addV(cx, cy); pinIdx[id] = pi;
     if (id === 'loc_stadium') continue;   // the ground's only way out is the north gate (below)
-    const near = pathVerts.map(v => ({ i: v.i, d: (v.x - cx) ** 2 + (v.y - cy) ** 2 })).sort((a, b) => a.d - b.d).slice(0, 2);
-    for (const nb of near) link(pi, nb.i);
+    // Join the pin to the network at the NEAREST POINT ON A PATH (a short perpendicular
+    // step onto the lane) rather than striking a straight line to a far vertex that
+    // would cut across the buildings between them. Split the path segment at that foot
+    // so travel then follows the traced ways only.
+    const f = nearestOnPath(cx, cy);
+    if (f) { const fi = addV(f.x, f.y); link(fi, f.a); link(fi, f.b); link(pi, fi); }
   }
   // the stadium reaches the street network only through the north gate (its real
   // entrance) — never straight out through the south wall.
@@ -352,6 +369,11 @@ function draw() {
 }
 function drawDebugOverlay(routes) {
   const g = state.graph; if (!g) return;
+  if (routes.obscured) {
+    ctx.save(); ctx.fillStyle = 'rgba(255,40,40,.28)'; ctx.strokeStyle = 'rgba(255,60,60,.7)'; ctx.lineWidth = 1;
+    for (const o of (state.map.obscured || [])) { const pts = o.pts || o; ctx.beginPath(); pts.forEach((p, i) => { const [x, y] = P2S(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.restore();
+  }
   ctx.save();
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(80,200,255,.35)';
   for (let a = 0; a < g.adj.length; a++) for (const [b] of g.adj[a]) if (b > a) {
