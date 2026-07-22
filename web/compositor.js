@@ -50,6 +50,10 @@ async function boot() {
   const INDOOR_WORK = ['loc_bakery', 'loc_club_shop', 'loc_corner_grocer', 'loc_club_offices', 'loc_museum', 'loc_school'];
   state.indoor = new Set([...state.world.locations.filter(l => l.home).map(l => l.id), ...INDOOR_WORK]);
 
+  // obscured zones: polygons (plate px) the camera can't see past — anyone whose
+  // feet fall inside is hidden. Authored in the plate-mapper's obscure tool.
+  state.obscured = (map.obscured || []).map(z => z.pts || z);
+
   // streetlamps: drop a lamp every ~95px along the streets and lanes
   state.lamps = [];
   for (const p of (map.paths || [])) {
@@ -58,6 +62,7 @@ async function boot() {
     for (let i = 1; i < p.pts.length; i++) {
       const [ax, ay] = p.pts[i - 1], [bx, by] = p.pts[i];
       const segLen = Math.hypot(bx - ax, by - ay);
+      if (segLen < 1e-3) continue;
       while (acc + segLen >= next) {
         const t = (next - acc) / segLen;
         state.lamps.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
@@ -156,37 +161,30 @@ function draw() {
   // backdrop
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
-  // night: genuinely darken the plate, then add light back at windows & lamps
   const night = nightFactor(f.hour, f.minute);
-  if (night > 0) drawNightWash(night);
-  if (night > 0.04) { drawStreetlamps(night); drawWindowGlows(f, night); }
 
-  if (state.showPins) drawPins();
-
-  // living layer: map every entity, y-sort, draw back-to-front
+  // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
-    // indoors (settled at home / inside a shop): don't draw them on the roof
-    if (meta.kind === 'resident' && !e.moving && state.indoor.has(e.place)) continue;
+    if (meta.kind === 'resident' && !e.moving && state.indoor.has(e.place)) continue; // indoors
     const [px, py] = placeEntity(e);
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
+    if (obscured(px, py)) continue; // behind a building the camera can't see past
     figs.push({ e, meta, px, py });
   }
   figs.sort((a, b) => a.py - b.py);
   for (const fig of figs) drawFigure(fig, f);
 
-  // foreground occluder: front greenery drawn over the living layer, so figures
-  // by the banks read as *behind* the front bushes (the 2.5D depth cue).
-  if (state.occluder) {
-    ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
-    if (night > 0) { // darken the occluder greenery to match the night
-      ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.globalAlpha = 1;
-      ctx.fillStyle = `rgba(10,14,30,${0.86 * night})`;
-      ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s); ctx.restore();
-    }
-  }
+  // foreground occluder: front greenery over the living layer (2.5D depth).
+  if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
+  // night lighting: multiply a warm light map over the whole composed scene, so
+  // lamps and lit windows genuinely illuminate the buildings, ground and people
+  // around them — everything else falls into real darkness.
+  if (night > 0) applyLightMap(night, f);
+
+  if (state.showPins) drawPins();
   drawHUD(f);
 }
 
@@ -206,31 +204,6 @@ const HAIRS = ['#2c2016', '#4a2f1c', '#6b4a2a', '#8a6a3a', '#3a3a40', '#d8d2c8']
 function hashId(id) { let h = 2166136261; for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 const skinOf = id => SKINS[hashId(id) % SKINS.length];
 const hairOf = id => HAIRS[(hashId(id) >> 3) % HAIRS.length];
-
-// Warm window light where residents are home/inside at night — emissive
-// (additive), so the glow spills into the space around each building.
-function drawWindowGlows(f, night) {
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (const [pid, n] of Object.entries(f.occupancy || {})) {
-    if (!n || !state.indoor.has(pid) || !state.map.places[pid]) continue;
-    const p = state.map.places[pid];
-    if (p.x < 0 || p.x > PLATE_W) continue;
-    const [x, y] = P2S(p.x, p.y - 6);
-    const sc = scaleAt(p.y) * view.s;
-    const r = (10 + Math.min(n, 5) * 3.5) * sc;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(255,206,128,${0.75 * night})`);
-    g.addColorStop(0.5, `rgba(255,190,110,${0.28 * night})`);
-    g.addColorStop(1, 'rgba(255,190,110,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-    // a couple of bright window squares at the core
-    ctx.fillStyle = `rgba(255,224,160,${0.95 * night})`;
-    for (let i = 0; i < Math.min(n, 3); i++) {
-      ctx.fillRect(x - 3 * sc + i * 3 * sc, y - 1 * sc, 1.6 * sc, 1.6 * sc);
-    }
-  }
-  ctx.restore();
-}
 
 function drawFigure(fig, f) {
   const { e, meta } = fig;
@@ -395,35 +368,73 @@ function nightFactor(hour, minute) {
   return 1;                                                     // night
 }
 
-// Actually darken the plate toward deep blue (multiply), so night reads dark —
-// not a flat grey veil. Light gets added back by lamps and windows.
-function drawNightWash(n) {
-  const R = PLATE_W * view.s, x0 = view.ox, y0 = view.oy, H = PLATE_H * view.s;
-  ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = `rgb(${Math.round(lerp(255, 26, n))},${Math.round(lerp(255, 34, n))},${Math.round(lerp(255, 66, n))})`;
-  ctx.fillRect(x0, y0, R, H);
-  ctx.restore();
-  // faint cool ambient on top for depth
-  ctx.fillStyle = `rgba(20,28,60,${0.12 * n})`;
-  ctx.fillRect(x0, y0, R, H);
+// A resident whose feet fall inside an obscured region (a passage the camera
+// can't see past, marked in the plate-mapper) is hidden.
+function obscured(px, py) {
+  const zs = state.obscured;
+  if (!zs || !zs.length) return false;
+  for (const poly of zs) if (pointInPoly(px, py, poly)) return true;
+  return false;
+}
+function pointInPoly(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
 }
 
-// Warm streetlamp pools along the lanes at night — additive so they emit light.
-function drawStreetlamps(n) {
+// Real night lighting. Build a warm light map (dark ambient floor + additive
+// warm pools at every lamp and lit window) in an offscreen canvas, then MULTIPLY
+// it over the whole composed scene — so lamps and windows actually illuminate
+// the buildings, ground and people near them, and unlit areas fall dark.
+function applyLightMap(n, f) {
+  const R = Math.ceil(PLATE_W * view.s), H = Math.ceil(PLATE_H * view.s);
+  let lc = state.lc;
+  if (!lc) lc = state.lc = document.createElement('canvas');
+  if (lc.width !== R || lc.height !== H) { lc.width = R; lc.height = H; }
+  const g = lc.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  // ambient floor: how dark the unlit night gets (deep blue), eased through dusk
+  g.fillStyle = `rgb(${Math.round(lerp(255, 18, n))},${Math.round(lerp(255, 26, n))},${Math.round(lerp(255, 54, n))})`;
+  g.fillRect(0, 0, R, H);
+  g.globalCompositeOperation = 'lighter';
+  const lamp = (lx, ly, rad, c0, c1) => {
+    if (!isFinite(lx) || !isFinite(ly) || !isFinite(rad) || rad <= 0) return;
+    const rg = g.createRadialGradient(lx, ly, 0, lx, ly, rad);
+    rg.addColorStop(0, c0); rg.addColorStop(0.5, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = rg; g.beginPath(); g.arc(lx, ly, rad, 0, 7); g.fill();
+  };
+  for (const L of state.lamps) {
+    if (L.x < 0 || L.x > PLATE_W) continue;
+    const lx = L.x * view.s, ly = L.y * view.s, sc = scaleAt(L.y) * view.s;
+    lamp(lx, ly, 46 * sc, `rgba(255,196,128,${n})`, `rgba(255,170,96,${0.45 * n})`);
+  }
+  for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
+    if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
+    const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
+    const lx = p.x * view.s, ly = (p.y - 5) * view.s, sc = scaleAt(p.y) * view.s;
+    lamp(lx, ly, (22 + Math.min(cnt, 5) * 5) * sc, `rgba(255,186,112,${n})`, `rgba(255,168,92,${0.4 * n})`);
+  }
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(lc, view.ox, view.oy);
+  ctx.restore();
+  // bright bulb cores + window squares on top (additive) so the sources sparkle
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
-    const r = 22 * sc;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(255,214,150,${0.5 * n})`);
-    g.addColorStop(0.4, `rgba(255,196,120,${0.22 * n})`);
-    g.addColorStop(1, 'rgba(255,196,120,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-    // bright lamp head
-    ctx.fillStyle = `rgba(255,236,190,${0.9 * n})`;
-    ctx.beginPath(); ctx.arc(x, y - 3 * sc, 1.3 * sc, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,240,206,${0.85 * n})`;
+    ctx.beginPath(); ctx.arc(x, y - 2 * sc, 1.2 * sc, 0, 7); ctx.fill();
+  }
+  for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
+    if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
+    const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
+    const [x, y] = P2S(p.x, p.y - 5); const sc = scaleAt(p.y) * view.s;
+    ctx.fillStyle = `rgba(255,226,164,${0.95 * n})`;
+    for (let i = 0; i < Math.min(cnt, 3); i++) ctx.fillRect(x - 3 * sc + i * 3 * sc, y, 1.5 * sc, 1.5 * sc);
   }
   ctx.restore();
 }
