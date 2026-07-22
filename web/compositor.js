@@ -19,12 +19,14 @@ async function boot() {
     replay = window.__INLINE.replay;
     map = window.__INLINE.map;
     plate = await loadImg(window.__INLINE.plate);
+    state.occluder = window.__INLINE.occluder ? await loadImg(window.__INLINE.occluder) : null;
   } else {                                      // served build
     [replay, map, plate] = await Promise.all([
       fetch('assets/replay.json').then(r => r.json()),
       fetch('assets/era-plate-map.json').then(r => r.json()),
       loadImg(PLATE_IMG),
     ]);
+    state.occluder = await loadImg('assets/occluder.png').catch(() => null);
   }
   state.world = replay.world;
   state.frames = replay.frames;
@@ -123,6 +125,13 @@ function draw() {
   }
   figs.sort((a, b) => a.py - b.py);
   for (const fig of figs) drawFigure(fig, f);
+
+  // foreground occluder: front greenery drawn over the living layer, so figures
+  // by the banks read as *behind* the front bushes (the 2.5D depth cue).
+  if (state.occluder) {
+    ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
+    if (tint) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = tint; ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s); ctx.restore(); }
+  }
 
   drawHUD(f);
 }
