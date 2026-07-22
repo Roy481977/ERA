@@ -423,9 +423,10 @@ function draw() {
 
   const night = nightFactor(f.hour, f.minute);
   const lit = lampsOn(f.hour, f.minute);
+  const wx = weatherOf(f);                                     // today's sky, drives the weather layer
 
   const flood = floodOn(f);
-  drawSky(night);
+  drawSky(night, wx);
   drawWater(night);
   drawLampPosts(lit);
   drawFloodPosts(flood);
@@ -475,12 +476,15 @@ function draw() {
   // foreground occluder: front greenery over the living layer (2.5D depth).
   if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
+  drawWeatherGrade(wx, night);   // grey overcast wash + wet-street sheen over the whole scene
+
   // night lighting: multiply a warm light map over the whole composed scene, so
   // lamps and lit windows genuinely illuminate the buildings, ground and people
   // around them — everything else falls into real darkness.
   if (night > 0) applyLightMap(night, lit, f);
   drawFloodBeams(flood);   // beam shafts + head flares over the lit scene
   drawFestival(festivalOn(f), f);   // strung lanterns + music over the square
+  drawPrecip(wx, night);   // rain streaks / snow, wind-angled, over everything
 
   if (state.showPins) drawPins();
   drawHUD(f);
@@ -521,22 +525,125 @@ function drawDebugOverlay(routes) {
   ctx.restore();
 }
 
-// Drifting clouds over the plate's sky band — very soft, so they sit on top of
-// the baked sky without fighting it. Dimmed at night.
-function drawSky(night) {
+// Read the deterministic sky for this frame into a small render struct.
+// grey = how heavily to wash the scene toward overcast; rain/snow/fog are flags.
+function weatherOf(f) {
+  const w = (f && f.weather) || {};
+  const sky = w.sky || 'clear';
+  const grey = ({ clear: 0, fair: 0.06, cloudy: 0.34, overcast: 0.62, rain: 0.56, snow: 0.40, fog: 0.52 })[sky] || 0;
+  return {
+    sky, grey,
+    rain: sky === 'rain' ? 1 : 0,
+    snow: sky === 'snow' ? 1 : 0,
+    fog: sky === 'fog' ? 1 : 0,
+    wet: !!w.wet, windy: !!w.windy,
+  };
+}
+
+// Drifting clouds over the plate's sky band. On grey days the puffs turn denser,
+// slatier and more numerous so the sky itself reads overcast, not just the ground.
+function drawSky(night, wx) {
   if (!state.clouds) return;
-  const W = PLATE_W * view.s, span = PLATE_W + 240;
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const grey = wx ? wx.grey : 0;
+  const span = PLATE_W + 240;
+  ctx.save(); ctx.globalCompositeOperation = grey > 0.25 ? 'source-over' : 'lighter';
   const T = state.anim || 0;
-  for (const c of state.clouds) {
-    const x = ((c.ph * span + T * c.sp * 2.2) % span) - 120;
-    const [sx, sy] = P2S(x, c.y); const r = Math.max(1, c.s * view.s);
-    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
-    const a = c.a * (1 - 0.7 * night);
-    g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(sx, sy, r * 2, r * 0.9, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(sx + r * 0.7, sy + r * 0.2, r * 1.2, r * 0.7, 0, 0, 7); ctx.fill();
+  // grey days: blanket the sky band with extra slate puffs riding lower and wider
+  const passes = grey > 0.25 ? 2 : 1;
+  const tint = grey > 0.25 ? [176, 182, 190] : [255, 255, 255];   // slate vs bright cloud
+  for (let p = 0; p < passes; p++) {
+    for (const c of state.clouds) {
+      const drift = T * c.sp * 2.2 + p * 137;
+      const x = ((c.ph * span + drift) % span) - 120;
+      const yOff = p * 34 + grey * 26;                              // spread the cover down over the band
+      const [sx, sy] = P2S(x, c.y + yOff); const r = Math.max(1, c.s * view.s) * (1 + grey * 0.8);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
+      const a = (c.a + grey * 0.10) * (1 - 0.7 * night);
+      g.addColorStop(0, `rgba(${tint[0]},${tint[1]},${tint[2]},${a})`); g.addColorStop(1, `rgba(${tint[0]},${tint[1]},${tint[2]},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(sx, sy, r * 2, r * 0.9, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(sx + r * 0.7, sy + r * 0.2, r * 1.2, r * 0.7, 0, 0, 7); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// Overcast wash + wet-street sheen over the fully composed scene. The grey grade
+// is atmospheric (kept light so figures still read); the sheen only shows when wet.
+function drawWeatherGrade(wx, night) {
+  if (!wx) return;
+  const X = view.ox, Y = view.oy, W = PLATE_W * view.s, H = PLATE_H * view.s;
+  const day = 1 - 0.6 * night;
+  if (wx.grey > 0.02) {
+    // 1) drain the baked sunshine out of the scene, proportional to how grey the day is
+    ctx.save();
+    ctx.globalCompositeOperation = 'saturation';
+    ctx.globalAlpha = Math.min(0.85, wx.grey * 0.9) * day;
+    ctx.fillStyle = 'rgb(128,128,128)'; ctx.fillRect(X, Y, W, H);
+    ctx.restore();
+    // 2) cool grey overcast wash — heavier at the sky, lifting toward the ground
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, Y, 0, Y + H);
+    grad.addColorStop(0, `rgba(146,154,166,${0.36 * wx.grey * day})`);
+    grad.addColorStop(1, `rgba(150,158,168,${0.16 * wx.grey * day})`);
+    ctx.fillStyle = grad; ctx.fillRect(X, Y, W, H);
+    ctx.restore();
+  }
+  if (wx.fog) {   // drifting low fog banks across the lower half
+    const T = state.anim || 0;
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const yy = Y + H * (0.55 + i * 0.14);
+      const off = ((T * (6 + i * 3)) % (W + 300)) - 150;
+      const g = ctx.createRadialGradient(X + off, yy, 0, X + off, yy, W * 0.42);
+      g.addColorStop(0, `rgba(210,214,220,${0.16 * day})`); g.addColorStop(1, 'rgba(210,214,220,0)');
+      ctx.fillStyle = g; ctx.fillRect(X, yy - H * 0.2, W, H * 0.4);
+    }
+    ctx.restore();
+  }
+  if (wx.wet) {   // cool reflective sheen on the lower ground — the streets are wet
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const grad = ctx.createLinearGradient(0, Y + H * 0.52, 0, Y + H);
+    grad.addColorStop(0, 'rgba(126,156,182,0)'); grad.addColorStop(1, `rgba(134,166,192,${0.11 * day})`);
+    ctx.fillStyle = grad; ctx.fillRect(X, Y + H * 0.52, W, H * 0.48);
+    ctx.restore();
+  }
+}
+
+// Precipitation over the whole viewport: parallel rain streaks (steeper when windy)
+// or drifting snow. Recycled deterministic particles scrolled by the ambient clock.
+function drawPrecip(wx, night) {
+  if (!wx || (!wx.rain && !wx.snow)) return;
+  const T = state.anim || 0, s = view.s, W = cnv.width, H = cnv.height;
+  ctx.save();
+  if (wx.rain) {
+    const N = 260, slant = wx.windy ? 0.52 : 0.22, len = 14 * s;
+    const fall = (wx.windy ? 640 : 520) * s, span = H + 60;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(214,226,238,${(0.42 - 0.14 * night)})`;
+    ctx.lineWidth = Math.max(0.7, 0.95 * s);
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const h = (i * 2654435761) >>> 0;
+      const x = (h % 100000) / 100000 * (W + 260) - 130;
+      const speed = fall * (0.78 + (h >> 5 & 255) / 255 * 0.5);
+      const y = (((h >> 13 & 8191) / 8191) * span + T * speed) % span - 30;
+      ctx.moveTo(x, y); ctx.lineTo(x - len * slant, y - len);
+    }
+    ctx.stroke();
+  }
+  if (wx.snow) {
+    const N = 150, fall = 66 * s, span = H + 40, drift = wx.windy ? 2 : 1;
+    ctx.fillStyle = `rgba(248,250,255,${0.9 - 0.35 * night})`;
+    for (let i = 0; i < N; i++) {
+      const h = (i * 2654435761) >>> 0;
+      const x0 = (h % 100000) / 100000 * (W + 80) - 40;
+      const speed = fall * (0.6 + (h >> 6 & 255) / 255 * 0.7);
+      const y = (((h >> 13 & 8191) / 8191) * span + T * speed) % span - 20;
+      const dx = Math.sin(T * 0.6 + (h & 63)) * 10 * s * drift;
+      const r = (0.9 + (h & 3) * 0.4) * s;
+      ctx.beginPath(); ctx.arc(x0 + dx, y, r, 0, 7); ctx.fill();
+    }
   }
   ctx.restore();
 }
@@ -804,7 +911,9 @@ function drawFigure(fig, f) {
     ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.45, headR * 1.6, headR * 0.55, 0, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.ellipse(hcx, headCY - headR * 0.8, headR * 0.75, headR * 0.55, 0, Math.PI, 0); ctx.fill();
   }
-  if (worn.includes('umbrella')) {
+  // out in the rain: raise an umbrella (from the sim's `worn`, or simply because it's wet outdoors)
+  const rainingOut = !!(f && f.weather && f.weather.wet) && !sit;
+  if (worn.includes('umbrella') || rainingOut) {
     ctx.fillStyle = 'rgba(45,65,95,.92)';
     ctx.beginPath(); ctx.ellipse(x, headCY - headR * 2.6, 6.5 * U, 2.6 * U, 0, Math.PI, 0); ctx.fill();
     ctx.strokeStyle = 'rgba(45,65,95,.92)'; ctx.lineWidth = 0.8 * U;
