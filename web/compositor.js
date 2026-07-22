@@ -8,7 +8,7 @@ const PLATE_IMG = 'assets/plate-v1-graded.jpeg';
 
 const state = {
   world: null, frames: [], map: null, anchors: [],
-  t: 0, playing: true, speed: 6, last: 0, acc: 0,
+  t: 0, playing: true, M: 120, last: 0,   // M = game-seconds per real-second (1 = true real time)
   showPins: false, showNames: false,
   plate: null,
 };
@@ -453,14 +453,21 @@ function drawHUD(f) {
 // --- playback loop ---
 function loop(ts) {
   if (!state.last) state.last = ts;
-  const dt = (ts - state.last) / 1000; state.last = ts;
+  const dt = Math.min((ts - state.last) / 1000, 0.25); state.last = ts;
   if (state.playing) {
-    state.t += dt * state.speed;
-    if (state.t >= state.frames.length) state.t = 0;
+    // one tick = 300 game-seconds; advance the world by M game-seconds per real second
+    state.t += dt * state.M / 300;
+    if (state.t >= state.frames.length) state.t -= state.frames.length;  // seamless loop
     document.getElementById('scrub').value = Math.floor(state.t);
   }
   draw();
   requestAnimationFrame(loop);
+}
+
+function speedLabel(M) {
+  if (M <= 1) return 'live · real time';
+  if (M < 60) return `${M}× · ${M}s world/s`;
+  return `${M}× · ${Math.round(M / 60)} min world/s`;
 }
 
 function wireControls() {
@@ -469,7 +476,11 @@ function wireControls() {
   scrub.addEventListener('input', () => { state.t = +scrub.value; state.playing = false; playBtn.textContent = '▶'; });
   const playBtn = document.getElementById('play');
   playBtn.addEventListener('click', () => { state.playing = !state.playing; playBtn.textContent = state.playing ? '❚❚' : '▶'; state.last = 0; });
-  document.getElementById('speed').addEventListener('input', e => { state.speed = +e.target.value; document.getElementById('speedv').textContent = state.speed + '×'; });
+  const STOPS = [1, 15, 60, 120, 300, 900, 1800];
+  const speed = document.getElementById('speed');
+  speed.min = 0; speed.max = STOPS.length - 1; speed.step = 1; speed.value = STOPS.indexOf(state.M);
+  const applySpeed = () => { state.M = STOPS[+speed.value]; document.getElementById('speedv').textContent = speedLabel(state.M); };
+  speed.addEventListener('input', applySpeed); applySpeed();
   document.getElementById('pins').addEventListener('change', e => state.showPins = e.target.checked);
   document.getElementById('names').addEventListener('change', e => state.showNames = e.target.checked);
   window.playBtn = playBtn;
