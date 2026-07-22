@@ -9,6 +9,7 @@ const PLATE_IMG = 'assets/plate-v1-graded.jpeg';
 const state = {
   world: null, frames: [], map: null, anchors: [],
   t: 0, playing: true, M: 120, last: 0,   // M = game-seconds per real-second (1 = true real time)
+  selected: null, lastFigs: [], story: [], storyAt: -1,
   showPins: false, showNames: false,
   plate: null,
 };
@@ -40,9 +41,11 @@ async function boot() {
     .filter(l => px[l.id])
     .map(l => ({ id: l.id, wx: l.x, wy: l.y, px: px[l.id].x, py: px[l.id].y }));
 
-  // roster: id -> {name, kind, color}
+  // roster: id -> {name, kind, color}; and place id -> name
   state.roster = {};
   for (const e of state.world.entities) state.roster[e.id] = e;
+  state.locName = {};
+  for (const l of state.world.locations) state.locName[l.id] = l.name;
 
   // indoor places: homes + workplaces that are inside. A settled resident here is
   // indoors, not standing on the roof — so we don't draw them (their window lights
@@ -58,6 +61,16 @@ async function boot() {
   // pin-to-pin lines (which cut across the river and buildings).
   state.graph = buildPlateGraph(map);
   state.routeCache = {};
+
+  // river polyline (for animated shimmer) as an arc-length curve
+  const rv = (map.paths || []).find(p => p.type === 'river');
+  if (rv && rv.pts.length > 1) {
+    const cum = [0]; for (let i = 1; i < rv.pts.length; i++) cum.push(cum[i - 1] + Math.hypot(rv.pts[i][0] - rv.pts[i - 1][0], rv.pts[i][1] - rv.pts[i - 1][1]));
+    state.river = { pts: rv.pts, cum, len: cum[cum.length - 1] };
+  }
+  // drifting clouds (stable seeds; move with time)
+  state.clouds = [];
+  for (let i = 0; i < 5; i++) { const h = (i * 2654435761) >>> 0; state.clouds.push({ y: 40 + (h % 130), s: 26 + (h >> 4) % 34, sp: 3 + (h >> 8) % 5, ph: (h % 1000) / 1000, a: 0.05 + (h % 5) / 90 }); }
 
   // lamps: use the ones placed in the mapper if present; otherwise auto-place
   // (sample along streets/lanes + a few centre and back-of-town extras).
@@ -260,6 +273,8 @@ function draw() {
   const night = nightFactor(f.hour, f.minute);
   const lit = lampsOn(f.hour, f.minute);
 
+  drawSky(night);
+  drawWater(night);
   drawLampPosts(lit);
 
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
@@ -273,6 +288,13 @@ function draw() {
     figs.push({ e, meta, px, py });
   }
   figs.sort((a, b) => a.py - b.py);
+  // remember screen positions for click-to-inspect
+  state.lastFigs = figs.map(fig => { const [sx, sy] = P2S(fig.px, fig.py); return { id: fig.e.id, sx, sy, sc: scaleAt(fig.py) * view.s }; });
+  // selection ring under the chosen resident
+  if (state.selected) {
+    const lf = state.lastFigs.find(l => l.id === state.selected);
+    if (lf) { ctx.strokeStyle = 'rgba(255,215,90,.95)'; ctx.lineWidth = Math.max(1.5, 1.6 * lf.sc); ctx.beginPath(); ctx.ellipse(lf.sx, lf.sy, 8 * lf.sc, 3 * lf.sc, 0, 0, 7); ctx.stroke(); }
+  }
   for (const fig of figs) drawFigure(fig, f);
 
   // foreground occluder: front greenery over the living layer (2.5D depth).
@@ -285,6 +307,45 @@ function draw() {
 
   if (state.showPins) drawPins();
   drawHUD(f);
+}
+
+// Drifting clouds over the plate's sky band — very soft, so they sit on top of
+// the baked sky without fighting it. Dimmed at night.
+function drawSky(night) {
+  if (!state.clouds) return;
+  const W = PLATE_W * view.s, span = PLATE_W + 240;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const c of state.clouds) {
+    const x = ((c.ph * span + state.t * c.sp) % span) - 120;
+    const [sx, sy] = P2S(x, c.y); const r = Math.max(1, c.s * view.s);
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
+    const a = c.a * (1 - 0.7 * night);
+    g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(sx, sy, r * 2, r * 0.9, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(sx + r * 0.7, sy + r * 0.2, r * 1.2, r * 0.7, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Animated river: soft highlight streaks drift downstream along the water,
+// plus a faint shimmer — additive, dimmed at night.
+function drawWater(night) {
+  const r = state.river; if (!r) return;
+  const at = t => { const target = t * r.len; let i = 1; while (i < r.cum.length && r.cum[i] < target) i++; if (i >= r.pts.length) i = r.pts.length - 1; const seg = r.cum[i] - r.cum[i - 1] || 1, f = (target - r.cum[i - 1]) / seg; const a = r.pts[i - 1], b = r.pts[i]; return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, Math.atan2(b[1] - a[1], b[0] - a[0])]; };
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const K = 9, alpha = 0.5 * (1 - 0.6 * night);
+  for (let k = 0; k < K; k++) {
+    const t = ((state.t * 0.02 + k / K) % 1);
+    const [wx, wy, ang] = at(t); const [sx, sy] = P2S(wx, wy); const sc = scaleAt(wy) * view.s;
+    const fade = Math.sin(t * Math.PI);   // dim at the ends of the run
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+    const g = ctx.createLinearGradient(-8 * sc, 0, 8 * sc, 0);
+    g.addColorStop(0, 'rgba(180,235,240,0)'); g.addColorStop(0.5, `rgba(200,240,245,${alpha * fade})`); g.addColorStop(1, 'rgba(180,235,240,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 8 * sc, 1.5 * sc, 0, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 function drawPins() {
@@ -642,10 +703,72 @@ function drawHUD(f) {
   el.innerHTML = `<b>${f.weekday}</b> · day ${f.day} · ${String(f.hour).padStart(2,'0')}:${mm}
     <span class="dim">· ${f.season} · ${f.weather.phrase}</span>`;
   document.getElementById('sub').textContent = busiest;
+  updateStory(f);
+  updateInspector(f);
+}
+
+// Replace loc_ ids and route arrows in sim text with friendly place names.
+function prettify(text) {
+  return text.replace(/loc_[a-z_]+/g, id => state.locName[id] || id)
+    .replace(/\s*->\s*/g, ' → ');
+}
+
+// --- the town's unfolding story: a rolling feed of what's happening ---
+function updateStory(f) {
+  const fi = Math.floor(state.t);
+  if (fi === state.storyAt) return;
+  const back = state.storyAt >= 0 && fi < state.storyAt; // looped/scrubbed back
+  state.storyAt = fi;
+  if (back) state.story = [];
+  const hm = `${String(f.hour).padStart(2, '0')}:${String(f.minute).padStart(2, '0')}`;
+  for (const ev of (f.events || [])) {
+    const actor = Array.isArray(ev) ? ev[0] : ev.actor;
+    const text = Array.isArray(ev) ? ev[1] : ev.text;
+    if (!text) continue;
+    const who = actor && !text.startsWith(actor) ? actor + ' ' : '';
+    state.story.push({ text: prettify((who + text).replace(/\s*—\s*at .*$/, '')), hm });
+  }
+  if (!f.events || !f.events.length) for (const c of (f.callouts || []).slice(0, 1)) state.story.push({ text: prettify(c.text), hm });
+  if (state.story.length > 60) state.story = state.story.slice(-60);
   const near = document.getElementById('near');
-  // a couple of live callouts for texture
-  near.innerHTML = (f.callouts || []).slice(0, 3)
-    .map(c => `<div class="cal">${c.text}</div>`).join('');
+  near.innerHTML = state.story.slice(-7).map(s => `<div class="cal"><span class="t">${s.hm}</span> ${s.text}</div>`).join('');
+  near.scrollTop = near.scrollHeight;
+}
+
+// --- click-to-inspect: who is this person, and their life right now ---
+function moodWord(m) { return m > 0.5 ? 'bright' : m > 0.15 ? 'content' : m > -0.15 ? 'even' : m > -0.5 ? 'low' : 'downcast'; }
+function socWord(s) { return s >= 2 ? 'outgoing' : s === 1 ? 'sociable' : s === 0 ? 'even-keeled' : s === -1 ? 'reserved' : 'solitary'; }
+
+function updateInspector(f) {
+  const panel = document.getElementById('inspector');
+  if (!state.selected) { panel.classList.add('hidden'); return; }
+  const e = f.entities.find(x => x.id === state.selected);
+  const meta = state.roster[state.selected];
+  if (!e || !meta) { panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+  const isRes = meta.kind === 'resident';
+  const bar = (v, col) => `<span class="bar"><i style="width:${Math.round(clamp(v, 0, 1) * 100)}%;background:${col}"></i></span>`;
+  const bonds = (f.bonds || []).filter(b => b.a === state.selected || b.b === state.selected)
+    .map(b => ({ who: b.a === state.selected ? b.b : b.a, aff: b.affinity, place: b.place }))
+    .sort((x, y) => y.aff - x.aff).slice(0, 4);
+  const nameOf = id => (state.roster[id] || {}).name || id;
+  let html = `<div class="ihead"><span class="dot" style="background:${meta.color}"></span><b>${meta.name}</b>
+    <button id="iclose">✕</button></div>`;
+  if (isRes) {
+    html += `<div class="irow">${socWord(e.soc)}${e.child ? ' · a child' : ''}</div>
+      <div class="idoing">${e.doing || '—'}</div>
+      <div class="imeta">at <b>${state.locName[e.place] || e.place}</b>${e.partner ? ` · with <b>${nameOf(e.partner)}</b>` : ''}</div>
+      <div class="istat">mood <span>${moodWord(e.mood)}</span> ${bar((e.mood + 1) / 2, '#e8b93a')}</div>
+      <div class="istat">energy ${bar(e.energy, '#5fb0e8')}</div>`;
+    if (e.worn && e.worn.length) html += `<div class="iworn">wearing: ${e.worn.join(', ').replace(/_/g, ' ')}</div>`;
+    if (bonds.length) html += `<div class="ibonds"><div class="lbl">knows</div>${bonds.map(b => `<div class="bond" data-id="${b.who}">${nameOf(b.who)} <span class="aff">${'♥'.repeat(clamp(Math.round(b.aff / 2), 1, 5))}</span></div>`).join('')}</div>`;
+  } else {
+    html += `<div class="irow">${meta.kind}</div><div class="idoing">${e.doing || 'about the district'}</div>
+      <div class="imeta">at <b>${state.locName[e.place] || e.place}</b></div>`;
+  }
+  panel.innerHTML = html;
+  document.getElementById('iclose').onclick = () => { state.selected = null; draw(); };
+  panel.querySelectorAll('.bond').forEach(el => el.onclick = () => { state.selected = el.dataset.id; draw(); });
 }
 
 // --- playback loop ---
@@ -682,6 +805,21 @@ function wireControls() {
   document.getElementById('pins').addEventListener('change', e => state.showPins = e.target.checked);
   document.getElementById('names').addEventListener('change', e => state.showNames = e.target.checked);
   window.playBtn = playBtn;
+
+  // click a figure to inspect them
+  cnv.addEventListener('click', e => {
+    const f = cnv.width / cnv.clientWidth;   // CSS px -> canvas px
+    const cx = e.offsetX * f, cy = e.offsetY * f;
+    let best = null, bd = Infinity;
+    for (const lf of state.lastFigs) {
+      const hy = lf.sy - 11 * lf.sc;          // aim at the body, not the feet
+      const d = Math.hypot(cx - lf.sx, cy - hy);
+      const r = Math.max(16 * f, 18 * lf.sc);
+      if (d < r && d < bd) { bd = d; best = lf.id; }
+    }
+    state.selected = best;    // click empty space to deselect
+    draw();
+  });
 }
 
 boot();
