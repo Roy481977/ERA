@@ -342,7 +342,7 @@ function draw() {
       }
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
-    if (!walking && obscured(px, py)) continue; // hide only settled folk behind buildings — walkers stay on their path (no flicker)
+    if (obscured(px, py)) continue; // nothing is ever drawn on an occluded area — walkers vanish behind buildings and reappear on open ground (Roy tunes the zones)
     figs.push({ e, meta, px, py, walking, hd });
   }
   figs.sort((a, b) => a.py - b.py);
