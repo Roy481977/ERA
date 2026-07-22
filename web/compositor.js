@@ -117,19 +117,31 @@ async function boot() {
     : [{ x: 1012, y: 430 }, { x: 1300, y: 452 }, { x: 1055, y: 512 }, { x: 1312, y: 504 }];
   state.floodAim = { x: 1160, y: 470 };   // pitch centre
 
-  // Game-night crowd: seats scattered across the visible stands. On a match evening
-  // the terracing fills with anonymous supporters (green & white) — a decorative crowd,
-  // not sim residents. Seats are ordered by distance from the north gate so the stands
-  // populate from the entrance outward.
+  // Game-night crowd: seats across the visible stands. On a match evening the terracing
+  // fills with anonymous supporters (green & white) — a decorative crowd, not sim
+  // residents. If Roy has outlined the stands in the mapper (map.stands polygons) the
+  // seats are sampled inside those; otherwise a built-in estimate of the main + side
+  // stand. Ordered by distance from the north gate so they populate from the entrance out.
   const gate = { x: 1070, y: 408 };
   const seats = [];
-  for (let row = 0; row < 6; row++) {                 // main stand behind the pitch (tiered)
-    const y = 376 + row * 6, x0 = 1046 + row * 4, x1 = 1298 - row * 2;
-    for (let x = x0; x <= x1; x += 9) seats.push({ x, y });
-  }
-  for (let row = 0; row < 4; row++) {                 // near side stand (left of the pitch)
-    const x = 1036 - row * 6, y0 = 388 + row * 3, y1 = 424 - row * 2;
-    for (let y = y0; y <= y1; y += 8) seats.push({ x, y });
+  const stands = (map.stands || []).map(z => z.pts || z);
+  if (stands.length) {
+    for (const poly of stands) {
+      let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+      for (const [px, py] of poly) { minx = Math.min(minx, px); miny = Math.min(miny, py); maxx = Math.max(maxx, px); maxy = Math.max(maxy, py); }
+      for (let y = miny; y <= maxy; y += 6) for (let x = minx; x <= maxx; x += 8) {
+        if (pointInPoly(x, y, poly)) seats.push({ x, y });
+      }
+    }
+  } else {
+    for (let row = 0; row < 6; row++) {               // main stand behind the pitch (tiered)
+      const y = 376 + row * 6, x0 = 1046 + row * 4, x1 = 1298 - row * 2;
+      for (let x = x0; x <= x1; x += 9) seats.push({ x, y });
+    }
+    for (let row = 0; row < 4; row++) {               // near side stand (left of the pitch)
+      const x = 1036 - row * 6, y0 = 388 + row * 3, y1 = 424 - row * 2;
+      for (let y = y0; y <= y1; y += 8) seats.push({ x, y });
+    }
   }
   seats.sort((a, b) => ((a.x - gate.x) ** 2 + (a.y - gate.y) ** 2) - ((b.x - gate.x) ** 2 + (b.y - gate.y) ** 2));
   state.stadiumSeats = seats;
@@ -949,20 +961,35 @@ function gameCrowdFill(f) {
   if (h < gameEnd) return 1;                             // packed for the match
   return 1 - (h - gameEnd) / (clear - gameEnd);          // drifting out after
 }
-// Draw the anonymous supporters in the stands — green & white, seated, no faces to read.
-// The number varies per match (seeded 40–180); they fill nearest the north gate first.
+// Draw the anonymous supporters in the stands — the same little clay build as the
+// residents (torso + head), just faceless and in club green or white. The number varies
+// per match (seeded 40–180); they fill nearest the north gate first.
+const SPEC_SKIN = ['#e3b78e', '#cda079', '#b98c66', '#9a734f', '#7f5c3d'];
 function drawStadiumCrowd(f) {
   const fill = gameCrowdFill(f); if (fill <= 0 || !state.stadiumSeats) return;
   const target = 40 + (hashId('gamecrowd|' + f.day) % 141);   // 40..180 this match
   const n = Math.min(Math.floor(target * fill), state.stadiumSeats.length);
-  ctx.save();
+  const ink = 'rgba(30,22,16,.5)';
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   for (let i = 0; i < n; i++) {
-    const s = state.stadiumSeats[i], [x, y] = P2S(s.x, s.y), sc = scaleAt(s.y) * view.s;
-    const hgt = hashId('seat|' + i), green = (hgt % 2) === 0;
-    ctx.fillStyle = green ? 'rgba(46,132,66,0.96)' : 'rgba(236,240,236,0.96)';   // club green / white
-    ctx.beginPath(); ctx.ellipse(x, y, 1.4 * sc, 1.9 * sc, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(226,196,166,0.9)';                                     // head
-    ctx.beginPath(); ctx.arc(x, y - 1.9 * sc, 0.85 * sc, 0, 7); ctx.fill();
+    const s = state.stadiumSeats[i], hgt = hashId('seat|' + i);
+    const jx = ((hgt % 7) - 3) * 0.5, jy = (((hgt >> 3) % 5) - 2) * 0.4;   // break the grid a touch
+    const [x, y] = P2S(s.x + jx, s.y + jy), sc = scaleAt(s.y) * view.s, U = sc * 0.7;
+    const col = (hgt % 2) === 0 ? '#2e8442' : '#e9ede7';                    // club green / white
+    const hipY = y, shoulderY = y - 4 * U, headCY = shoulderY - 2.2 * U;
+    // torso — clay trapezoid, shaded like a resident
+    const g = ctx.createLinearGradient(0, shoulderY, 0, hipY);
+    g.addColorStop(0, shade(col, 1.12)); g.addColorStop(1, shade(col, 0.82));
+    ctx.fillStyle = g;
+    const sw = 3.4 * U, hw = 2.7 * U;
+    ctx.beginPath();
+    ctx.moveTo(x - sw / 2, shoulderY); ctx.lineTo(x + sw / 2, shoulderY);
+    ctx.lineTo(x + hw / 2, hipY); ctx.lineTo(x - hw / 2, hipY); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = Math.max(0.4, 0.5 * U); ctx.strokeStyle = ink; ctx.stroke();
+    // head
+    ctx.fillStyle = SPEC_SKIN[hgt % SPEC_SKIN.length];
+    ctx.beginPath(); ctx.arc(x, headCY, 1.6 * U, 0, 7); ctx.fill();
+    ctx.lineWidth = Math.max(0.3, 0.4 * U); ctx.strokeStyle = ink; ctx.stroke();
   }
   ctx.restore();
 }
