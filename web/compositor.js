@@ -68,6 +68,8 @@ async function boot() {
     const cum = [0]; for (let i = 1; i < rv.pts.length; i++) cum.push(cum[i - 1] + Math.hypot(rv.pts[i][0] - rv.pts[i - 1][0], rv.pts[i][1] - rv.pts[i - 1][1]));
     state.river = { pts: rv.pts, cum, len: cum[cum.length - 1] };
   }
+  // water surface polygons (marked in the mapper) — ripple animates across them
+  state.waterAreas = (map.water || []).map(z => z.pts || z);
   // drifting clouds (stable seeds; move with time)
   state.clouds = [];
   for (let i = 0; i < 5; i++) { const h = (i * 2654435761) >>> 0; state.clouds.push({ y: 40 + (h % 130), s: 26 + (h >> 4) % 34, sp: 3 + (h >> 8) % 5, ph: (h % 1000) / 1000, a: 0.05 + (h % 5) / 90 }); }
@@ -230,6 +232,12 @@ function placeEntity(e) {
     const h = hashId(e.id);
     return [1020 + (h % 300), 388 + ((h >> 4) % 5) * 7];  // rows in the terracing
   }
+  // animals settle at their place's ground spot (with a little jitter) rather than
+  // a drifted world point that can land on a rooftop
+  if (!e.moving && P[e.place] && (e.id === 'the_old_dog' || e.id.startsWith('ani_'))) {
+    const [jx, jy] = jitterPx(e.id, 3);
+    return [P[e.place].x + jx, P[e.place].y + jy];
+  }
   return worldToPlate(e.x, e.y);
 }
 
@@ -290,7 +298,7 @@ function draw() {
   const figs = [];
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
-    if (meta.kind === 'resident' && !e.moving && state.indoor.has(e.place)) continue; // indoors
+    if ((meta.kind === 'resident' || meta.kind === 'dog') && !e.moving && state.indoor.has(e.place)) continue; // indoors — people & the dog off the rooftops
     let [px, py] = placeEntity(e);
     const eN = nextById[e.id];                                 // glide toward next tick's position
     if (eN && frac > 0) {
@@ -298,7 +306,7 @@ function draw() {
       if (Math.hypot(nx - px, ny - py) < 130) { px += (nx - px) * frac; py += (ny - py) * frac; }
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
-    if (obscured(px, py)) continue; // behind a building the camera can't see past
+    if (!e.moving && obscured(px, py)) continue; // hide only settled folk behind buildings — walkers stay on their path (no flicker)
     figs.push({ e, meta, px, py });
   }
   figs.sort((a, b) => a.py - b.py);
@@ -343,13 +351,47 @@ function drawSky(night) {
   ctx.restore();
 }
 
-// Animated river: soft highlight streaks drift downstream along the water,
-// plus a faint shimmer — additive, dimmed at night.
+// Animated river. If a water *area* is marked (mapper Water tool), ripple across
+// the whole surface; otherwise fall back to shimmer streaks along the centerline.
 function drawWater(night) {
+  const T = state.anim || 0;
+  if (state.waterAreas && state.waterAreas.length) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const a = 0.5 * (1 - 0.6 * night);
+    for (const poly of state.waterAreas) {
+      if (poly.length < 3) continue;
+      ctx.save();
+      ctx.beginPath();
+      let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+      poly.forEach((pt, i) => { const [x, y] = P2S(pt[0], pt[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); minx = Math.min(minx, x); miny = Math.min(miny, y); maxx = Math.max(maxx, x); maxy = Math.max(maxy, y); });
+      ctx.closePath(); ctx.clip();
+      const w = maxx - minx, h = maxy - miny;
+      // scrolling ripple bands, drifting downstream (downward)
+      const N = 8;
+      for (let i = 0; i < N; i++) {
+        const yy = miny + (((i / N) + T * 0.05) % 1) * (h + 24) - 12;
+        const bh = 7 * view.s;
+        const g = ctx.createLinearGradient(0, yy - bh, 0, yy + bh);
+        g.addColorStop(0, 'rgba(196,238,244,0)'); g.addColorStop(0.5, `rgba(206,242,248,${a * 0.42})`); g.addColorStop(1, 'rgba(196,238,244,0)');
+        ctx.fillStyle = g; ctx.fillRect(minx - 4, yy - bh, w + 8, bh * 2);
+      }
+      // drifting sparkle caustics
+      for (let k = 0; k < 14; k++) {
+        const hx = (k * 2654435761) >>> 0;
+        const sx = minx + (hx % 1000) / 1000 * w;
+        const sy = miny + (((hx >> 10) % 1000) / 1000 + T * 0.08) % 1 * h;
+        const rr = (1.2 + (hx % 3) * 0.6) * view.s;
+        ctx.fillStyle = `rgba(220,246,250,${a * 0.5})`;
+        ctx.beginPath(); ctx.ellipse(sx, sy, rr * 1.6, rr * 0.7, 0, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+    return;
+  }
   const r = state.river; if (!r) return;
   const at = t => { const target = t * r.len; let i = 1; while (i < r.cum.length && r.cum[i] < target) i++; if (i >= r.pts.length) i = r.pts.length - 1; const seg = r.cum[i] - r.cum[i - 1] || 1, f = (target - r.cum[i - 1]) / seg; const a = r.pts[i - 1], b = r.pts[i]; return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, Math.atan2(b[1] - a[1], b[0] - a[0])]; };
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const T = state.anim || 0;
   const K = 12, alpha = 0.55 * (1 - 0.6 * night);
   for (let k = 0; k < K; k++) {
     const t = ((T * 0.07 + k / K) % 1);
