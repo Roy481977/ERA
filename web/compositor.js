@@ -154,11 +154,15 @@ function buildPlateGraph(map) {
     if (a === b) return; const w = Math.hypot(V[a].x - V[b].x, V[a].y - V[b].y);
     adj[a].push([b, w]); adj[b].push([a, w]);
   };
-  const pathVerts = [], segs = [];                       // segs: consecutive path edges [a,b]
+  const pathVerts = [], segs = [];                       // segs: consecutive path edges [a,b,pathIdx]
+  const endpoints = [];                                   // {i,x,y,pathIdx} — first & last vertex of each path
+  let pathIdx = -1;
   for (const p of (map.paths || [])) {
     if (p.type === 'river') continue;                    // river is not walkable
-    let prev = null;
-    for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); if (prev != null) { link(prev, i); segs.push([prev, i]); } prev = i; }
+    pathIdx++;
+    let prev = null; const verts = [];
+    for (const [x, y] of p.pts) { const i = addV(x, y); pathVerts.push({ i, x, y }); verts.push({ i, x, y }); if (prev != null) { link(prev, i); segs.push([prev, i, pathIdx]); } prev = i; }
+    if (verts.length) { endpoints.push(Object.assign({ pathIdx }, verts[0])); if (verts.length > 1) endpoints.push(Object.assign({ pathIdx }, verts[verts.length - 1])); }
   }
   // Make the paths one continuous web. (1) where two path segments actually CROSS,
   // drop a shared junction node at the crossing and wire it to both segments' ends, so
@@ -180,6 +184,22 @@ function buildPlateGraph(map) {
       const P = segInt(V[a1], V[b1], V[a2], V[b2]);
       if (P) { const vi = addV(P.x, P.y); link(vi, a1); link(vi, b1); link(vi, a2); link(vi, b2); }
     }
+  // (3) T-junctions: where a path's ENDPOINT lands near a DIFFERENT path (one lane runs
+  // into another), join it at the nearest point on that path. This closes the little gaps
+  // that make a resident cut the corner — without laddering parallel lanes, because only
+  // endpoints (not every mid-segment vertex) reach out.
+  const ENDTH = 34;
+  for (const ep of endpoints) {
+    let best = ENDTH * ENDTH, foot = null, fa = -1, fb = -1;
+    for (const [a, b, pi] of segs) {
+      if (pi === ep.pathIdx) continue;                   // don't join a path to itself
+      const ax = V[a].x, ay = V[a].y, bx = V[b].x, by = V[b].y, dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+      let t = ((ep.x - ax) * dx + (ep.y - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const fx = ax + t * dx, fy = ay + t * dy, d = (ep.x - fx) ** 2 + (ep.y - fy) ** 2;
+      if (d < best) { best = d; foot = { x: fx, y: fy }; fa = a; fb = b; }
+    }
+    if (foot) { const vi = addV(foot.x, foot.y); link(vi, fa); link(vi, fb); link(vi, ep.i); }
+  }
   const TH2 = 16 * 16;                                    // near-touch stitch (real intersections handled above)
   for (let a = 0; a < pathVerts.length; a++)
     for (let b = a + 1; b < pathVerts.length; b++) {
@@ -408,6 +428,11 @@ function draw() {
 }
 function drawDebugOverlay(routes) {
   const g = state.graph; if (!g) return;
+  if (routes.markers) {   // {x,y,r,c} diagnostic dots
+    ctx.save(); ctx.lineWidth = 2;
+    for (const mk of routes.markers) { const [x, y] = P2S(mk.x, mk.y); ctx.strokeStyle = mk.c; ctx.fillStyle = mk.c.replace(')', ',.25)').replace('rgb', 'rgba'); ctx.beginPath(); ctx.arc(x, y, mk.r || 7, 0, 7); ctx.stroke(); }
+    ctx.restore();
+  }
   if (routes.paths) {   // raw traced path polylines in green — compare against the cyan graph
     ctx.save(); ctx.strokeStyle = 'rgba(40,255,90,.9)'; ctx.lineWidth = 3;
     for (const p of (state.map.paths || [])) { if (p.type === 'river') continue; ctx.beginPath(); p.pts.forEach((pt, i) => { const [x, y] = P2S(pt[0], pt[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); }
@@ -462,7 +487,7 @@ function drawWater(night) {
   const T = state.anim || 0;
   if (state.waterAreas && state.waterAreas.length) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const a = 0.5 * (1 - 0.6 * night);
+    const a = 0.30 * (1 - 0.6 * night);                    // lighter overall
     for (const poly of state.waterAreas) {
       if (poly.length < 3) continue;
       ctx.save();
@@ -471,23 +496,37 @@ function drawWater(night) {
       poly.forEach((pt, i) => { const [x, y] = P2S(pt[0], pt[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); minx = Math.min(minx, x); miny = Math.min(miny, y); maxx = Math.max(maxx, x); maxy = Math.max(maxy, y); });
       ctx.closePath(); ctx.clip();
       const w = maxx - minx, h = maxy - miny;
-      // scrolling ripple bands, drifting downstream (downward)
-      const N = 8;
+      // scrolling ripple bands, drifting downstream (downward) — soft and faint
+      const N = 7;
       for (let i = 0; i < N; i++) {
         const yy = miny + (((i / N) + T * 0.05) % 1) * (h + 24) - 12;
-        const bh = 7 * view.s;
+        const bh = 5 * view.s;
         const g = ctx.createLinearGradient(0, yy - bh, 0, yy + bh);
-        g.addColorStop(0, 'rgba(196,238,244,0)'); g.addColorStop(0.5, `rgba(206,242,248,${a * 0.42})`); g.addColorStop(1, 'rgba(196,238,244,0)');
+        g.addColorStop(0, 'rgba(196,238,244,0)'); g.addColorStop(0.5, `rgba(206,242,248,${a * 0.26})`); g.addColorStop(1, 'rgba(196,238,244,0)');
         ctx.fillStyle = g; ctx.fillRect(minx - 4, yy - bh, w + 8, bh * 2);
       }
-      // drifting sparkle caustics
-      for (let k = 0; k < 14; k++) {
+      // drifting sparkle caustics — fewer, dimmer
+      for (let k = 0; k < 9; k++) {
         const hx = (k * 2654435761) >>> 0;
         const sx = minx + (hx % 1000) / 1000 * w;
         const sy = miny + (((hx >> 10) % 1000) / 1000 + T * 0.08) % 1 * h;
-        const rr = (1.2 + (hx % 3) * 0.6) * view.s;
-        ctx.fillStyle = `rgba(220,246,250,${a * 0.5})`;
+        const rr = (1.1 + (hx % 3) * 0.5) * view.s;
+        ctx.fillStyle = `rgba(220,246,250,${a * 0.32})`;
         ctx.beginPath(); ctx.ellipse(sx, sy, rr * 1.6, rr * 0.7, 0, 0, 7); ctx.fill();
+      }
+      // very little foam: a handful of tiny soft-white crests riding the ripple lines,
+      // drifting downstream and gently blinking in and out so it never reads as spray
+      const FOAM = 5;
+      for (let k = 0; k < FOAM; k++) {
+        const hx = ((k + 1) * 40503 * 2654435761) >>> 0;
+        const fx = minx + (hx % 997) / 997 * w;
+        const phase = ((hx >> 9) % 1000) / 1000;
+        const fy = miny + ((phase + T * 0.05) % 1) * h;                 // rides with the bands
+        const blink = Math.max(0, Math.sin((T * 0.5 + phase * 6.28)));  // fades in/out
+        if (blink < 0.15) continue;
+        const fr = (0.8 + (hx % 2) * 0.5) * view.s;
+        ctx.fillStyle = `rgba(248,253,255,${0.16 * blink * (1 - 0.7 * night)})`;
+        ctx.beginPath(); ctx.ellipse(fx, fy, fr * 1.5, fr * 0.6, 0, 0, 7); ctx.fill();
       }
       ctx.restore();
     }
