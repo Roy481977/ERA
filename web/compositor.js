@@ -403,19 +403,22 @@ function applyLightMap(n, f) {
   const lamp = (lx, ly, rad, c0, c1) => {
     if (!isFinite(lx) || !isFinite(ly) || !isFinite(rad) || rad <= 0) return;
     const rg = g.createRadialGradient(lx, ly, 0, lx, ly, rad);
-    rg.addColorStop(0, c0); rg.addColorStop(0.5, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    rg.addColorStop(0, c0); rg.addColorStop(0.62, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = rg; g.beginPath(); g.arc(lx, ly, rad, 0, 7); g.fill();
   };
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const lx = L.x * view.s, ly = L.y * view.s, sc = scaleAt(L.y) * view.s;
-    lamp(lx, ly, 46 * sc, `rgba(255,196,128,${n})`, `rgba(255,170,96,${0.45 * n})`);
+    lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.5 * n})`, `rgba(255,166,96,${0.2 * n})`);  // wide soft spill
+    lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.95 * n})`, `rgba(255,180,108,${0.4 * n})`); // brighter core
   }
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
     const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
     const lx = p.x * view.s, ly = (p.y - 5) * view.s, sc = scaleAt(p.y) * view.s;
-    lamp(lx, ly, (22 + Math.min(cnt, 5) * 5) * sc, `rgba(255,186,112,${n})`, `rgba(255,168,92,${0.4 * n})`);
+    const rc = (22 + Math.min(cnt, 5) * 5) * sc;
+    lamp(lx, ly, rc * 2.6, `rgba(255,178,108,${0.46 * n})`, `rgba(255,160,90,${0.18 * n})`); // wide halo
+    lamp(lx, ly, rc, `rgba(255,192,120,${0.9 * n})`, `rgba(255,170,100,${0.36 * n})`);       // core
   }
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
