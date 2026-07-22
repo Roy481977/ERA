@@ -50,6 +50,23 @@ async function boot() {
   const INDOOR_WORK = ['loc_bakery', 'loc_club_shop', 'loc_corner_grocer', 'loc_club_offices', 'loc_museum', 'loc_school'];
   state.indoor = new Set([...state.world.locations.filter(l => l.home).map(l => l.id), ...INDOOR_WORK]);
 
+  // streetlamps: drop a lamp every ~95px along the streets and lanes
+  state.lamps = [];
+  for (const p of (map.paths || [])) {
+    if (p.type !== 'street' && p.type !== 'lane') continue;
+    let acc = 0, next = 40;
+    for (let i = 1; i < p.pts.length; i++) {
+      const [ax, ay] = p.pts[i - 1], [bx, by] = p.pts[i];
+      const segLen = Math.hypot(bx - ax, by - ay);
+      while (acc + segLen >= next) {
+        const t = (next - acc) / segLen;
+        state.lamps.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
+        next += 95;
+      }
+      acc += segLen;
+    }
+  }
+
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
   wireControls();
@@ -88,6 +105,12 @@ function placeEntity(e) {
     const a = P[e.from], b = P[e.to], t = clamp(e.et || 0, 0, 1);
     const [jx, jy] = jitterPx(e.id, 2);
     return [lerp(a.x, b.x, t) + jx, lerp(a.y, b.y, t) + jy];
+  }
+  // stadium: spectators/gatherers stand in the STANDS, not on the pitch. Only
+  // the groundskeeper (tending the pitch) stays on the grass.
+  if (!e.moving && e.place === 'loc_stadium' && !/pitch|grounds|mow|groundskeep/i.test(e.doing || '')) {
+    const h = hashId(e.id);
+    return [1020 + (h % 300), 388 + ((h >> 4) % 5) * 7];  // rows in the terracing
   }
   return worldToPlate(e.x, e.y);
 }
@@ -133,14 +156,11 @@ function draw() {
   // backdrop
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
-  // night/day tint overlay
-  const tint = skyTint(f.hour, f.minute);
-  if (tint) {
-    ctx.fillStyle = tint;
-    ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
-  }
+  // night: genuinely darken the plate, then add light back at windows & lamps
+  const night = nightFactor(f.hour, f.minute);
+  if (night > 0) drawNightWash(night);
+  if (night > 0.04) { drawStreetlamps(night); drawWindowGlows(f, night); }
 
-  if (tint) drawWindowGlows(f);   // lit windows where people are home at night
   if (state.showPins) drawPins();
 
   // living layer: map every entity, y-sort, draw back-to-front
@@ -160,7 +180,11 @@ function draw() {
   // by the banks read as *behind* the front bushes (the 2.5D depth cue).
   if (state.occluder) {
     ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
-    if (tint) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = tint; ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s); ctx.restore(); }
+    if (night > 0) { // darken the occluder greenery to match the night
+      ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.globalAlpha = 1;
+      ctx.fillStyle = `rgba(10,14,30,${0.86 * night})`;
+      ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s); ctx.restore();
+    }
   }
 
   drawHUD(f);
@@ -183,24 +207,29 @@ function hashId(id) { let h = 2166136261; for (let i = 0; i < id.length; i++) { 
 const skinOf = id => SKINS[hashId(id) % SKINS.length];
 const hairOf = id => HAIRS[(hashId(id) >> 3) % HAIRS.length];
 
-// Warm window glow where residents are home/inside at night — the town keeps
-// living even when nobody's on the street.
-function drawWindowGlows(f) {
-  const night = clamp((f.hour >= 20 || f.hour < 6) ? 1 : (f.hour >= 17 ? (f.hour - 17) / 3 : 0), 0, 1);
-  if (night <= 0.05) return;
+// Warm window light where residents are home/inside at night — emissive
+// (additive), so the glow spills into the space around each building.
+function drawWindowGlows(f, night) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (const [pid, n] of Object.entries(f.occupancy || {})) {
     if (!n || !state.indoor.has(pid) || !state.map.places[pid]) continue;
     const p = state.map.places[pid];
     if (p.x < 0 || p.x > PLATE_W) continue;
-    const [x, y] = P2S(p.x, p.y);
+    const [x, y] = P2S(p.x, p.y - 6);
     const sc = scaleAt(p.y) * view.s;
-    const r = (7 + Math.min(n, 5) * 2) * sc;
-    const g = ctx.createRadialGradient(x, y - 4 * sc, 0, x, y - 4 * sc, r);
-    g.addColorStop(0, `rgba(255,208,120,${0.55 * night})`);
-    g.addColorStop(1, 'rgba(255,208,120,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y - 4 * sc, r, 0, 7); ctx.fill();
+    const r = (10 + Math.min(n, 5) * 3.5) * sc;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,206,128,${0.75 * night})`);
+    g.addColorStop(0.5, `rgba(255,190,110,${0.28 * night})`);
+    g.addColorStop(1, 'rgba(255,190,110,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    // a couple of bright window squares at the core
+    ctx.fillStyle = `rgba(255,224,160,${0.95 * night})`;
+    for (let i = 0; i < Math.min(n, 3); i++) {
+      ctx.fillRect(x - 3 * sc + i * 3 * sc, y - 1 * sc, 1.6 * sc, 1.6 * sc);
+    }
   }
+  ctx.restore();
 }
 
 function drawFigure(fig, f) {
@@ -305,10 +334,23 @@ function drawFigure(fig, f) {
 }
 
 function drawAnimal(fig, f, x, y, sc) {
-  const { e, meta } = fig; const col = meta.color || '#b98a5a'; const k = sc; const kind = meta.kind;
+  const { e, meta } = fig; const col = meta.color || '#b98a5a'; const k = sc * 1.25; const kind = meta.kind;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.beginPath(); ctx.ellipse(x, y, 5 * k, 1.8 * k, 0, 0, 7); ctx.fill();
 
+  if (kind === 'cat') {
+    ctx.strokeStyle = shade(col, 0.75); ctx.lineWidth = 1.1 * k;
+    for (const dx of [-2, -0.5, 0.5, 2]) { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 2.4 * k); ctx.lineTo(x + dx * k, y); ctx.stroke(); }
+    ctx.fillStyle = col; roundRect(x - 3.2 * k, y - 5 * k, 6.4 * k, 2.9 * k, 1.5 * k); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 3.4 * k, y - 5.4 * k, 1.7 * k, 0, 7); ctx.fill();
+    // ears
+    ctx.beginPath(); ctx.moveTo(x + 2.7 * k, y - 6.6 * k); ctx.lineTo(x + 3.1 * k, y - 7.6 * k); ctx.lineTo(x + 3.7 * k, y - 6.7 * k); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 3.6 * k, y - 6.7 * k); ctx.lineTo(x + 4.1 * k, y - 7.6 * k); ctx.lineTo(x + 4.5 * k, y - 6.5 * k); ctx.fill();
+    // upright curling tail
+    ctx.strokeStyle = col; ctx.lineWidth = 1.3 * k;
+    ctx.beginPath(); ctx.moveTo(x - 3.2 * k, y - 4 * k); ctx.quadraticCurveTo(x - 5.6 * k, y - 5 * k, x - 4.8 * k, y - 7.4 * k); ctx.stroke();
+    return;
+  }
   if (kind === 'dog' || kind === 'fox') {
     ctx.strokeStyle = shade(col, 0.7); ctx.lineWidth = 1.3 * k;
     for (const dx of [-2.5, -1, 1, 2.5]) { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 3 * k); ctx.lineTo(x + dx * k, y); ctx.stroke(); }
@@ -344,13 +386,46 @@ function roundRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
-// day/night wash. Returns a fillStyle or null (full day).
-function skyTint(hour, minute) {
+// 0 = full day, 1 = deep night, ramped through dawn/dusk.
+function nightFactor(hour, minute) {
   const h = hour + minute / 60;
-  if (h >= 7 && h < 17) return null;                       // day
-  if (h >= 5 && h < 7) return `rgba(255,150,90,${lerp(0.28, 0, (h - 5) / 2)})`;   // dawn
-  if (h >= 17 && h < 20) return `rgba(40,50,110,${lerp(0, 0.30, (h - 17) / 3)})`; // dusk
-  return 'rgba(18,24,64,.42)';                             // night
+  if (h >= 7 && h < 17) return 0;
+  if (h >= 5 && h < 7) return clamp(1 - (h - 5) / 2, 0, 1);     // dawn fade out
+  if (h >= 17 && h < 20.5) return clamp((h - 17) / 3.5, 0, 1);  // dusk fade in
+  return 1;                                                     // night
+}
+
+// Actually darken the plate toward deep blue (multiply), so night reads dark —
+// not a flat grey veil. Light gets added back by lamps and windows.
+function drawNightWash(n) {
+  const R = PLATE_W * view.s, x0 = view.ox, y0 = view.oy, H = PLATE_H * view.s;
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = `rgb(${Math.round(lerp(255, 26, n))},${Math.round(lerp(255, 34, n))},${Math.round(lerp(255, 66, n))})`;
+  ctx.fillRect(x0, y0, R, H);
+  ctx.restore();
+  // faint cool ambient on top for depth
+  ctx.fillStyle = `rgba(20,28,60,${0.12 * n})`;
+  ctx.fillRect(x0, y0, R, H);
+}
+
+// Warm streetlamp pools along the lanes at night — additive so they emit light.
+function drawStreetlamps(n) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const L of state.lamps) {
+    if (L.x < 0 || L.x > PLATE_W) continue;
+    const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
+    const r = 22 * sc;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,214,150,${0.5 * n})`);
+    g.addColorStop(0.4, `rgba(255,196,120,${0.22 * n})`);
+    g.addColorStop(1, 'rgba(255,196,120,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    // bright lamp head
+    ctx.fillStyle = `rgba(255,236,190,${0.9 * n})`;
+    ctx.beginPath(); ctx.arc(x, y - 3 * sc, 1.3 * sc, 0, 7); ctx.fill();
+  }
+  ctx.restore();
 }
 
 function shade(hex, f) {
