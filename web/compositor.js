@@ -844,14 +844,15 @@ function nightFactor(hour, minute) {
   return 1;                                                     // night
 }
 
-// Street/window lights on their own switch: ON at 19:20, OFF at 5:20, with a
-// short ramp so they fade rather than snap. Independent of sky darkness.
+// Street/window lights on their own switch: ON at 19:20, fully OUT by ~5:05, with a
+// short ramp so they fade rather than snap. The morning fade is pulled earlier (and
+// eased) so nothing lingers lit once it reads as morning. Independent of sky darkness.
 function lampsOn(hour, minute) {
   const h = hour + minute / 60;
   if (h >= 19 + 20 / 60 && h < 19 + 40 / 60) return (h - (19 + 20 / 60)) / (20 / 60); // ramp up 19:20→19:40
-  if (h >= 19 + 40 / 60 || h < 5) return 1;                                            // full on overnight
-  if (h >= 5 && h < 5 + 20 / 60) return 1 - (h - 5) / (20 / 60);                        // ramp down 5:00→5:20
-  return 0;                                                                             // daytime, off
+  if (h >= 19 + 40 / 60 || h < 4 + 40 / 60) return 1;                                  // full on overnight until 4:40
+  if (h >= 4 + 40 / 60 && h < 5 + 5 / 60) { const u = (h - (4 + 40 / 60)) / (25 / 60); return (1 - u) * (1 - u); } // ease out 4:40→5:05
+  return 0;                                                                             // day, off
 }
 
 // Stadium floodlights: on for one evening in the loop (a matchday preview) — day 1,
