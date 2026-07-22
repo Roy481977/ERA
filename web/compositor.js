@@ -117,6 +117,23 @@ async function boot() {
     : [{ x: 1012, y: 430 }, { x: 1300, y: 452 }, { x: 1055, y: 512 }, { x: 1312, y: 504 }];
   state.floodAim = { x: 1160, y: 470 };   // pitch centre
 
+  // Game-night crowd: seats scattered across the visible stands. On a match evening
+  // the terracing fills with anonymous supporters (green & white) — a decorative crowd,
+  // not sim residents. Seats are ordered by distance from the north gate so the stands
+  // populate from the entrance outward.
+  const gate = { x: 1070, y: 408 };
+  const seats = [];
+  for (let row = 0; row < 6; row++) {                 // main stand behind the pitch (tiered)
+    const y = 376 + row * 6, x0 = 1046 + row * 4, x1 = 1298 - row * 2;
+    for (let x = x0; x <= x1; x += 9) seats.push({ x, y });
+  }
+  for (let row = 0; row < 4; row++) {                 // near side stand (left of the pitch)
+    const x = 1036 - row * 6, y0 = 388 + row * 3, y1 = 424 - row * 2;
+    for (let y = y0; y <= y1; y += 8) seats.push({ x, y });
+  }
+  seats.sort((a, b) => ((a.x - gate.x) ** 2 + (a.y - gate.y) ** 2) - ((b.x - gate.x) ** 2 + (b.y - gate.y) ** 2));
+  state.stadiumSeats = seats;
+
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
   wireControls();
@@ -400,6 +417,7 @@ function draw() {
   drawWater(night);
   drawLampPosts(lit);
   drawFloodPosts(flood);
+  drawStadiumCrowd(f);   // game-night supporters filling the stands
 
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
@@ -916,6 +934,35 @@ function drawFloodBeams(on) {
     ctx.beginPath(); ctx.moveTo(x, hy); ctx.lineTo(ax + nx * spread, ay + ny * spread); ctx.lineTo(ax - nx * spread, ay - ny * spread); ctx.closePath(); ctx.fill();
     ctx.fillStyle = `rgba(255,255,250,${0.9 * on})`;                              // bright head flare
     ctx.beginPath(); ctx.arc(x, hy, 1.8 * sc, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Game-night crowd fill: on the match evening (the floodlight night) the stands fill
+// from ~18:25, are full through the game, and clear after. Returns 0..1 (how full).
+function gameCrowdFill(f) {
+  if (f.day !== 1) return 0;                          // the floodlight/match night
+  const h = f.hour + f.minute / 60;
+  const arrive = 18 + 25 / 60, full = 19 + 40 / 60, gameEnd = 21, clear = 21 + 40 / 60;
+  if (h < arrive || h >= clear) return 0;
+  if (h < full) return (h - arrive) / (full - arrive);   // filling from the north gate
+  if (h < gameEnd) return 1;                             // packed for the match
+  return 1 - (h - gameEnd) / (clear - gameEnd);          // drifting out after
+}
+// Draw the anonymous supporters in the stands — green & white, seated, no faces to read.
+// The number varies per match (seeded 40–180); they fill nearest the north gate first.
+function drawStadiumCrowd(f) {
+  const fill = gameCrowdFill(f); if (fill <= 0 || !state.stadiumSeats) return;
+  const target = 40 + (hashId('gamecrowd|' + f.day) % 141);   // 40..180 this match
+  const n = Math.min(Math.floor(target * fill), state.stadiumSeats.length);
+  ctx.save();
+  for (let i = 0; i < n; i++) {
+    const s = state.stadiumSeats[i], [x, y] = P2S(s.x, s.y), sc = scaleAt(s.y) * view.s;
+    const hgt = hashId('seat|' + i), green = (hgt % 2) === 0;
+    ctx.fillStyle = green ? 'rgba(46,132,66,0.96)' : 'rgba(236,240,236,0.96)';   // club green / white
+    ctx.beginPath(); ctx.ellipse(x, y, 1.4 * sc, 1.9 * sc, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(226,196,166,0.9)';                                     // head
+    ctx.beginPath(); ctx.arc(x, y - 1.9 * sc, 0.85 * sc, 0, 7); ctx.fill();
   }
   ctx.restore();
 }
