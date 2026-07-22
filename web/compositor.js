@@ -44,6 +44,12 @@ async function boot() {
   state.roster = {};
   for (const e of state.world.entities) state.roster[e.id] = e;
 
+  // indoor places: homes + workplaces that are inside. A settled resident here is
+  // indoors, not standing on the roof — so we don't draw them (their window lights
+  // up at night instead). Café/pub/square/market/riverside/ground stay visible.
+  const INDOOR_WORK = ['loc_bakery', 'loc_club_shop', 'loc_corner_grocer', 'loc_club_offices', 'loc_museum', 'loc_school'];
+  state.indoor = new Set([...state.world.locations.filter(l => l.home).map(l => l.id), ...INDOOR_WORK]);
+
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
   wireControls();
@@ -134,12 +140,15 @@ function draw() {
     ctx.fillRect(view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
   }
 
+  if (tint) drawWindowGlows(f);   // lit windows where people are home at night
   if (state.showPins) drawPins();
 
   // living layer: map every entity, y-sort, draw back-to-front
   const figs = [];
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
+    // indoors (settled at home / inside a shop): don't draw them on the roof
+    if (meta.kind === 'resident' && !e.moving && state.indoor.has(e.place)) continue;
     const [px, py] = placeEntity(e);
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
     figs.push({ e, meta, px, py });
@@ -174,9 +183,29 @@ function hashId(id) { let h = 2166136261; for (let i = 0; i < id.length; i++) { 
 const skinOf = id => SKINS[hashId(id) % SKINS.length];
 const hairOf = id => HAIRS[(hashId(id) >> 3) % HAIRS.length];
 
+// Warm window glow where residents are home/inside at night — the town keeps
+// living even when nobody's on the street.
+function drawWindowGlows(f) {
+  const night = clamp((f.hour >= 20 || f.hour < 6) ? 1 : (f.hour >= 17 ? (f.hour - 17) / 3 : 0), 0, 1);
+  if (night <= 0.05) return;
+  for (const [pid, n] of Object.entries(f.occupancy || {})) {
+    if (!n || !state.indoor.has(pid) || !state.map.places[pid]) continue;
+    const p = state.map.places[pid];
+    if (p.x < 0 || p.x > PLATE_W) continue;
+    const [x, y] = P2S(p.x, p.y);
+    const sc = scaleAt(p.y) * view.s;
+    const r = (7 + Math.min(n, 5) * 2) * sc;
+    const g = ctx.createRadialGradient(x, y - 4 * sc, 0, x, y - 4 * sc, r);
+    g.addColorStop(0, `rgba(255,208,120,${0.55 * night})`);
+    g.addColorStop(1, 'rgba(255,208,120,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y - 4 * sc, r, 0, 7); ctx.fill();
+  }
+}
+
 function drawFigure(fig, f) {
   const { e, meta } = fig;
-  const [x, y] = P2S(fig.px, fig.py);
+  let [x, y] = P2S(fig.px, fig.py);
   const sc = scaleAt(fig.py) * view.s;
   if (meta.kind !== 'resident') { drawAnimal(fig, f, x, y, sc); return; }
 
@@ -200,8 +229,12 @@ function drawFigure(fig, f) {
 
   const legH = (sit ? 2.2 : 5) * U, torsoH = (sit ? 6 : 8) * U, torsoW = 6 * U;
   const headR = 3.2 * U * (e.child ? 1.14 : 1);
-  const bob = moving ? Math.abs(wph) * 0.6 * U : 0;
-  const hipY = y - legH + bob, shoulderY = hipY - torsoH, headCY = shoulderY - headR * 0.9;
+  // idle life: a slow breathing bob + faint sway when standing about
+  const idle = moving ? 0 : Math.sin(state.t * 1.5 + (hs % 628) / 100);
+  const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * 0.5 * U;
+  const bob = moving ? Math.abs(wph) * 0.6 * U : idle * 0.25 * U;
+  const hipY = y - legH + bob, shoulderY = hipY - torsoH, headCY = shoulderY - headR * 0.9 + idle * 0.15 * U;
+  x += sway;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 
   // legs
