@@ -464,7 +464,7 @@ function draw() {
   }
   figs.sort((a, b) => a.py - b.py);
   // remember screen positions for click-to-inspect
-  state.lastFigs = figs.map(fig => { const [sx, sy] = P2S(fig.px, fig.py); return { id: fig.e.id, sx, sy, sc: scaleAt(fig.py) * view.s }; });
+  state.lastFigs = figs.map(fig => { const [sx, sy] = P2S(fig.px, fig.py); return { id: fig.e.id, sx, sy, px: fig.px, py: fig.py, walking: fig.walking, sc: scaleAt(fig.py) * view.s }; });
   // selection ring under the chosen resident
   if (state.selected) {
     const lf = state.lastFigs.find(l => l.id === state.selected);
