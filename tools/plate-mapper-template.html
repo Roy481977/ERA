@@ -41,6 +41,7 @@
       <button data-m="place">📍 Place</button>
       <button data-m="obscure">▨ Obscure</button>
       <button data-m="water">💧 Water</button>
+      <button data-m="stands">🟩 Stands</button>
       <button data-m="lamp">💡 Lamp</button>
       <button data-m="select">Select</button>
     </div>
@@ -76,7 +77,7 @@
     <div class="row"><button id="imp">Import</button><button id="undo">↶ Undo</button><button id="clr" class="warn">Clear</button></div>
 
     <h2>How</h2>
-    <div class="hint"><b>Path:</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point.<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Obscure:</b> click around an area the camera can't see (behind a house); <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close it. Anyone standing there is hidden.<br><b>Water:</b> click around the river's edge to outline the water surface; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It ripples in the game.<br><b>Lamp:</b> click to drop a lamp post (drag to place). A lamp inside an obscured zone hides its post but still casts light.<br><b>Select:</b> drag points, pins or lamps; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
+    <div class="hint"><b>Path:</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point.<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Obscure:</b> click around an area the camera can't see (behind a house); <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close it. Anyone standing there is hidden.<br><b>Water:</b> click around the river's edge to outline the water surface; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It ripples in the game.<br><b>Stands:</b> outline the terracing where the crowd sits; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. The game-night crowd fills inside it.<br><b>Lamp:</b> click to drop a lamp post (drag to place). A lamp inside an obscured zone hides its post but still casts light.<br><b>Select:</b> drag points, pins or lamps; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
   </div>
   <canvas id="cnv"></canvas>
 </div>
@@ -90,18 +91,19 @@ const KC={street:'#e8b93a',lane:'#e8843a',path:'#46c06e',river:'#3a9fe8'};
 const KW={street:9,lane:7,path:6,river:12};
 const OBSCOL='rgba(150,80,190,0.95)', OBSFILL='rgba(140,70,180,0.22)';
 const WATCOL='rgba(58,159,232,0.95)', WATFILL='rgba(58,159,232,0.22)';
+const STANDCOL='rgba(70,190,110,0.95)', STANDFILL='rgba(70,190,110,0.22)';
 const cnv=document.getElementById('cnv'),ctx=cnv.getContext('2d');
 const img=new Image(); let scale=1,ox=0,oy=0,ready=false;
 let mode='path',kind='street';
-let paths=[],places={},obscured=[],water=[],lamps=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
+let paths=[],places={},obscured=[],water=[],stands=[],lamps=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
 const undoStack=[];
 function W2S(x,y){return[x*scale+ox,y*scale+oy]} function S2W(x,y){return[(x-ox)/scale,(y-oy)/scale]}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,1500)}
-function pushUndo(){undoStack.push(JSON.stringify({paths,places,obscured,water,lamps}));if(undoStack.length>60)undoStack.shift()}
+function pushUndo(){undoStack.push(JSON.stringify({paths,places,obscured,water,stands,lamps}));if(undoStack.length>60)undoStack.shift()}
 function resize(){cnv.width=cnv.clientWidth*devicePixelRatio;cnv.height=cnv.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);if(ready)draw()}
 window.addEventListener('resize',resize);
 img.onload=()=>{ready=true;const w=cnv.clientWidth,h=cnv.clientHeight;scale=Math.min(w/img.width,h/img.height)*0.98;ox=(w-img.width*scale)/2;oy=(h-img.height*scale)/2;
-  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=INIT.places||{};obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
+  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=INIT.places||{};obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
   draw();refreshList();refreshRouteSels()};
 
 // FROM / TO route dropdowns for tagging paths as explicit A->B ways
@@ -134,12 +136,18 @@ function draw(){
     ctx.fillStyle=WATFILL;ctx.fill();
     ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=WATCOL;ctx.stroke();ctx.setLineDash([]);
     if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  // stands (green) — the terracing the game-night crowd fills
+  for(const z of stands){const on=sel&&sel.k==='stand'&&sel.o===z;
+    ctx.beginPath();z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
+    ctx.fillStyle=STANDFILL;ctx.fill();
+    ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=STANDCOL;ctx.stroke();ctx.setLineDash([]);
+    if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
   // paths
   for(const p of paths){const on=sel&&sel.k==='path'&&sel.o===p;const tagged=p.from||p.to;ctx.strokeStyle=KC[p.type];ctx.lineWidth=Math.max(2.5,KW[p.type]*scale*0.5);ctx.lineJoin='round';ctx.lineCap='round';ctx.globalAlpha=on?1:(tagged?.95:.62);ctx.beginPath();p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.globalAlpha=1;
     if(tagged){const mid=p.pts[Math.floor(p.pts.length/2)];const[lx,ly]=W2S(...mid);const nm=id=>(LOCS.find(l=>l.id===id)||{}).name||'?';const lab=nm(p.from)+' → '+nm(p.to);ctx.font='11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.fillStyle='#ffe08a';ctx.strokeText(lab,lx+6,ly-4);ctx.fillText(lab,lx+6,ly-4)}
     if(on)p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
   // in-progress drawing
-  if(drawing){const poly=drawing.type==='obscure'||drawing.type==='water';const pc=drawing.type==='water'?WATCOL:OBSCOL;ctx.strokeStyle=poly?pc:KC[drawing.type];ctx.lineWidth=Math.max(2.5,(poly?7:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
+  if(drawing){const poly=drawing.type==='obscure'||drawing.type==='water'||drawing.type==='stands';const pc=drawing.type==='water'?WATCOL:drawing.type==='stands'?STANDCOL:OBSCOL;ctx.strokeStyle=poly?pc:KC[drawing.type];ctx.lineWidth=Math.max(2.5,(poly?7:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
   // place pins
   ctx.font='11px sans-serif';
   for(const [id,p] of Object.entries(places)){const[x,y]=W2S(p.x,p.y);const on=sel&&sel.k==='place'&&sel.id===id;
@@ -157,12 +165,14 @@ function draw(){
 function pickPath(mx,my){for(const p of paths)for(let i=0;i<p.pts.length;i++){const[x,y]=W2S(...p.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'path',o:p,pi:i}}return null}
 function pickObs(mx,my){for(const z of obscured)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'obs',o:z,pi:i}}return null}
 function pickWat(mx,my){for(const z of water)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'wat',o:z,pi:i}}return null}
+function pickStand(mx,my){for(const z of stands)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'stand',o:z,pi:i}}return null}
 function pickLamp(mx,my){for(const L of lamps){const[x,y]=W2S(L.x,L.y);if(Math.hypot(mx-x,my-y)<9||Math.hypot(mx-x,my-(y-(L.small?9:13)))<8)return{k:'lamp',o:L}}return null}
 function pickPlace(mx,my){for(const[id,p]of Object.entries(places)){const[x,y]=W2S(p.x,p.y);if(Math.hypot(mx-x,my-y)<9)return{k:'place',id}}return null}
 
 function finishDrawing(){if(!drawing)return;
   if(drawing.type==='obscure'){if(drawing.pts.length>=3)obscured.push({pts:drawing.pts})}
   else if(drawing.type==='water'){if(drawing.pts.length>=3)water.push({pts:drawing.pts})}
+  else if(drawing.type==='stands'){if(drawing.pts.length>=3)stands.push({pts:drawing.pts})}
   else{if(drawing.pts.length>=2){drawing.from=fromSel.value;drawing.to=toSel.value;paths.push(drawing);const nm=id=>(LOCS.find(l=>l.id===id)||{}).name||'any';if(drawing.from||drawing.to)toast('path '+nm(drawing.from)+' → '+nm(drawing.to))}}
   drawing=null;draw()}
 
@@ -172,14 +182,15 @@ cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W
   if(mode==='path'){if(!drawing){pushUndo();drawing={id:'p'+(pid++),type:kind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='obscure'){if(!drawing){pushUndo();drawing={type:'obscure',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='water'){if(!drawing){pushUndo();drawing={type:'water',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='stands'){if(!drawing){pushUndo();drawing={type:'stands',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='lamp'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
-  const hp=pickPlace(mx,my)||pickPath(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickLamp(mx,my);
+  const hp=pickPlace(mx,my)||pickPath(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
   if(hp){sel=hp;dragging=hp;if(hp.k==='path'){fromSel.value=hp.o.from||'';toSel.value=hp.o.to||''}draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
 });
 cnv.addEventListener('mousemove',e=>{
   if(panning){ox=panning[2]+(e.clientX-panning[0]);oy=panning[3]+(e.clientY-panning[1]);draw();return}
   if(!dragging)return;const[wx,wy]=S2W(e.offsetX,e.offsetY).map(Math.round);
-  if((dragging.k==='path'||dragging.k==='obs'||dragging.k==='wat')&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
+  if((dragging.k==='path'||dragging.k==='obs'||dragging.k==='wat'||dragging.k==='stand')&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
   else if(dragging.k==='lamp'){dragging.o.x=wx;dragging.o.y=wy}
   else if(dragging.k==='place')places[dragging.id]={x:wx,y:wy};
   draw();
@@ -192,22 +203,23 @@ window.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.a
   else if(e.key==='Escape'){drawing=null;sel=null;draw()}
   else if(e.key==='Backspace'){e.preventDefault();
     if(drawing){drawing.pts.pop();if(!drawing.pts.length)drawing=null;draw()}
-    else if(sel&&(sel.k==='path'||sel.k==='obs'||sel.k==='wat')&&sel.pi!=null&&sel.o.pts.length>(sel.k==='path'?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
+    else if(sel&&(sel.k==='path'||sel.k==='obs'||sel.k==='wat'||sel.k==='stand')&&sel.pi!=null&&sel.o.pts.length>(sel.k==='path'?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
     else if(sel&&sel.k==='path'){pushUndo();paths=paths.filter(p=>p!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='obs'){pushUndo();obscured=obscured.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='wat'){pushUndo();water=water.filter(z=>z!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='stand'){pushUndo();stands=stands.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='lamp'){pushUndo();lamps=lamps.filter(l=>l!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='place'){pushUndo();delete places[sel.id];sel=null;refreshList();draw()}}
 });
 function setMode(m){mode=m;document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));cnv.style.cursor=m==='select'?'default':'crosshair';drawing=null;draw()}
 document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 document.querySelectorAll('#kinds button').forEach(b=>b.onclick=()=>{kind=b.dataset.k;document.querySelectorAll('#kinds button').forEach(x=>x.classList.toggle('on',x===b))});
-const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' px',paths:paths.map(p=>Object.assign({id:p.id,type:p.type},p.from?{from:p.from}:{},p.to?{to:p.to}:{},{pts:p.pts})),places,obscured:obscured.map(z=>({pts:z.pts})),water:water.map(z=>({pts:z.pts})),lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
+const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' px',paths:paths.map(p=>Object.assign({id:p.id,type:p.type},p.from?{from:p.from}:{},p.to?{to:p.to}:{},{pts:p.pts})),places,obscured:obscured.map(z=>({pts:z.pts})),water:water.map(z=>({pts:z.pts})),stands:stands.map(z=>({pts:z.pts})),lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
 document.getElementById('exCopy').onclick=async()=>{document.getElementById('io').value=outJSON();try{await navigator.clipboard.writeText(outJSON());toast('copied — paste to Claude')}catch(_){toast('JSON in the box — copy it')}};
 document.getElementById('exDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([outJSON()],{type:'application/json'}));a.download='era-plate-map.json';a.click();toast('downloaded')};
-document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=j.places||{};obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
-document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;places=s.places;obscured=s.obscured||[];water=s.water||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
-document.getElementById('clr').onclick=()=>{if(confirm('Clear paths, pins, obscured zones, water AND lamps?')){pushUndo();paths=[];places={};obscured=[];water=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
+document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=j.places||{};obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
+document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;places=s.places;obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
+document.getElementById('clr').onclick=()=>{if(confirm('Clear paths, pins, obscured zones, water, stands AND lamps?')){pushUndo();paths=[];places={};obscured=[];water=[];stands=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
 resize();
 </script>
 </body>
