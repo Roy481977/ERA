@@ -807,26 +807,10 @@ function obscured(px, py) {
 // across a ~20px band around the edge. A resident stays fully visible on the open
 // street, dissolves smoothly as it steps behind a building, and fades back in on the
 // far side — natural depth, no flicker. 1 = fully visible, 0 = hidden.
-const OCC_FADE = 22;
-// distance from a point to the nearest traced path (the walkable ways)
-function distToPath(px, py) {
-  let best = Infinity;
-  for (const p of (state.map.paths || [])) {
-    if (p.type === 'river') continue;
-    const pts = p.pts;
-    for (let i = 1; i < pts.length; i++) {
-      const ax = pts[i - 1][0], ay = pts[i - 1][1], bx = pts[i][0], by = pts[i][1], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
-      let t = ((px - ax) * dx + (py - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
-      const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-      if (d < best) { best = d; if (best < 6) return best; }
-    }
-  }
-  return best;
-}
+const OCC_FADE = 12;
 function occlusionAlpha(px, py) {
   const zs = state.obscured;
   if (!zs || !zs.length) return 1;
-  if (distToPath(px, py) <= 15) return 1;   // on a walkable way — always visible, never occluded
   let inside = false, mind = Infinity;
   for (const poly of zs) {
     if (pointInPoly(px, py, poly)) inside = true;
