@@ -401,8 +401,9 @@ function draw() {
       }
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
-    if (obscured(px, py)) continue; // nothing is ever drawn on an occluded area — walkers vanish behind buildings and reappear on open ground (Roy tunes the zones)
-    figs.push({ e, meta, px, py, walking, hd });
+    const alpha = occlusionAlpha(px, py);   // soft fade behind buildings instead of a hard blink
+    if (alpha <= 0.02) continue;            // fully behind a building — skip
+    figs.push({ e, meta, px, py, walking, hd, alpha });
   }
   figs.sort((a, b) => a.py - b.py);
   // remember screen positions for click-to-inspect
@@ -412,7 +413,7 @@ function draw() {
     const lf = state.lastFigs.find(l => l.id === state.selected);
     if (lf) { ctx.strokeStyle = 'rgba(255,215,90,.95)'; ctx.lineWidth = Math.max(1.5, 1.6 * lf.sc); ctx.beginPath(); ctx.ellipse(lf.sx, lf.sy, 8 * lf.sc, 3 * lf.sc, 0, 0, 7); ctx.stroke(); }
   }
-  for (const fig of figs) drawFigure(fig, f);
+  for (const fig of figs) { ctx.globalAlpha = fig.alpha != null ? fig.alpha : 1; drawFigure(fig, f); } ctx.globalAlpha = 1;
 
   // foreground occluder: front greenery over the living layer (2.5D depth).
   if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
@@ -800,6 +801,45 @@ function obscured(px, py) {
   if (!zs || !zs.length) return false;
   for (const poly of zs) if (pointInPoly(px, py, poly)) return true;
   return false;
+}
+// Soft occlusion: instead of a hard on/off at the obscured-zone edge (which makes
+// walkers blink and reads as jumpy, fragmented motion), return an opacity that fades
+// across a ~20px band around the edge. A resident stays fully visible on the open
+// street, dissolves smoothly as it steps behind a building, and fades back in on the
+// far side — natural depth, no flicker. 1 = fully visible, 0 = hidden.
+const OCC_FADE = 22;
+// distance from a point to the nearest traced path (the walkable ways)
+function distToPath(px, py) {
+  let best = Infinity;
+  for (const p of (state.map.paths || [])) {
+    if (p.type === 'river') continue;
+    const pts = p.pts;
+    for (let i = 1; i < pts.length; i++) {
+      const ax = pts[i - 1][0], ay = pts[i - 1][1], bx = pts[i][0], by = pts[i][1], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+      let t = ((px - ax) * dx + (py - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      if (d < best) { best = d; if (best < 6) return best; }
+    }
+  }
+  return best;
+}
+function occlusionAlpha(px, py) {
+  const zs = state.obscured;
+  if (!zs || !zs.length) return 1;
+  if (distToPath(px, py) <= 15) return 1;   // on a walkable way — always visible, never occluded
+  let inside = false, mind = Infinity;
+  for (const poly of zs) {
+    if (pointInPoly(px, py, poly)) inside = true;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const ax = poly[j][0], ay = poly[j][1], bx = poly[i][0], by = poly[i][1];
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+      let t = ((px - ax) * dx + (py - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      if (d < mind) mind = d;
+    }
+  }
+  const signed = inside ? mind : -mind;                 // + inside a building, - out on the open
+  return clamp(0.5 - signed / OCC_FADE, 0, 1);
 }
 function pointInPoly(x, y, poly) {
   let inside = false;
