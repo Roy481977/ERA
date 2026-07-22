@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERA — Plate Mapper</title>
+<style>
+  :root{--panel:#f7f3ea;--line:#d9d2c2;--ink:#28331f;--accent:#2f7d46}
+  html,body{margin:0;height:100%;overflow:hidden;font:13px/1.4 -apple-system,system-ui,sans-serif;color:var(--ink);background:#20241c;user-select:none}
+  #wrap{display:flex;height:100%}
+  #side{width:262px;min-width:262px;background:var(--panel);border-right:1px solid var(--line);padding:12px 13px;overflow-y:auto}
+  #cnv{flex:1;display:block;cursor:crosshair;background:#20241c}
+  h1{font-size:15px;margin:0 0 2px}.sub{color:#7a7461;font-size:11px;margin-bottom:10px}
+  h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#8a8371;margin:13px 0 5px}
+  .row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px}
+  button{font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;cursor:pointer;color:var(--ink)}
+  button:hover{background:#eee9dc}
+  button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.warn{color:#a33}
+  .chip{display:flex;gap:5px;flex-wrap:wrap}
+  .chip button{padding:3px 8px;font-size:11px}
+  .chip button.on{background:var(--k)}
+  select{font:inherit;font-size:12px;width:97%;padding:4px;border:1px solid var(--line);border-radius:7px}
+  textarea{width:95%;height:60px;font:10px monospace;border:1px solid var(--line);border-radius:8px}
+  .hint{color:#8a8371;font-size:11px;line-height:1.45}
+  kbd{background:#eee;border:1px solid #ccc;border-radius:4px;padding:0 4px;font-size:11px}
+  #plist{font-size:11px;max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:5px;background:#fff}
+  #plist div{padding:1px 0} #plist .done{color:var(--accent)} #plist .todo{color:#b06}
+  #toast{position:fixed;bottom:14px;left:280px;background:#28331f;color:#fff;padding:6px 13px;border-radius:9px;opacity:0;transition:.3s;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <h1>ERA · Plate Mapper</h1>
+    <div class="sub">Map the world onto <b>plate-v1</b>: trace the walk-paths, pin the 23 places, and mark passages the camera can't see past. Exports in plate pixels (1376×768).</div>
+
+    <h2>Mode</h2>
+    <div class="row" id="modes">
+      <button data-m="path" class="on">✏ Path</button>
+      <button data-m="place">📍 Place</button>
+      <button data-m="obscure">▨ Obscure</button>
+      <button data-m="lamp">💡 Lamp</button>
+      <button data-m="select">Select</button>
+    </div>
+
+    <h2>Path kind</h2>
+    <div class="chip" id="kinds">
+      <button data-k="street" class="on" style="--k:#e8b93a">street</button>
+      <button data-k="lane" style="--k:#e8843a">lane</button>
+      <button data-k="path" style="--k:#46c06e">footpath</button>
+      <button data-k="river" style="--k:#3a9fe8">river</button>
+    </div>
+
+    <h2>Place to drop next</h2>
+    <select id="placeSel"></select>
+    <div class="hint">In 📍 Place mode, click the plate where this building sits. It auto-advances to the next unplaced one.</div>
+
+    <h2>Places (<span id="pdone">0</span>/23)</h2>
+    <div id="plist"></div>
+
+    <h2>Paths: <span id="cnt">0</span> · Obscured: <span id="ocnt">0</span> · Lamps: <span id="lcnt">0</span></h2>
+    <div class="row">
+      <button id="exCopy">Copy JSON</button>
+      <button id="exDl">⬇ Download</button>
+    </div>
+    <textarea id="io" placeholder="…paste a saved JSON here and Import"></textarea>
+    <div class="row"><button id="imp">Import</button><button id="undo">↶ Undo</button><button id="clr" class="warn">Clear</button></div>
+
+    <h2>How</h2>
+    <div class="hint"><b>Path:</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point.<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Obscure:</b> click around an area the camera can't see (behind a house); <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close it. Anyone standing there is hidden.<br><b>Lamp:</b> click to drop a lamp post (drag to place). A lamp inside an obscured zone hides its post but still casts light.<br><b>Select:</b> drag points, pins or lamps; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
+  </div>
+  <canvas id="cnv"></canvas>
+</div>
+<div id="toast"></div>
+<script>
+'use strict';
+const IMG='data:image/jpeg;base64,__IMG__';
+const LOCS=__LOCS__;
+const INIT=__INIT__;
+const KC={street:'#e8b93a',lane:'#e8843a',path:'#46c06e',river:'#3a9fe8'};
+const KW={street:9,lane:7,path:6,river:12};
+const OBSCOL='rgba(150,80,190,0.95)', OBSFILL='rgba(140,70,180,0.22)';
+const cnv=document.getElementById('cnv'),ctx=cnv.getContext('2d');
+const img=new Image(); let scale=1,ox=0,oy=0,ready=false;
+let mode='path',kind='street';
+let paths=[],places={},obscured=[],lamps=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
+const undoStack=[];
+function W2S(x,y){return[x*scale+ox,y*scale+oy]} function S2W(x,y){return[(x-ox)/scale,(y-oy)/scale]}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,1500)}
+function pushUndo(){undoStack.push(JSON.stringify({paths,places,obscured,lamps}));if(undoStack.length>60)undoStack.shift()}
+function resize(){cnv.width=cnv.clientWidth*devicePixelRatio;cnv.height=cnv.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);if(ready)draw()}
+window.addEventListener('resize',resize);
+img.onload=()=>{ready=true;const w=cnv.clientWidth,h=cnv.clientHeight;scale=Math.min(w/img.width,h/img.height)*0.98;ox=(w-img.width*scale)/2;oy=(h-img.height*scale)/2;
+  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts}));places=INIT.places||{};obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
+  draw();refreshList()};
+img.src=IMG;
+
+const sel0=document.getElementById('placeSel');
+function refreshSel(){sel0.innerHTML='';LOCS.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=(places[l.id]?'✓ ':'• ')+l.name;sel0.appendChild(o)});
+  const nxt=LOCS.find(l=>!places[l.id]); if(nxt) sel0.value=nxt.id;}
+function refreshList(){refreshSel();const el=document.getElementById('plist');el.innerHTML=LOCS.map(l=>`<div class="${places[l.id]?'done':'todo'}">${places[l.id]?'✓':'○'} ${l.name}</div>`).join('');
+  document.getElementById('pdone').textContent=Object.keys(places).length;}
+
+function draw(){
+  const w=cnv.clientWidth,h=cnv.clientHeight;ctx.fillStyle='#20241c';ctx.fillRect(0,0,w,h);
+  ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.drawImage(img,0,0);ctx.restore();
+  // obscured zones (dotted purple areas — the camera can't see past here)
+  for(const z of obscured){const on=sel&&sel.k==='obs'&&sel.o===z;
+    ctx.beginPath();z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
+    ctx.fillStyle=OBSFILL;ctx.fill();
+    ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=OBSCOL;ctx.stroke();ctx.setLineDash([]);
+    if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  // paths
+  for(const p of paths){const on=sel&&sel.k==='path'&&sel.o===p;ctx.strokeStyle=KC[p.type];ctx.lineWidth=Math.max(2.5,KW[p.type]*scale*0.5);ctx.lineJoin='round';ctx.lineCap='round';ctx.globalAlpha=on?1:.9;ctx.beginPath();p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.globalAlpha=1;
+    if(on)p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  // in-progress drawing
+  if(drawing){const obs=drawing.type==='obscure';ctx.strokeStyle=obs?OBSCOL:KC[drawing.type];ctx.lineWidth=Math.max(2.5,(obs?7:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
+  // place pins
+  ctx.font='11px sans-serif';
+  for(const [id,p] of Object.entries(places)){const[x,y]=W2S(p.x,p.y);const on=sel&&sel.k==='place'&&sel.id===id;
+    ctx.fillStyle=on?'#111':'#c62828';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();ctx.stroke();
+    const nm=(LOCS.find(l=>l.id===id)||{}).name||id;ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=3;ctx.strokeText(nm,x+9,y+4);ctx.fillText(nm,x+9,y+4)}
+  // lamps (little posts with a warm head)
+  for(const L of lamps){const[x,y]=W2S(L.x,L.y);const on=sel&&sel.k==='lamp'&&sel.o===L;const ph=L.small?9:13;
+    ctx.strokeStyle=on?'#111':'rgba(60,55,40,0.9)';ctx.lineWidth=on?2.4:1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
+    ctx.fillStyle=on?'#111':'#f0b429';ctx.strokeStyle='#5a4a1e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-ph,on?4:3,0,7);ctx.fill();ctx.stroke()}
+  document.getElementById('cnt').textContent=paths.length;
+  document.getElementById('ocnt').textContent=obscured.length;
+  const le=document.getElementById('lcnt');if(le)le.textContent=lamps.length;
+}
+function pickPath(mx,my){for(const p of paths)for(let i=0;i<p.pts.length;i++){const[x,y]=W2S(...p.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'path',o:p,pi:i}}return null}
+function pickObs(mx,my){for(const z of obscured)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'obs',o:z,pi:i}}return null}
+function pickLamp(mx,my){for(const L of lamps){const[x,y]=W2S(L.x,L.y);if(Math.hypot(mx-x,my-y)<9||Math.hypot(mx-x,my-(y-(L.small?9:13)))<8)return{k:'lamp',o:L}}return null}
+function pickPlace(mx,my){for(const[id,p]of Object.entries(places)){const[x,y]=W2S(p.x,p.y);if(Math.hypot(mx-x,my-y)<9)return{k:'place',id}}return null}
+
+function finishDrawing(){if(!drawing)return;
+  if(drawing.type==='obscure'){if(drawing.pts.length>=3)obscured.push({pts:drawing.pts})}
+  else{if(drawing.pts.length>=2)paths.push(drawing)}
+  drawing=null;draw()}
+
+cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W(mx,my).map(Math.round);
+  if(mode==='place'){const id=sel0.value;if(!id)return;pushUndo();places[id]={x:wx,y:wy};refreshList();
+    const nxt=LOCS.find(l=>!places[l.id]);if(nxt)sel0.value=nxt.id;toast('placed '+(LOCS.find(l=>l.id===id).name));draw();return}
+  if(mode==='path'){if(!drawing){pushUndo();drawing={id:'p'+(pid++),type:kind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='obscure'){if(!drawing){pushUndo();drawing={type:'obscure',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='lamp'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
+  const hp=pickPlace(mx,my)||pickPath(mx,my)||pickObs(mx,my)||pickLamp(mx,my);
+  if(hp){sel=hp;dragging=hp;draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
+});
+cnv.addEventListener('mousemove',e=>{
+  if(panning){ox=panning[2]+(e.clientX-panning[0]);oy=panning[3]+(e.clientY-panning[1]);draw();return}
+  if(!dragging)return;const[wx,wy]=S2W(e.offsetX,e.offsetY).map(Math.round);
+  if((dragging.k==='path'||dragging.k==='obs')&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
+  else if(dragging.k==='lamp'){dragging.o.x=wx;dragging.o.y=wy}
+  else if(dragging.k==='place')places[dragging.id]={x:wx,y:wy};
+  draw();
+});
+window.addEventListener('mouseup',()=>{dragging=null;panning=null;cnv.style.cursor=mode==='select'?'default':'crosshair'});
+cnv.addEventListener('dblclick',()=>finishDrawing());
+cnv.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:.893,[wx,wy]=S2W(e.offsetX,e.offsetY);scale=Math.max(.15,Math.min(8,scale*f));ox=e.offsetX-wx*scale;oy=e.offsetY-wy*scale;draw()},{passive:false});
+window.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  if(e.key==='Enter'&&drawing){finishDrawing()}
+  else if(e.key==='Escape'){drawing=null;sel=null;draw()}
+  else if(e.key==='Backspace'){e.preventDefault();
+    if(drawing){drawing.pts.pop();if(!drawing.pts.length)drawing=null;draw()}
+    else if(sel&&(sel.k==='path'||sel.k==='obs')&&sel.pi!=null&&sel.o.pts.length>(sel.k==='obs'?3:2)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
+    else if(sel&&sel.k==='path'){pushUndo();paths=paths.filter(p=>p!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='obs'){pushUndo();obscured=obscured.filter(z=>z!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='lamp'){pushUndo();lamps=lamps.filter(l=>l!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='place'){pushUndo();delete places[sel.id];sel=null;refreshList();draw()}}
+});
+function setMode(m){mode=m;document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));cnv.style.cursor=m==='select'?'default':'crosshair';drawing=null;draw()}
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+document.querySelectorAll('#kinds button').forEach(b=>b.onclick=()=>{kind=b.dataset.k;document.querySelectorAll('#kinds button').forEach(x=>x.classList.toggle('on',x===b))});
+const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' px',paths:paths.map(p=>({id:p.id,type:p.type,pts:p.pts})),places,obscured:obscured.map(z=>({pts:z.pts})),lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
+document.getElementById('exCopy').onclick=async()=>{document.getElementById('io').value=outJSON();try{await navigator.clipboard.writeText(outJSON());toast('copied — paste to Claude')}catch(_){toast('JSON in the box — copy it')}};
+document.getElementById('exDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([outJSON()],{type:'application/json'}));a.download='era-plate-map.json';a.click();toast('downloaded')};
+document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts}));places=j.places||{};obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
+document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;places=s.places;obscured=s.obscured||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
+document.getElementById('clr').onclick=()=>{if(confirm('Clear paths, pins, obscured zones AND lamps?')){pushUndo();paths=[];places={};obscured=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
+resize();
+</script>
+</body>
+</html>
