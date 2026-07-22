@@ -110,6 +110,13 @@ async function boot() {
     state.lamps = state.lamps.filter(L => !inPitch(L.x, L.y));
   }
 
+  // stadium floodlights: four tall masts at the pitch corners, aimed into the pitch.
+  // Use masts placed in the mapper if present, else these estimates (Roy can nudge).
+  state.floods = (map.floodlights && map.floodlights.length)
+    ? map.floodlights.map(F => ({ x: F.x, y: F.y }))
+    : [{ x: 1012, y: 430 }, { x: 1300, y: 452 }, { x: 1055, y: 512 }, { x: 1312, y: 504 }];
+  state.floodAim = { x: 1160, y: 470 };   // pitch centre
+
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
   wireControls();
@@ -372,9 +379,11 @@ function draw() {
   const night = nightFactor(f.hour, f.minute);
   const lit = lampsOn(f.hour, f.minute);
 
+  const flood = floodOn(f);
   drawSky(night);
   drawWater(night);
   drawLampPosts(lit);
+  drawFloodPosts(flood);
 
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
@@ -422,6 +431,7 @@ function draw() {
   // lamps and lit windows genuinely illuminate the buildings, ground and people
   // around them — everything else falls into real darkness.
   if (night > 0) applyLightMap(night, lit, f);
+  drawFloodBeams(flood);   // beam shafts + head flares over the lit scene
 
   if (state.showPins) drawPins();
   drawHUD(f);
@@ -794,6 +804,63 @@ function lampsOn(hour, minute) {
   return 0;                                                                             // daytime, off
 }
 
+// Stadium floodlights: on for one evening in the loop (a matchday preview) — day 1,
+// 19:00→21:00 with a short ramp each end. When the sim emits real matchdays this hooks
+// to that flag instead of a fixed evening. Returns 0..1.
+function floodOn(f) {
+  if (f.day !== 1) return 0;
+  const h = f.hour + f.minute / 60, on = 19, off = 21, ramp = 1 / 6;   // 10-min ramps
+  if (h < on || h >= off) return 0;
+  if (h < on + ramp) return (h - on) / ramp;
+  if (h > off - ramp) return (off - h) / ramp;
+  return 1;
+}
+// The physical masts: a tall pole with a lamp panel angled toward the pitch. The bright
+// pitch wash itself comes from applyLightMap; this is the fixture + its glowing head.
+function drawFloodPosts(on) {
+  const floods = state.floods, aim = state.floodAim; if (!floods) return;
+  for (const F of floods) {
+    const [x, y] = P2S(F.x, F.y), sc = scaleAt(F.y) * view.s;
+    const mastH = 52 * sc, hx = x, hy = y - mastH;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(38,40,46,0.9)'; ctx.lineWidth = Math.max(1, 1.8 * sc);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(hx, hy); ctx.stroke();          // mast
+    // lamp panel at the top, tilted a touch toward the pitch centre
+    const dir = Math.atan2(aim.y - F.y, aim.x - F.x);
+    ctx.save(); ctx.translate(hx, hy); ctx.rotate(Math.sin(dir) * 0.25);
+    const pw = 9 * sc, ph = 4.5 * sc;
+    ctx.fillStyle = on > 0.1 ? `rgba(236,244,255,${0.55 + 0.45 * on})` : 'rgba(58,62,68,0.92)';
+    ctx.strokeStyle = 'rgba(26,28,32,0.85)'; ctx.lineWidth = Math.max(0.5, 0.6 * sc);
+    roundRect(-pw / 2, -ph, pw, ph, 1 * sc); ctx.fill(); ctx.stroke();
+    if (on > 0.1) {                                                              // individual bulbs glowing
+      ctx.fillStyle = `rgba(255,255,246,${on})`;
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
+        ctx.beginPath(); ctx.arc(-pw / 2 + (i + 0.5) * pw / 4, -ph + (j + 0.5) * ph / 2, 0.7 * sc, 0, 7); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+// Visible beam shafts + a cool glow spilling from each mast onto the pitch (additive,
+// drawn over the night light map so the pitch reads brightly floodlit).
+function drawFloodBeams(on) {
+  const floods = state.floods, aim = state.floodAim; if (!floods || on <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const [ax, ay] = P2S(aim.x, aim.y);
+  for (const F of floods) {
+    const sc = scaleAt(F.y) * view.s, [x, y] = P2S(F.x, F.y), hy = y - 52 * sc;
+    const dx = ax - x, dy = ay - hy, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+    const spread = 26 * sc;
+    const g = ctx.createLinearGradient(x, hy, ax, ay);
+    g.addColorStop(0, `rgba(220,236,255,${0.16 * on})`); g.addColorStop(1, 'rgba(210,228,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(x, hy); ctx.lineTo(ax + nx * spread, ay + ny * spread); ctx.lineTo(ax - nx * spread, ay - ny * spread); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,250,${0.9 * on})`;                              // bright head flare
+    ctx.beginPath(); ctx.arc(x, hy, 1.8 * sc, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
 // A resident whose feet fall inside an obscured region (a passage the camera
 // can't see past, marked in the plate-mapper) is hidden.
 function obscured(px, py) {
@@ -892,6 +959,16 @@ function applyLightMap(n, lit, f) {
     const rc = (22 + Math.min(cnt, 5) * 5) * sc;
     lamp(lx, ly, rc * 2.6, `rgba(255,178,108,${0.4 * n})`, `rgba(255,160,90,${0.16 * n})`); // wide halo
     lamp(lx, ly, rc, `rgba(255,192,120,${0.8 * n})`, `rgba(255,170,100,${0.32 * n})`);       // core
+  }
+  // stadium floodlights: a strong, cool-white wash over the whole pitch when they're on
+  const flood = floodOn(f);
+  if (flood > 0 && state.floods) {
+    const aim = state.floodAim, asc = scaleAt(aim.y) * view.s;
+    for (const F of state.floods) {                       // a pool from each mast into its quadrant
+      const cx = lerp(F.x, aim.x, 0.5) * view.s, cy = lerp(F.y, aim.y, 0.5) * view.s, sc = scaleAt(F.y) * view.s;
+      lamp(cx, cy, 150 * sc, `rgba(226,238,255,${0.62 * flood})`, `rgba(206,224,255,${0.3 * flood})`);
+    }
+    lamp(aim.x * view.s, aim.y * view.s, 250 * asc, `rgba(230,240,255,${0.5 * flood})`, `rgba(210,226,255,${0.22 * flood})`); // whole-pitch wash
   }
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
