@@ -167,9 +167,13 @@ function buildPlateGraph(map) {
   for (const [id, p] of Object.entries(map.places || {})) {
     if (p.x < 0 || p.x > PLATE_W) continue;
     const pi = addV(p.x, p.y); pinIdx[id] = pi;
+    if (id === 'loc_stadium') continue;   // the ground's only way out is the north gate (below)
     const near = pathVerts.map(v => ({ i: v.i, d: (v.x - p.x) ** 2 + (v.y - p.y) ** 2 })).sort((a, b) => a.d - b.d).slice(0, 2);
     for (const nb of near) link(pi, nb.i);
   }
+  // the stadium reaches the street network only through the north gate (its real
+  // entrance) — never straight out through the south wall.
+  if (pinIdx['loc_stadium'] != null && pinIdx['loc_north_gate'] != null) link(pinIdx['loc_stadium'], pinIdx['loc_north_gate']);
   return { V, adj, pinIdx };
 }
 
@@ -325,8 +329,9 @@ function drawSky(night) {
   if (!state.clouds) return;
   const W = PLATE_W * view.s, span = PLATE_W + 240;
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const T = state.anim || 0;
   for (const c of state.clouds) {
-    const x = ((c.ph * span + state.t * c.sp) % span) - 120;
+    const x = ((c.ph * span + T * c.sp * 2.2) % span) - 120;
     const [sx, sy] = P2S(x, c.y); const r = Math.max(1, c.s * view.s);
     const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
     const a = c.a * (1 - 0.7 * night);
@@ -344,9 +349,10 @@ function drawWater(night) {
   const r = state.river; if (!r) return;
   const at = t => { const target = t * r.len; let i = 1; while (i < r.cum.length && r.cum[i] < target) i++; if (i >= r.pts.length) i = r.pts.length - 1; const seg = r.cum[i] - r.cum[i - 1] || 1, f = (target - r.cum[i - 1]) / seg; const a = r.pts[i - 1], b = r.pts[i]; return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, Math.atan2(b[1] - a[1], b[0] - a[0])]; };
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  const K = 9, alpha = 0.5 * (1 - 0.6 * night);
+  const T = state.anim || 0;
+  const K = 12, alpha = 0.55 * (1 - 0.6 * night);
   for (let k = 0; k < K; k++) {
-    const t = ((state.t * 0.02 + k / K) % 1);
+    const t = ((T * 0.07 + k / K) % 1);
     const [wx, wy, ang] = at(t); const [sx, sy] = P2S(wx, wy); const sc = scaleAt(wy) * view.s;
     const fade = Math.sin(t * Math.PI);   // dim at the ends of the run
     ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
@@ -785,6 +791,7 @@ function updateInspector(f) {
 function loop(ts) {
   if (!state.last) state.last = ts;
   const dt = Math.min((ts - state.last) / 1000, 0.25); state.last = ts;
+  state.anim = (state.anim || 0) + dt;   // real-time clock for ambient effects (water, sky) — runs even when paused
   if (state.playing) {
     // one tick = 300 game-seconds; advance the world by M game-seconds per real second
     state.t += dt * state.M / 300;
