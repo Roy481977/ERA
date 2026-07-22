@@ -71,6 +71,13 @@ async function boot() {
       acc += segLen;
     }
   }
+  // extra lamps around the town centre — the heart wants more light
+  const CENTER = ['loc_main_square', 'loc_cafe', 'loc_pub', 'loc_bakery', 'loc_high_street',
+    'loc_corner_grocer', 'loc_north_gate', 'loc_museum', 'loc_club_shop', 'loc_bridge'];
+  for (const id of CENTER) {
+    const p = map.places[id];
+    if (p && p.x > 0 && p.x < PLATE_W) state.lamps.push({ x: p.x, y: p.y + 6, center: true });
+  }
 
   sizeCanvas();
   window.addEventListener('resize', sizeCanvas);
@@ -162,6 +169,8 @@ function draw() {
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
 
   const night = nightFactor(f.hour, f.minute);
+
+  drawLampPosts(night);
 
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
@@ -385,6 +394,27 @@ function pointInPoly(x, y, poly) {
   return inside;
 }
 
+// Visible lamp posts: a slim post with a lantern head, standing in the scene.
+// Faint by day, with the lantern lit warm at night. The light pools themselves
+// come from applyLightMap; this is the physical fixture.
+function drawLampPosts(night) {
+  for (const L of state.lamps) {
+    if (L.x < 0 || L.x > PLATE_W) continue;
+    const [x, y] = P2S(L.x, L.y);
+    const sc = scaleAt(L.y) * view.s;
+    const ph = 14 * sc, hx = x, hy = y - ph;
+    ctx.lineCap = 'round';
+    // post
+    ctx.strokeStyle = `rgba(38,40,36,${0.5 + 0.35 * night})`;
+    ctx.lineWidth = Math.max(0.8, 1.3 * sc);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(hx, hy + 1.5 * sc); ctx.stroke();
+    // lantern head
+    ctx.fillStyle = night > 0.15 ? `rgba(255,224,150,${0.6 + 0.4 * night})` : 'rgba(60,60,54,0.8)';
+    ctx.strokeStyle = 'rgba(30,30,26,0.7)'; ctx.lineWidth = Math.max(0.5, 0.6 * sc);
+    ctx.beginPath(); ctx.arc(hx, hy, 1.9 * sc, 0, 7); ctx.fill(); ctx.stroke();
+  }
+}
+
 // Real night lighting. Build a warm light map (dark ambient floor + additive
 // warm pools at every lamp and lit window) in an offscreen canvas, then MULTIPLY
 // it over the whole composed scene — so lamps and windows actually illuminate
@@ -408,17 +438,18 @@ function applyLightMap(n, f) {
   };
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
-    const lx = L.x * view.s, ly = L.y * view.s, sc = scaleAt(L.y) * view.s;
-    lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.5 * n})`, `rgba(255,166,96,${0.2 * n})`);  // wide soft spill
-    lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.95 * n})`, `rgba(255,180,108,${0.4 * n})`); // brighter core
+    const sc = scaleAt(L.y) * view.s;
+    const lx = L.x * view.s, ly = L.y * view.s - 14 * sc;   // pool centred at the lantern head
+    lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
+    lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
   }
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
     const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
     const lx = p.x * view.s, ly = (p.y - 5) * view.s, sc = scaleAt(p.y) * view.s;
     const rc = (22 + Math.min(cnt, 5) * 5) * sc;
-    lamp(lx, ly, rc * 2.6, `rgba(255,178,108,${0.46 * n})`, `rgba(255,160,90,${0.18 * n})`); // wide halo
-    lamp(lx, ly, rc, `rgba(255,192,120,${0.9 * n})`, `rgba(255,170,100,${0.36 * n})`);       // core
+    lamp(lx, ly, rc * 2.6, `rgba(255,178,108,${0.4 * n})`, `rgba(255,160,90,${0.16 * n})`); // wide halo
+    lamp(lx, ly, rc, `rgba(255,192,120,${0.8 * n})`, `rgba(255,170,100,${0.32 * n})`);       // core
   }
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
@@ -429,8 +460,8 @@ function applyLightMap(n, f) {
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
-    ctx.fillStyle = `rgba(255,240,206,${0.85 * n})`;
-    ctx.beginPath(); ctx.arc(x, y - 2 * sc, 1.2 * sc, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,240,206,${0.8 * n})`;
+    ctx.beginPath(); ctx.arc(x, y - 14 * sc, 1.5 * sc, 0, 7); ctx.fill();  // glow at the lantern head
   }
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
