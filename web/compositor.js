@@ -73,6 +73,27 @@ function worldToPlate(wx, wy) {
   return [sx / sw, sy / sw];
 }
 
+// Entity -> plate pixel. While traveling, walk the street network leg-by-leg
+// between adjacent place pins (no water-cutting); when settled, use the accurate
+// near-pin IDW position (which preserves the sim's fine drift to benches/shade).
+function placeEntity(e) {
+  const P = state.map.places;
+  if (e.moving && e.from && e.to && P[e.from] && P[e.to]) {
+    const a = P[e.from], b = P[e.to], t = clamp(e.et || 0, 0, 1);
+    const [jx, jy] = jitterPx(e.id, 2);
+    return [lerp(a.x, b.x, t) + jx, lerp(a.y, b.y, t) + jy];
+  }
+  return worldToPlate(e.x, e.y);
+}
+
+// small stable per-id pixel offset so figures sharing a spot don't perfectly stack
+function jitterPx(id, r) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const a = (h % 360) * Math.PI / 180;
+  return [Math.cos(a) * r, Math.sin(a) * r];
+}
+
 // perspective scale from plate y: further back (smaller y) => smaller figures
 function scaleAt(py) {
   const t = clamp((py - 230) / (700 - 230), 0, 1);
@@ -119,7 +140,7 @@ function draw() {
   const figs = [];
   for (const e of f.entities) {
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
-    const [px, py] = worldToPlate(e.x, e.y);
+    const [px, py] = placeEntity(e);
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
     figs.push({ e, meta, px, py });
   }

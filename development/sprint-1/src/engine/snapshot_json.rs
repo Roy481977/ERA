@@ -165,10 +165,19 @@ impl Snapshot {
                 worn.push('"');
             }
             worn.push(']');
+            let from = match e.from {
+                Some(f) => format!("\"{f}\""),
+                None => "null".to_string(),
+            };
+            let to = match e.to {
+                Some(t) => format!("\"{t}\""),
+                None => "null".to_string(),
+            };
             out.push_str(&format!(
                 "{{\"id\":\"{}\",\"x\":{:.1},\"y\":{:.1},\"h\":{:.2},\"spd\":{:.2},\"ph\":{:.2},\
                  \"pose\":\"{}\",\"gest\":\"{}\",\"partner\":{},\"place\":\"{}\",\"doing\":\"{}\",\"moving\":{},\
-                 \"soc\":{},\"mood\":{:.2},\"energy\":{:.2},\"worn\":{},\"child\":{}}}",
+                 \"soc\":{},\"mood\":{:.2},\"energy\":{:.2},\"worn\":{},\"child\":{},\
+                 \"from\":{},\"to\":{},\"et\":{:.3}}}",
                 e.id,
                 e.x,
                 e.y,
@@ -185,7 +194,10 @@ impl Snapshot {
                 e.mood,
                 e.energy,
                 worn,
-                e.child
+                e.child,
+                from,
+                to,
+                e.edge_t
             ));
         }
         out.push(']');
