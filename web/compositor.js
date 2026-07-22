@@ -372,6 +372,22 @@ function draw() {
   const fB = state.frames[(fi + 1) % state.frames.length] || f;
   const nextById = {};
   for (const e of fB.entities) nextById[e.id] = e;
+  // social arrangement: the sim marks who's talking to whom (mutual `partner`) but often
+  // stacks the pair on one spot. Place mutual conversation partners a step apart and turn
+  // them to FACE each other, so their gestures read as a real exchange, not two blobs.
+  const byId = {}; for (const e of f.entities) byId[e.id] = e;
+  const pairPose = {};   // id -> {px,py,hd}
+  for (const e of f.entities) {
+    const p = e.partner && byId[e.partner];
+    if (!p || p.partner !== e.id || e.id > p.id) continue;   // mutual, handle each pair once
+    if (e.moving || p.moving || pairPose[e.id]) continue;    // settled conversation only
+    const [ax, ay] = placeEntity(e), [bx, by] = placeEntity(p);
+    const cx = (ax + bx) / 2, cy = (ay + by) / 2;
+    const ang = (hashId(e.id + p.id) % 360) * Math.PI / 180;
+    const d = 8, ox = Math.cos(ang) * d, oy = Math.sin(ang) * d * 0.4;   // flatten y for perspective
+    pairPose[e.id] = { px: cx - ox, py: cy - oy, hd: (ox >= 0) ? Math.PI : 0 };   // face toward partner
+    pairPose[p.id] = { px: cx + ox, py: cy + oy, hd: (ox >= 0) ? 0 : Math.PI };
+  }
   ctx.clearRect(0, 0, cnv.width, cnv.height);
   // backdrop
   ctx.drawImage(state.plate, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
@@ -399,7 +415,9 @@ function draw() {
     const walking = (e.moving && (e.spd || 0) > 0.03) || (hop && hopRoute && hopRoute.len > 4);
     if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) continue; // indoors — people & the dog off the rooftops
     let [px, py] = placeEntity(e); let hd = null;
-    if (eN && frac > 0) {
+    const conv = !walking && pairPose[e.id];                   // arranged conversation position
+    if (conv) { px = conv.px; py = conv.py; hd = conv.hd; }
+    else if (eN && frac > 0) {
       if (hopRoute && hopRoute.len > 4) {                      // glide along the network
         [px, py] = pointAlong(hopRoute, frac);
         const [ax, ay] = pointAlong(hopRoute, Math.min(1, frac + 0.03));
