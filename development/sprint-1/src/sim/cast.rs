@@ -122,7 +122,7 @@ pub fn cast() -> Vec<Resident> {
             act_at("eva_mid", "the midday market", "GATHER", "loc_main_square", 11, 3, 5, 2),
             act("eva_river", "tends the riverside flowers", "WALK", 15, 3, 7, 2),
             act("eva_home", "home to Miller's Row", "HOME", 20, 4, 6, 3),
-        ]),
+        ]).with_sig(Signature::Flowers),
         Resident::new("res_karim", "Karim", 34, "Kiosk vendor", "loc_high_street", vec![
             act("karim_sleep", "sleeps in the High Street rooms", "HOME", 0, 1, 10, 6),
             act("karim_am", "opens the kiosk", "KIOSK", 7, 2, 9, 3).on_weekdays(WORKING_DAYS),
@@ -147,7 +147,7 @@ pub fn cast() -> Vec<Resident> {
             act("milo_busk", "busks by the fountain", "BUSK", 16, 3, 8, 3),
             act("milo_eve", "the evening crowd", "BUSK", 19, 2, 8, 2),
             act("milo_home", "home to the High Street", "HOME", 21, 3, 5, 2),
-        ]),
+        ]).with_sig(Signature::Instrument),
         Resident::new("res_tomas", "Tomas", 9, "Schoolchild", "loc_oakside", vec![
             act("tomas_sleep", "sleeps at Oakside Cottages", "HOME", 0, 1, 10, 7),
             act("tomas_school", "goes to school", "SCHOOL", 9, 2, 8, 4).on_weekdays(MON_FRI),
@@ -155,7 +155,7 @@ pub fn cast() -> Vec<Resident> {
             act_at("tomas_play", "plays in the square", "GATHER", "loc_main_square", 11, 3, 5, 3).on_weekdays(WEEKEND),
             act("tomas_oak", "visits the Old Oak", "VISIT_OAK", 15, 3, 7, 2),
             act("tomas_home", "home to Oakside", "HOME", 20, 4, 9, 4),
-        ]),
+        ]).with_sig(Signature::Skip),
     ];
     residents.extend(townsfolk());
     residents
@@ -179,7 +179,7 @@ fn townsfolk() -> Vec<Resident> {
             act_at("bruno_am", "hauls crates by the ground", "GATHER", "loc_stadium", 8, 2, 8, 2).on_weekdays(WORKING_DAYS),
             act_at("bruno_mid", "a breather on the square", "GATHER", "loc_main_square", 12, 3, 6, 2),
             act("bruno_home", "home to Elm Row", "HOME", 19, 4, 6, 3),
-        ]),
+        ]).with_sig(Signature::Load),
         Resident::new("res_dan", "Dan", 31, "Mechanic", "loc_kiln_yard", vec![
             act("dan_sleep", "sleeps at Kiln Yard", "HOME", 0, 1, 10, 6),
             act_at("dan_am", "the morning's work on the square", "GATHER", "loc_main_square", 8, 2, 8, 3).on_weekdays(WORKING_DAYS),
@@ -204,7 +204,7 @@ fn townsfolk() -> Vec<Resident> {
             act_at("otto_mid", "watches the square go by", "GATHER", "loc_main_square", 12, 3, 6, 2),
             act_at("otto_oak", "sits a while by the Old Oak", "VISIT_OAK", "loc_riverside", 15, 3, 6, 2),
             act("otto_home", "home to the Slate House", "HOME", 19, 4, 7, 3),
-        ]),
+        ]).with_sig(Signature::Cane),
         Resident::new("res_lena", "Lena", 36, "Teacher", "loc_orchard_close", vec![
             act("lena_sleep", "sleeps at Orchard Close", "HOME", 0, 1, 10, 5),
             act("lena_school", "takes the class", "SCHOOL", 9, 1, 9, 4).on_weekdays(MON_FRI),
@@ -217,7 +217,7 @@ fn townsfolk() -> Vec<Resident> {
             act_at("sam_play", "plays in the square", "GATHER", "loc_main_square", 11, 3, 6, 3).on_weekdays(WEEKEND),
             act_at("sam_oak", "runs down to the Old Oak", "VISIT_OAK", "loc_riverside", 15, 3, 6, 2),
             act("sam_home", "home to Orchard Close", "HOME", 20, 4, 9, 3),
-        ]),
+        ]).with_sig(Signature::Skip),
         Resident::new("res_ines", "Ines", 46, "Seamstress", "loc_weavers_lane", vec![
             act("ines_sleep", "sleeps on Weavers' Lane", "HOME", 0, 1, 10, 6),
             act_at("ines_am", "the morning market", "MARKET", "loc_main_square", 8, 2, 8, 3).on_weekdays(WORKING_DAYS),

@@ -61,6 +61,14 @@ pub enum Signature {
     Limp,
     /// Age and a walking stick — a stoop and a cane stroke (Agnes, Otto).
     Cane,
+    /// A porter's load on the back — a laden stoop and a steady heavy gait (Bruno).
+    Load,
+    /// Carries an instrument at their side (Milo the busker).
+    Instrument,
+    /// An armful of flowers held at the chest (Eva the florist).
+    Flowers,
+    /// A child's run — bouncy, skipping, never quite a straight walk (Tomas, Sam).
+    Skip,
 }
 
 impl Signature {
@@ -70,6 +78,10 @@ impl Signature {
             Signature::None => "none",
             Signature::Limp => "limp",
             Signature::Cane => "cane",
+            Signature::Load => "load",
+            Signature::Instrument => "instrument",
+            Signature::Flowers => "flowers",
+            Signature::Skip => "skip",
         }
     }
 }

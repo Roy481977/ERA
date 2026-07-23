@@ -888,19 +888,19 @@ function drawFigure(fig, f) {
   const role = roleOf(e);
 
   const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
-  const gaitRate = (3.0 + spd * 2.4 + vigor * 0.7) * tr.gait;                                  // hurry & vigour quicken the step
+  const gaitRate = (3.0 + spd * 2.4 + vigor * 0.7) * tr.gait * (sig === 'skip' ? 1.5 : 1);      // hurry & vigour quicken the step; a child's skip is quicker still
   const wph = moving ? Math.sin(state.t * gaitRate + ph) : 0;
-  const strideAmp = (0.55 + spd * 1.0 + vigor * 0.25) * tr.stride * (sig === 'cane' ? 0.6 : 1);  // stride length (a cane shortens it)
+  const strideAmp = (0.55 + spd * 1.0 + vigor * 0.25) * tr.stride * (sig === 'cane' ? 0.6 : sig === 'load' ? 0.8 : 1);  // stride length (a cane / a load shortens it)
   const workPhase = working ? Math.sin(state.t * 2.6 + ph) : 0;                    // rhythmic task
   const playHop = playing ? Math.abs(Math.sin(state.t * 3.2 + ph)) : 0;           // child's hop
 
   // proportions — broader shoulders than hips
   const legH = (sit ? 2.4 : 5.4) * U, torsoH = (sit ? 6 : 8) * U;
   const shoulderW = 7 * U, hipW = 5.4 * U, headR = 3.0 * U * (e.child ? 1.2 : 1);
-  const slump = (((1 - vigor) * 0.6 + (1 - cheer) * 0.35) - tr.upright * 0.5 + (sig === 'cane' ? 1.4 : 0)) * U;   // tired/low-mood shoulders drop; a cane bends the back into a stoop
+  const slump = (((1 - vigor) * 0.6 + (1 - cheer) * 0.35) - tr.upright * 0.5 + (sig === 'cane' ? 1.4 : sig === 'load' ? 1.1 : 0)) * U;   // tired/low-mood shoulders drop; a cane or a heavy load bends the back into a stoop
   const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) * tr.idle + ph);
   const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * (0.32 + openness * 0.4) * U;
-  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U * tr.bob
+  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U * tr.bob * (sig === 'skip' ? 1.9 : sig === 'load' ? 0.5 : 1)
     : (playing ? playHop * 1.7 * U : dancing ? (0.4 + Math.abs(Math.sin(dancePh))) * 1.2 * U : idle * 0.22 * U);
   const lean = working ? faceS * 0.9 * U : 0;                                     // stoop over the work
   const danceSway = dancing ? Math.sin(dancePh * 0.5) * 1.7 * U : 0;              // hips side to side
@@ -967,6 +967,28 @@ function drawFigure(fig, f) {
     ctx.strokeStyle = apron; ctx.lineWidth = 0.9 * U;
     ctx.beginPath(); ctx.moveTo(x - hipW * 0.26, aTop); ctx.lineTo(x - hipW * 0.12, shoulderY + 1.4 * U);
     ctx.moveTo(x + hipW * 0.26, aTop); ctx.lineTo(x + hipW * 0.12, shoulderY + 1.4 * U); ctx.stroke();
+  }
+
+  // carried signatures — a porter's load, a busker's instrument, a florist's blooms
+  if (sig === 'load') {                                     // a crate/sack on the back
+    const bw = 6.2 * U, bh = 5.4 * U, bx = x - faceS * 2.6 * U - bw / 2, by = shoulderY - 1.4 * U;
+    ctx.fillStyle = '#8a6a44'; ctx.strokeStyle = ink; ctx.lineWidth = 0.6 * U;
+    roundRect(bx, by, bw, bh, 1 * U); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,30,20,.5)'; ctx.lineWidth = 0.5 * U;                 // strap
+    ctx.beginPath(); ctx.moveTo(x - faceS * 0.6 * U, shoulderY); ctx.lineTo(bx + bw * 0.5, by + 1 * U); ctx.stroke();
+  }
+  if (sig === 'instrument') {                               // a slim case slung at the trailing side
+    ctx.save(); ctx.translate(x - faceS * 3.3 * U, shoulderY + 3.2 * U); ctx.rotate(faceS * 0.5);
+    ctx.fillStyle = '#8a5a2a'; ctx.strokeStyle = ink; ctx.lineWidth = 0.5 * U;
+    ctx.beginPath(); ctx.ellipse(0, 0, 1.7 * U, 4.4 * U, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  if (sig === 'flowers') {                                  // an armful of blooms at the chest
+    const cx2 = x + faceS * 1.4 * U, cy2 = shoulderY + 3.4 * U;
+    ctx.strokeStyle = '#3f6b3a'; ctx.lineWidth = 0.8 * U;
+    ctx.beginPath(); ctx.moveTo(cx2, cy2 + 2 * U); ctx.lineTo(cx2, cy2 - 1.4 * U); ctx.stroke();
+    for (const [dx, dy, c] of [[-1.2, -1.4, '#e2637a'], [1.2, -1.6, '#f2c14e'], [0, -2.6, '#d98cc0'], [-1.7, -0.1, '#e88a3a']])
+      { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx2 + dx * U, cy2 + dy * U, 1.15 * U, 0, 7); ctx.fill(); }
   }
 
   // arms — behaviour-driven: work at a surface, play arms-up, or swing/gesture
