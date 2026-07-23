@@ -3,8 +3,8 @@
 // deterministic sim replay, positioned by a smooth world->plate mapping built
 // from the plate-map pins, perspective-scaled and y-sorted.
 
-const PLATE_W = 1376, PLATE_H = 768;
-const PLATE_IMG = 'assets/plate-v1-graded.jpeg';
+const PLATE_W = 2048, PLATE_H = 2048;
+const PLATE_IMG = 'assets/plate-v2.jpeg';
 
 const state = {
   world: null, frames: [], map: null, anchors: [],
@@ -25,10 +25,11 @@ async function boot() {
   } else {                                      // served build
     [replay, map, plate] = await Promise.all([
       fetch('assets/replay.json').then(r => r.json()),
-      fetch('assets/era-plate-map.json').then(r => r.json()),
+      fetch('assets/era-plate-map-v2.json').then(r => r.json()),
       loadImg(PLATE_IMG),
     ]);
-    state.occluder = await loadImg('assets/occluder.png').catch(() => null);
+    // plate-v2 uses per-house occluder polygons from the map (not the v1 mask png).
+    state.occluder = null;
     state.miloSheet = await loadImg('milo/milo_walk_sheet.png').catch(() => null);
   }
   state.world = replay.world;
@@ -65,7 +66,11 @@ async function boot() {
 
   // plate-space path network, so walkers follow the streets instead of straight
   // pin-to-pin lines (which cut across the river and buildings).
-  state.graph = buildPlateGraph(map);
+  // plate-v2 authors walkable PATHWAY AREAS (polygons) instead of line paths, so a
+  // resident routes A->B across the painted ground (a nav-mesh), not along a rail.
+  state.areaMode = !!(map.pathareas && map.pathareas.length);
+  state.houses = (map.houses || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
+  state.graph = state.areaMode ? buildAreaGraph(map) : buildPlateGraph(map);
   state.routeCache = {};
   // low fences (jump-over): flatten to segments so a route crossing one triggers a hop
   state.lowFences = [];
@@ -286,6 +291,78 @@ function buildPlateGraph(map) {
   return { V, adj, pinIdx };
 }
 
+// Build a walkable nav-mesh from PATHWAY AREAS (plate-v2). Sample a grid over the
+// union of the pathway polygons, drop any node inside a house or the water, connect
+// neighbours whose connecting step stays on the ground and crosses no wall, then hook
+// each place pin onto the nearest walkable node. getRoute's Dijkstra runs on this
+// unchanged — so a journey A->B threads the painted ground, avoiding houses and river.
+function buildAreaGraph(map) {
+  const areas = (map.pathareas || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
+  const houses = (map.houses || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
+  const waters = (map.water || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
+  const walls = [];
+  for (const f of (map.fences || [])) if ((f.kind || 'low') === 'wall') {
+    const p = f.pts; for (let i = 1; i < p.length; i++) walls.push([p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]]);
+  }
+  const inAny = (x, y, polys) => { for (const p of polys) if (pointInPoly(x, y, p)) return true; return false; };
+  const blocked = (x, y) => inAny(x, y, houses) || inAny(x, y, waters);
+  const wallBlocked = (ax, ay, bx, by) => { for (const w of walls) if (segCross(ax, ay, bx, by, w[0], w[1], w[2], w[3])) return true; return false; };
+
+  // Rasterise the walkable ground onto a fine grid, then DILATE it: the hand-drawn
+  // pathway polygon pinches below grid width in places, breaking the network into
+  // islands. Growing the raw mask by a few cells bridges those pinches (but never
+  // into a house or the river, which we re-subtract), giving one connected ground.
+  const S = 14, R = 3;                                       // cell size px, dilation radius (cells)
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  for (const a of areas) for (const [x, y] of a) { minx = Math.min(minx, x); miny = Math.min(miny, y); maxx = Math.max(maxx, x); maxy = Math.max(maxy, y); }
+  minx -= (R + 1) * S; miny -= (R + 1) * S; maxx += (R + 1) * S; maxy += (R + 1) * S;
+  const cols = Math.ceil((maxx - minx) / S) + 1, rows = Math.ceil((maxy - miny) / S) + 1;
+  const cx = c => minx + c * S, cy = r => miny + r * S;
+  const raw = new Uint8Array(cols * rows), walk = new Uint8Array(cols * rows);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+    if (inAny(cx(c), cy(r), areas) && !blocked(cx(c), cy(r))) raw[r * cols + c] = 1;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (blocked(cx(c), cy(r))) continue;                     // never grow into a building/river
+    let hit = 0;
+    for (let dr = -R; dr <= R && !hit; dr++) for (let dc = -R; dc <= R; dc++) {
+      const rr = r + dr, cc = c + dc; if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
+      if (raw[rr * cols + cc]) { hit = 1; break; }
+    }
+    if (hit) walk[r * cols + c] = 1;
+  }
+
+  const V = [], adj = [];
+  const addV = (x, y) => { const i = V.length; V.push({ x, y }); adj.push([]); return i; };
+  const link = (a, b) => { if (a === b) return; const w = Math.hypot(V[a].x - V[b].x, V[a].y - V[b].y); adj[a].push([b, w]); adj[b].push([a, w]); };
+  const gi = new Int32Array(cols * rows).fill(-1);
+  const at = (c, r) => (c >= 0 && c < cols && r >= 0 && r < rows) ? gi[r * cols + c] : -1;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (walk[r * cols + c]) gi[r * cols + c] = addV(cx(c), cy(r));
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const a = at(c, r); if (a < 0) continue;
+    for (const [dc, dr] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+      const b = at(c + dc, r + dr); if (b < 0) continue;
+      if (!wallBlocked(V[a].x, V[a].y, V[b].x, V[b].y)) link(a, b);
+    }
+  }
+  // largest connected component — pins must attach to the main ground, not a stray islet
+  const comp = new Int32Array(V.length).fill(-1); let nc = 0, mainC = 0, mainSz = -1;
+  for (let i = 0; i < V.length; i++) {
+    if (comp[i] >= 0) continue; const st = [i]; comp[i] = nc; let sz = 0;
+    while (st.length) { const u = st.pop(); sz++; for (const [v] of adj[u]) if (comp[v] < 0) { comp[v] = nc; st.push(v); } }
+    if (sz > mainSz) { mainSz = sz; mainC = nc; } nc++;
+  }
+  // hook each place pin to the nearest node in the main component (its doorstep onto the ground)
+  const pinIdx = {};
+  for (const [id, p] of Object.entries(map.places || {})) {
+    const pi = addV(p.x, p.y); pinIdx[id] = pi;
+    const near = [];
+    for (let i = 0; i < pi; i++) { if (comp[i] !== mainC) continue; near.push([(V[i].x - p.x) ** 2 + (V[i].y - p.y) ** 2, i]); }
+    near.sort((a, b) => a[0] - b[0]);
+    for (let k = 0; k < Math.min(3, near.length); k++) link(pi, near[k][1]);
+  }
+  return { V, adj, pinIdx, comp, mainC };
+}
+
 // Turn a raw polyline into a route {pts, cum, len}.
 function polyRoute(pts) {
   const P = pts.map(([x, y]) => ({ x, y }));
@@ -328,7 +405,8 @@ function getRoute(fromId, toId) {
   }
   let route = null;
   if (dist[t] < Infinity) {
-    const pts = []; for (let u = t; u !== -1; u = prev[u]) pts.push(g.V[u]); pts.reverse();
+    let pts = []; for (let u = t; u !== -1; u = prev[u]) pts.push(g.V[u]); pts.reverse();
+    if (state.areaMode) pts = chaikin(pts, 2);               // round the grid stair-steps into a natural line
     const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
     route = { pts, cum, len: cum[cum.length - 1] };
   }
@@ -353,6 +431,23 @@ function addHops(route) {
     for (let i = 1; i < route.pts.length; i++) { const a = route.pts[i - 1], b = route.pts[i];
       for (const s of F) { const p = segCross(a.x, a.y, b.x, b.y, s[0], s[1], s[2], s[3]); if (p) route.hopPts.push(p); } }
   return route;
+}
+// Chaikin corner-cutting: smooths a polyline's stair-steps into a rounded line,
+// keeping the endpoints. A couple of passes turns a grid route into a natural walk.
+function chaikin(pts, iters) {
+  let p = pts;
+  for (let k = 0; k < iters; k++) {
+    if (p.length < 3) break;
+    const out = [p[0]];
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i], b = p[i + 1];
+      out.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
+      out.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+    }
+    out.push(p[p.length - 1]);
+    p = out;
+  }
+  return p;
 }
 function pointAlong(route, t) {
   const target = t * route.len, cum = route.cum, pts = route.pts;
@@ -422,6 +517,10 @@ function jitterPx(id, r) {
 
 // perspective scale from plate y: further back (smaller y) => smaller figures
 function scaleAt(py) {
+  if (PLATE_H > 1200) {                                      // plate-v2 disc (2048): town spans ~py 420..1440
+    const t = clamp((py - 420) / (1440 - 420), 0, 1);
+    return lerp(0.9, 2.1, t);
+  }
   const t = clamp((py - 230) / (700 - 230), 0, 1);
   return lerp(0.55, 1.35, t);
 }
@@ -494,7 +593,7 @@ function onDblClick(e) {
   const mx = (e.clientX - rect.left) * (cnv.width / rect.width);
   const my = (e.clientY - rect.top) * (cnv.height / rect.height);
   if (zoom.z > 1.01) { zoom.z = 1; cnv.style.cursor = 'zoom-in'; }
-  else { zoom.z = 2.6; zoom.cx = (mx - view.ox) / view.s; zoom.cy = (my - view.oy) / view.s; cnv.style.cursor = 'zoom-out'; }
+  else { zoom.z = (PLATE_H > 1200 ? 5.5 : 2.6); zoom.cx = (mx - view.ox) / view.s; zoom.cy = (my - view.oy) / view.s; cnv.style.cursor = 'zoom-out'; }
   applyView(); draw();
 }
 const P2S = (x, y) => [view.ox + x * view.s, view.oy + y * view.s];
