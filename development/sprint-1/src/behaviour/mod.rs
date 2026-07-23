@@ -161,9 +161,23 @@ impl Choreographer {
             moving.insert(r.id, mv);
         }
         {
-            let p = layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle);
-            pos.insert("the_old_dog", settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y()));
-            moving.insert("the_old_dog", sim.dog.trip().is_some());
+            // The dog moves as real travel legs (from -> to over `total` ticks). Feed the
+            // behaviour layer its INTERPOLATED position along the leg, not its origin node,
+            // so the position actually advances tick to tick — that non-zero delta is what
+            // gives it a real speed and heading, which is what makes the compositor animate
+            // its legs instead of sliding it along frozen (the "gliding" bug).
+            let dog_moving = sim.dog.trip().is_some();
+            let dxy = if let Some(t) = sim.dog.trip() {
+                let tp = if t.total == 0 { 0.0 } else { (t.total - t.left) as f64 / t.total as f64 };
+                let a = layout::entity_pos(&sim.world, t.from, &Status::Idle);
+                let b = layout::entity_pos(&sim.world, t.to, &Status::Idle);
+                (a.x() + (b.x() - a.x()) * tp, a.y() + (b.y() - a.y()) * tp)
+            } else {
+                let p = layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle);
+                settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y())
+            };
+            pos.insert("the_old_dog", dxy);
+            moving.insert("the_old_dog", dog_moving);
         }
         for a in &sim.wildlife.animals {
             let (xy, mv) = animal_xy(a);
