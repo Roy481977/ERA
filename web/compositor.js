@@ -58,6 +58,10 @@ async function boot() {
   // obscured zones: polygons (plate px) the camera can't see past — anyone whose
   // feet fall inside is hidden. Authored in the plate-mapper's obscure tool.
   state.obscured = (map.obscured || []).map(z => z.pts || z);
+  // the stands are a solid structure: a real person WALKING the path behind them is
+  // hidden by the terracing (only the seated fans show). Kept separate from obscured
+  // so it applies to walkers only (settled spectators are placed in the stands).
+  state.stands = (map.stands || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
 
   // plate-space path network, so walkers follow the streets instead of straight
   // pin-to-pin lines (which cut across the river and buildings).
@@ -583,6 +587,7 @@ function draw() {
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
     let alpha = occlusionAlpha(px, py);     // soft fade behind buildings instead of a hard blink
+    if (walking) alpha *= standsAlpha(px, py);   // a real person walking behind the stands is hidden by them (fans are seated, not walking)
     const wasX = prevById[e.id];            // emerging from a doorway: fade in over the first step out
     if (walking && wasX && !wasX.moving && wasX.place !== e.place && state.indoor.has(wasX.place)) alpha *= ease01(frac);
     if (alpha <= 0.02) continue;            // fully behind a building — skip
@@ -1380,6 +1385,26 @@ function occlusionAlpha(px, py) {
   const signed = inside ? mind : -mind;                 // + inside a building, - out on the open
   return clamp(0.5 - signed / OCC_FADE, 0, 1);
 }
+// A walker whose feet fall behind the stands is hidden by the terracing (soft edge).
+// Outside the stands: fully visible. Seated fans are settled (not walkers) so this
+// never touches them.
+function standsAlpha(px, py) {
+  const zs = state.stands;
+  if (!zs || !zs.length) return 1;
+  let inside = false, mind = Infinity;
+  for (const poly of zs) {
+    if (pointInPoly(px, py, poly)) inside = true;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const ax = poly[j][0], ay = poly[j][1], bx = poly[i][0], by = poly[i][1];
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+      let t = ((px - ax) * dx + (py - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      if (d < mind) mind = d;
+    }
+  }
+  if (!inside) return 1;
+  return clamp(0.5 - mind / OCC_FADE, 0, 1);
+}
 function pointInPoly(x, y, poly) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -1473,6 +1498,7 @@ function applyLightMap(n, lit, f) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
+    if (obscured(L.x, L.y)) continue;   // behind a wall: hide the visible source too, not just the post — you don't see a light through a wall (its spill in the light-map above still lights the surroundings)
     const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
     ctx.fillStyle = `rgba(255,240,206,${0.8 * n})`;
     ctx.beginPath(); ctx.arc(x, y - 14 * sc, 1.5 * sc, 0, 7); ctx.fill();  // glow at the lantern head
