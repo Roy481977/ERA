@@ -1507,13 +1507,6 @@ function applyLightMap(n, lit, f) {
     ctx.fillStyle = `rgba(255,240,206,${0.8 * n})`;
     ctx.beginPath(); ctx.arc(x, y - 14 * sc, 1.5 * sc, 0, 7); ctx.fill();  // glow at the lantern head
   }
-  for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
-    if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
-    const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
-    const [x, y] = P2S(p.x, p.y - 5); const sc = scaleAt(p.y) * view.s;
-    ctx.fillStyle = `rgba(255,226,164,${0.95 * n})`;
-    for (let i = 0; i < Math.min(cnt, 3); i++) ctx.fillRect(x - 3 * sc + i * 3 * sc, y, 1.5 * sc, 1.5 * sc);
-  }
   ctx.restore();
 }
 
