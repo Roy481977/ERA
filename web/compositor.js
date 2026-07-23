@@ -339,7 +339,7 @@ function pointAlong(route, t) {
 function placeEntity(e) {
   const P = state.map.places;
   if (e.moving && e.from && e.to && P[e.from] && P[e.to]) {
-    const t = clamp(e.et || 0, 0, 1);
+    const t = ease01(e.et || 0);            // accelerate out of a place, decelerate into the next
     const route = getRoute(e.from, e.to);
     const [jx, jy] = jitterPx(e.id, 2);
     if (route) { const [x, y] = pointAlong(route, t); return [x + jx, y + jy]; }
@@ -376,6 +376,32 @@ function scaleAt(py) {
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
+
+// --- motion-quality helpers (presence & individuality pass) ---
+const ease01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };   // smoothstep: accel out of a place, decel into the next
+// A stable per-resident "how they move" profile, derived from the id hash — so two
+// people walking the same way never look like copies. All gentle multipliers.
+function idTraits(id) {
+  const h = hashId(id);
+  const b = (n, lo, hi) => lo + (((h >> n) & 15) / 15) * (hi - lo);
+  return {
+    gait:    b(0, 0.82, 1.20),   // step rate
+    stride:  b(4, 0.80, 1.22),   // step length
+    bob:     b(8, 0.75, 1.25),   // vertical bounce
+    upright: b(12, -0.5, 0.9),   // posture bias: <0 stoop, >0 tall
+    swing:   b(16, 0.70, 1.30),  // arm swing amplitude
+    idle:    b(20, 0.80, 1.25),  // idle fidget rate
+    phase:   ((h >> 6) % 628) / 100,  // personal gait phase so steps aren't in lockstep
+  };
+}
+// Eased facing: a continuous per-id value in [-1,1] that chases the target sign, so
+// the left/right flip reads as a turn instead of an instant mirror.
+function easeFace(id, target) {
+  const m = (state.face || (state.face = {}));
+  const cur = m[id] != null ? m[id] : target;
+  m[id] = cur + (target - cur) * Math.min(1, (state.dt || 0.016) * 9);
+  return m[id];
+}
 
 // --- canvas / layout ---
 let cnv, ctx, view = { s: 1, ox: 0, oy: 0 };
@@ -431,6 +457,8 @@ function draw() {
   const fB = state.frames[(fi + 1) % state.frames.length] || f;
   const nextById = {};
   for (const e of fB.entities) nextById[e.id] = e;
+  const fP = state.frames[(fi - 1 + state.frames.length) % state.frames.length] || f;
+  const prevById = {}; for (const e of fP.entities) prevById[e.id] = e;
   // social arrangement: the sim marks who's talking to whom (mutual `partner`) but often
   // stacks the pair on one spot. Place mutual conversation partners a step apart and turn
   // them to FACE each other, so their gestures read as a real exchange, not two blobs.
@@ -474,7 +502,17 @@ function draw() {
     const hop = !!(eN && frac > 0 && !e.moving && e.place && eN.place && e.place !== eN.place);
     const hopRoute = hop ? getRoute(e.place, eN.place) : null;
     const walking = (e.moving && (e.spd || 0) > 0.03) || (hop && hopRoute && hopRoute.len > 4);
-    if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) continue; // indoors — people & the dog off the rooftops
+    // Physical presence: instead of blinking out on arrival, a resident holds at the
+    // doorway for a beat and fades under the building's occlusion (and reverses on exit).
+    if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) {
+      const was = prevById[e.id];
+      if (was && was.place === e.place && !was.moving) continue;   // fully inside — off the rooftops
+      const dp = state.map.places[e.place], df = 1 - frac;          // just arrived: linger + fade at the door
+      if (!dp || df <= 0.03) continue;
+      const a = occlusionAlpha(dp.x, dp.y) * df;
+      if (a > 0.02) figs.push({ e, meta, px: dp.x, py: dp.y, walking: false, hd: null, alpha: a });
+      continue;
+    }
     let [px, py] = placeEntity(e); let hd = null;
     const conv = !walking && pairPose[e.id];                   // arranged conversation position
     if (conv) { px = conv.px; py = conv.py; hd = conv.hd; }
@@ -489,7 +527,9 @@ function draw() {
       }
     }
     if (px < -40 || px > PLATE_W + 40 || py < -40 || py > PLATE_H + 40) continue; // off-frame
-    const alpha = occlusionAlpha(px, py);   // soft fade behind buildings instead of a hard blink
+    let alpha = occlusionAlpha(px, py);     // soft fade behind buildings instead of a hard blink
+    const wasX = prevById[e.id];            // emerging from a doorway: fade in over the first step out
+    if (walking && wasX && !wasX.moving && wasX.place !== e.place && state.indoor.has(wasX.place)) alpha *= ease01(frac);
     if (alpha <= 0.02) continue;            // fully behind a building — skip
     figs.push({ e, meta, px, py, walking, hd, alpha });
   }
@@ -793,7 +833,7 @@ function drawMiloSprite(fig) {
   const targetH = 23 * sc;                          // match the procedural adult's height
   const dh = targetH, dw = targetH * (cellW / cellH);
   const hd = fig.hd != null ? fig.hd : (fig.e.h || 0);
-  const faceS = Math.cos(hd) >= 0 ? 1 : -1;         // flip to face direction of travel
+  const faceS = easeFace(fig.e.id, Math.cos(hd) >= 0 ? 1 : -1) >= 0 ? 1 : -1;  // eased turn to face travel
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(faceS, 1);
@@ -812,8 +852,9 @@ function drawFigure(fig, f) {
   const k = e.child ? 0.74 : 1.0;
   const U = sc * k;
   const hd = fig.hd != null ? fig.hd : (e.h || 0);
-  const faceS = Math.cos(hd) >= 0 ? 1 : -1;
+  const faceS = easeFace(e.id, Math.cos(hd) >= 0 ? 1 : -1) >= 0 ? 1 : -1;   // eased turn, not an instant mirror
   const ph = (hs % 628) / 100;
+  const tr = idTraits(e.id);                 // this resident's individual way of moving
   // behaviour → motion parameters (all straight from the deterministic stream)
   const spd = e.spd || 0;
   const vigor = clamp(((e.energy != null ? e.energy : 0.8) - 0.4) / 0.6, 0, 1);   // tired … lively
@@ -829,19 +870,19 @@ function drawFigure(fig, f) {
   const role = roleOf(e);
 
   const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
-  const gaitRate = 3.0 + spd * 2.4 + vigor * 0.7;                                  // hurry & vigour quicken the step
+  const gaitRate = (3.0 + spd * 2.4 + vigor * 0.7) * tr.gait;                                  // hurry & vigour quicken the step
   const wph = moving ? Math.sin(state.t * gaitRate + ph) : 0;
-  const strideAmp = 0.55 + spd * 1.0 + vigor * 0.25;                              // stride length
+  const strideAmp = (0.55 + spd * 1.0 + vigor * 0.25) * tr.stride;                              // stride length
   const workPhase = working ? Math.sin(state.t * 2.6 + ph) : 0;                    // rhythmic task
   const playHop = playing ? Math.abs(Math.sin(state.t * 3.2 + ph)) : 0;           // child's hop
 
   // proportions — broader shoulders than hips
   const legH = (sit ? 2.4 : 5.4) * U, torsoH = (sit ? 6 : 8) * U;
   const shoulderW = 7 * U, hipW = 5.4 * U, headR = 3.0 * U * (e.child ? 1.2 : 1);
-  const slump = ((1 - vigor) * 0.6 + (1 - cheer) * 0.35) * U;                     // tired/low-mood shoulders drop
-  const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) + ph);
+  const slump = (((1 - vigor) * 0.6 + (1 - cheer) * 0.35) - tr.upright * 0.5) * U;                     // tired/low-mood shoulders drop
+  const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) * tr.idle + ph);
   const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * (0.32 + openness * 0.4) * U;
-  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U
+  const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U * tr.bob
     : (playing ? playHop * 1.7 * U : dancing ? (0.4 + Math.abs(Math.sin(dancePh))) * 1.2 * U : idle * 0.22 * U);
   const lean = working ? faceS * 0.9 * U : 0;                                     // stoop over the work
   const danceSway = dancing ? Math.sin(dancePh * 0.5) * 1.7 * U : 0;              // hips side to side
@@ -919,7 +960,7 @@ function drawFigure(fig, f) {
     ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - 1.4 * U + d1, armY - 2.9 * U - Math.abs(d1) * 0.6); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(shR, armY); ctx.lineTo(shR + 1.4 * U + d2, armY - 2.9 * U - Math.abs(d2) * 0.6); ctx.stroke();
   } else {
-    const aSwing = moving ? wph * strideAmp * 1.8 * U : 0;
+    const aSwing = moving ? wph * strideAmp * 1.8 * U * tr.swing : 0;
     const rest = moving ? 0 : (0.6 + openness * 0.9) * U;                          // open posture = arms held out
     ctx.beginPath(); ctx.moveTo(shL, armY); ctx.lineTo(shL - aSwing * faceS - rest, armY + 3.4 * U); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(shR, armY);
@@ -1430,6 +1471,7 @@ function updateInspector(f) {
 function loop(ts) {
   if (!state.last) state.last = ts;
   const dt = Math.min((ts - state.last) / 1000, 0.25); state.last = ts;
+  state.dt = dt;                          // for per-resident easing (turning, gait)
   state.anim = (state.anim || 0) + dt;   // real-time clock for ambient effects (water, sky) — runs even when paused
   if (state.playing) {
     // one tick = 300 game-seconds; advance the world by M game-seconds per real second
