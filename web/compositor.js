@@ -52,6 +52,8 @@ async function boot() {
   // obscured zones: polygons (plate px) the camera can't see past — anyone whose
   // feet fall inside is hidden. Authored in the plate-mapper's obscure tool.
   state.obscured = (map.obscured || []).map(z => z.pts || z);
+  // moon-hide rooflines: the low moon is drawn BEHIND these, so it ducks behind the skyline.
+  state.moonmask = (map.moonmask || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
   // the stands are a solid structure: a real person WALKING the path behind them is
   // hidden by the terracing (only the seated fans show). Kept separate from obscured
   // so it applies to walkers only (settled spectators are placed in the stands).
@@ -575,7 +577,12 @@ function easeFace(id, target) {
 // --- canvas / layout ---
 let cnv, ctx, view = { s: 1, ox: 0, oy: 0 };
 let fit = { s: 1, ox: 0, oy: 0 };                          // plate-fit transform (no zoom)
-let zoom = { z: 1, cx: PLATE_W / 2, cy: PLATE_H / 2 };     // double-click zoom-to-area
+const DISC = PLATE_H > 1200;                               // plate-v2 floating disc
+const ZHOME = DISC ? 2.4 : 1;                              // start zoomed IN on the action (not the far whole-disc)
+const ZCLOSE = DISC ? 5.5 : 2.6;                           // double-click close-up
+const ZMAX = DISC ? 9 : 5;
+let zoom = { z: ZHOME, cx: DISC ? 950 : PLATE_W / 2, cy: DISC ? 940 : PLATE_H / 2 };  // z + focus point (drag to pan, wheel to zoom)
+let camDrag = null, suppressClick = false;
 function sizeCanvas() {
   cnv = document.getElementById('c'); ctx = cnv.getContext('2d');
   const wrap = document.getElementById('stage');
@@ -589,8 +596,12 @@ function sizeCanvas() {
   fit.ox = (cw * dpr - PLATE_W * fit.s) / 2;
   fit.oy = (ch * dpr - PLATE_H * fit.s) / 2;
   if (!cnv.__zoomBound) { cnv.__zoomBound = true;
-    cnv.style.cursor = 'zoom-in';
-    cnv.addEventListener('dblclick', onDblClick); }
+    cnv.style.cursor = 'grab';
+    cnv.addEventListener('dblclick', onDblClick);
+    cnv.addEventListener('mousedown', onPanDown);
+    window.addEventListener('mousemove', onPanMove);
+    window.addEventListener('mouseup', onPanUp);
+    cnv.addEventListener('wheel', onWheel, { passive: false }); }
   applyView();
 }
 // Compose the plate-fit with the current double-click zoom. The focus point stays
@@ -606,13 +617,36 @@ function applyView() {
   if (PLATE_H * view.s <= cnv.height) view.oy = (cnv.height - PLATE_H * view.s) / 2;
   else view.oy = clamp(view.oy, cnv.height - PLATE_H * view.s, 0);
 }
-// Double-click an area to zoom into it; double-click again to zoom back out.
+// Double-click toggles between the home view and a close-up centred where you clicked.
 function onDblClick(e) {
   const rect = cnv.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (cnv.width / rect.width);
   const my = (e.clientY - rect.top) * (cnv.height / rect.height);
-  if (zoom.z > 1.01) { zoom.z = 1; cnv.style.cursor = 'zoom-in'; }
-  else { zoom.z = (PLATE_H > 1200 ? 5.5 : 2.6); zoom.cx = (mx - view.ox) / view.s; zoom.cy = (my - view.oy) / view.s; cnv.style.cursor = 'zoom-out'; }
+  if (zoom.z > ZHOME + 0.4) { zoom.z = ZHOME; }                         // pull back to home
+  else { zoom.z = ZCLOSE; zoom.cx = (mx - view.ox) / view.s; zoom.cy = (my - view.oy) / view.s; }  // dive in
+  cnv.style.cursor = 'grab'; applyView(); draw();
+}
+// Drag the plate to move around (pan). A drag suppresses the click-to-inspect.
+function onPanDown(e) {
+  const rect = cnv.getBoundingClientRect();
+  camDrag = { x: e.clientX, y: e.clientY, cx: zoom.cx, cy: zoom.cy, sx: cnv.width / rect.width, sy: cnv.height / rect.height, moved: false };
+}
+function onPanMove(e) {
+  if (!camDrag) return;
+  const dx = (e.clientX - camDrag.x) * camDrag.sx, dy = (e.clientY - camDrag.y) * camDrag.sy;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) camDrag.moved = true;
+  if (camDrag.moved) { cnv.style.cursor = 'grabbing'; zoom.cx = camDrag.cx - dx / view.s; zoom.cy = camDrag.cy - dy / view.s; applyView(); draw(); }
+}
+function onPanUp() { if (!camDrag) return; if (camDrag.moved) suppressClick = true; camDrag = null; cnv.style.cursor = 'grab'; }
+// Wheel zooms toward the cursor.
+function onWheel(e) {
+  e.preventDefault();
+  const rect = cnv.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (cnv.width / rect.width), my = (e.clientY - rect.top) * (cnv.height / rect.height);
+  const wx = (mx - view.ox) / view.s, wy = (my - view.oy) / view.s;
+  zoom.z = clamp(zoom.z * (e.deltaY < 0 ? 1.12 : 1 / 1.12), 1, ZMAX);
+  view.s = fit.s * zoom.z;                                              // new scale, then keep the cursor's world point fixed
+  zoom.cx = wx - (mx - cnv.width / 2) / view.s; zoom.cy = wy - (my - cnv.height / 2) / view.s;
   applyView(); draw();
 }
 const P2S = (x, y) => [view.ox + x * view.s, view.oy + y * view.s];
@@ -870,6 +904,14 @@ function drawMoon(night, f) {
   const [sx, sy] = P2S(mx, my);
   const r = (disc ? 66 : 44) * view.s;
   const a = clamp(night, 0, 1);
+  // clip the moon to everything EXCEPT the marked rooflines, so it ducks behind them
+  const mm = state.moonmask;
+  ctx.save();
+  if (mm && mm.length) {
+    ctx.beginPath(); ctx.rect(0, 0, cnv.width, cnv.height);
+    for (const poly of mm) { poly.forEach((p, i) => { const [x, y] = P2S(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
+    ctx.clip('evenodd');
+  }
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   const halo = (rad, col) => { const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rad); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, rad, 0, 7); ctx.fill(); };
@@ -889,6 +931,7 @@ function drawMoon(night, f) {
   ctx.beginPath(); ctx.ellipse(sx - r * 0.26, sy - r * 0.14, r * 0.26, r * 0.2, 0.4, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.ellipse(sx + r * 0.22, sy + r * 0.24, r * 0.18, r * 0.15, -0.3, 0, 7); ctx.fill();
   ctx.restore();
+  ctx.restore();   // moon-mask clip
 }
 
 function drawSky(night, wx) {
@@ -1867,6 +1910,7 @@ function wireControls() {
 
   // click a figure to inspect them
   cnv.addEventListener('click', e => {
+    if (suppressClick) { suppressClick = false; return; }   // this "click" was the end of a pan-drag
     const f = cnv.width / cnv.clientWidth;   // CSS px -> canvas px
     const cx = e.offsetX * f, cy = e.offsetY * f;
     let best = null, bd = Infinity;

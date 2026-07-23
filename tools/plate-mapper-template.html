@@ -49,6 +49,7 @@
       <button data-m="light">💡 Light</button>
       <button data-m="lantern">🏮 Lantern</button>
       <button data-m="flood">🏟 Stadium light</button>
+      <button data-m="moonhide">🌙 Moon-hide</button>
       <button data-m="select">Select</button>
     </div>
 
@@ -80,7 +81,7 @@
     <div id="plist"></div>
 
     <h2>Paths <span id="cnt">0</span> · Pathways <span id="pacnt">0</span> · Doors <span id="dcnt">0</span> · Houses <span id="hcnt">0</span></h2>
-    <h2>Obscured <span id="ocnt">0</span> · Water <span id="wcnt">0</span> · Stands <span id="scnt">0</span> · Fences <span id="fcnt">0</span> · Lights <span id="ltcnt">0</span> · Lanterns <span id="lncnt">0</span> · Stadium <span id="flcnt">0</span></h2>
+    <h2>Obscured <span id="ocnt">0</span> · Water <span id="wcnt">0</span> · Stands <span id="scnt">0</span> · Fences <span id="fcnt">0</span> · Lights <span id="ltcnt">0</span> · Lanterns <span id="lncnt">0</span> · Stadium <span id="flcnt">0</span> · Moon-hide <span id="mmcnt">0</span></h2>
     <div class="row">
       <button id="exCopy">Copy JSON</button>
       <button id="exDl">⬇ Download</button>
@@ -89,7 +90,7 @@
     <div class="row"><button id="imp">Import</button><button id="undo">↶ Undo</button><button id="clr" class="warn">Clear</button></div>
 
     <h2>How</h2>
-    <div class="hint"><b>Path (line):</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point. A thin walk-line, taggable from→to.<br><b>Pathway (area):</b> click around a walkable <em>surface</em> — the ring road, the plaza, a wide apron — <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. Anyone may wander anywhere inside it (not just along a line).<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Door:</b> click once on each door. It's where a resident steps <em>inside</em> the nearest building (and out again) — so nobody stands awkwardly in a doorway. Mark them all.<br><b>House:</b> click around a house's footprint, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It becomes an <em>occluder</em>: anyone walking behind it is hidden by it (depth-sorted), so figures pass behind houses instead of over them.<br><b>Obscure:</b> a general area the camera can't see past (a tunnel mouth, deep shade) — anyone inside is hidden. Use <b>House</b> for buildings; this is for the rest.<br><b>Water:</b> outline the river's edge; it ripples in the game.<br><b>Stands:</b> outline the terracing; the game-night crowd fills inside it.<br><b>Fence:</b> click along a fence line. <b>Low</b> (dashed) = hop-over where a path crosses; <b>wall</b> (solid) = blocks and hides who's behind.<br><b>Light:</b> click to drop a street light — a <em>visible</em> post with a warm head that glows at night (drag to place).<br><b>Lantern:</b> click to drop a lantern — its light <em>only</em> shows at night and <em>nothing</em> of it appears by day; the post is <em>never</em> drawn in-game (the dashed ring here is just so you can see where it sits). Buildings block a lantern's light, so it lights the ground behind, not through the house.<br><b>Stadium light:</b> click to drop a floodlight mast around the pitch; on match nights they wash the pitch with cool-white light (they aim at the pitch centre).<br><b>Select:</b> drag points, pins, lights or doors; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
+    <div class="hint"><b>Path (line):</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point. A thin walk-line, taggable from→to.<br><b>Pathway (area):</b> click around a walkable <em>surface</em> — the ring road, the plaza, a wide apron — <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. Anyone may wander anywhere inside it (not just along a line).<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Door:</b> click once on each door. It's where a resident steps <em>inside</em> the nearest building (and out again) — so nobody stands awkwardly in a doorway. Mark them all.<br><b>House:</b> click around a house's footprint, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It becomes an <em>occluder</em>: anyone walking behind it is hidden by it (depth-sorted), so figures pass behind houses instead of over them.<br><b>Obscure:</b> a general area the camera can't see past (a tunnel mouth, deep shade) — anyone inside is hidden. Use <b>House</b> for buildings; this is for the rest.<br><b>Water:</b> outline the river's edge; it ripples in the game.<br><b>Stands:</b> outline the terracing; the game-night crowd fills inside it.<br><b>Fence:</b> click along a fence line. <b>Low</b> (dashed) = hop-over where a path crosses; <b>wall</b> (solid) = blocks and hides who's behind.<br><b>Light:</b> click to drop a street light — a <em>visible</em> post with a warm head that glows at night (drag to place).<br><b>Lantern:</b> click to drop a lantern — its light <em>only</em> shows at night and <em>nothing</em> of it appears by day; the post is <em>never</em> drawn in-game (the dashed ring here is just so you can see where it sits). Buildings block a lantern's light, so it lights the ground behind, not through the house.<br><b>Stadium light:</b> click to drop a floodlight mast around the pitch; on match nights they wash the pitch with cool-white light (they aim at the pitch centre).<br><b>Moon-hide:</b> outline a roof or tower that should hide the low moon; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. The moon is drawn <em>behind</em> it, so it ducks behind the skyline.<br><b>Select:</b> drag points, pins, lights or doors; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
   </div>
   <canvas id="cnv"></canvas>
 </div>
@@ -108,19 +109,20 @@ const PACOL='rgba(224,188,104,0.95)', PAFILL='rgba(224,188,104,0.28)';   // path
 const HOUSECOL='rgba(206,92,66,0.96)', HOUSEFILL='rgba(206,92,66,0.20)'; // house occluder (terracotta)
 const DOORCOL='#ffca3a', DOOREDGE='#5a3a12';
 const FENCELOW='rgba(201,138,58,0.98)', FENCEWALL='rgba(110,80,52,0.98)';
+const MOONCOL='rgba(150,180,230,0.95)', MOONFILL='rgba(150,180,230,0.18)'; // moon-hide roofline
 const cnv=document.getElementById('cnv'),ctx=cnv.getContext('2d');
 const img=new Image(); let scale=1,ox=0,oy=0,ready=false;
 let mode='path',kind='street',fenceKind='low';
-let paths=[],pathareas=[],places={},doors=[],houses=[],obscured=[],water=[],stands=[],fences=[],lamps=[],floodlights=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
+let paths=[],pathareas=[],places={},doors=[],houses=[],obscured=[],water=[],stands=[],fences=[],lamps=[],floodlights=[],moonmask=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
 const undoStack=[];
 function W2S(x,y){return[x*scale+ox,y*scale+oy]} function S2W(x,y){return[(x-ox)/scale,(y-oy)/scale]}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,1500)}
-function snapshot(){return JSON.stringify({paths,pathareas,places,doors,houses,obscured,water,stands,fences,lamps,floodlights})}
+function snapshot(){return JSON.stringify({paths,pathareas,places,doors,houses,obscured,water,stands,fences,lamps,floodlights,moonmask})}
 function pushUndo(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift()}
 function resize(){cnv.width=cnv.clientWidth*devicePixelRatio;cnv.height=cnv.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);if(ready)draw()}
 window.addEventListener('resize',resize);
 img.onload=()=>{ready=true;const w=cnv.clientWidth,h=cnv.clientHeight;scale=Math.min(w/img.width,h/img.height)*0.98;ox=(w-img.width*scale)/2;oy=(h-img.height*scale)/2;
-  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(INIT.pathareas||[]).map(z=>({pts:z.pts||z}));places=INIT.places||{};doors=(INIT.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(INIT.houses||[]).map(z=>({pts:z.pts||z}));obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));floodlights=(INIT.floodlights||[]).map(l=>({x:l.x,y:l.y}));pid=paths.length+1}
+  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(INIT.pathareas||[]).map(z=>({pts:z.pts||z}));places=INIT.places||{};doors=(INIT.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(INIT.houses||[]).map(z=>({pts:z.pts||z}));obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));floodlights=(INIT.floodlights||[]).map(l=>({x:l.x,y:l.y}));moonmask=(INIT.moonmask||[]).map(z=>({pts:z.pts||z}));pid=paths.length+1}
   draw();refreshList();refreshRouteSels()};
 
 // FROM / TO route dropdowns for tagging paths as explicit A->B ways
@@ -155,6 +157,8 @@ function draw(){
   for(const z of stands){const on=sel&&sel.k==='stand'&&sel.o===z;fillPoly(z.pts,STANDFILL,STANDCOL,on);if(on)handles(z.pts)}
   // houses (terracotta) — building footprints that occlude figures behind them
   for(const z of houses){const on=sel&&sel.k==='house'&&sel.o===z;fillPoly(z.pts,HOUSEFILL,HOUSECOL,on);if(on)handles(z.pts)}
+  // moon-hide rooflines (pale blue) — outline a roof/tower that should hide the low moon
+  for(const z of moonmask){const on=sel&&sel.k==='moon'&&sel.o===z;fillPoly(z.pts,MOONFILL,MOONCOL,on);if(on)handles(z.pts)}
   // fences (open lines) — low = jump-over (dashed brown with pickets), wall = blocks (solid dark)
   for(const f of fences){const on=sel&&sel.k==='fence'&&sel.o===f;const low=f.kind!=='wall';
     ctx.strokeStyle=low?FENCELOW:FENCEWALL;ctx.lineWidth=(low?2.4:4)*(on?1.4:1);ctx.lineJoin='round';ctx.lineCap='round';
@@ -167,7 +171,7 @@ function draw(){
     if(tagged){const mid=p.pts[Math.floor(p.pts.length/2)];const[lx,ly]=W2S(...mid);const nm=id=>(LOCS.find(l=>l.id===id)||{}).name||'?';const lab=nm(p.from)+' → '+nm(p.to);ctx.font='11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.fillStyle='#ffe08a';ctx.strokeText(lab,lx+6,ly-4);ctx.fillText(lab,lx+6,ly-4)}
     if(on)handles(p.pts)}
   // in-progress drawing
-  if(drawing){const polyTypes={obscure:OBSCOL,water:WATCOL,stands:STANDCOL,patharea:PACOL,house:HOUSECOL};const poly=drawing.type in polyTypes;const isFence=drawing.type==='fence';const pc=poly?polyTypes[drawing.type]:isFence?(drawing.kind==='wall'?FENCEWALL:FENCELOW):KC[drawing.type];ctx.strokeStyle=pc;ctx.lineWidth=Math.max(2.5,(poly?7:isFence?4:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
+  if(drawing){const polyTypes={obscure:OBSCOL,water:WATCOL,stands:STANDCOL,patharea:PACOL,house:HOUSECOL,moonhide:MOONCOL};const poly=drawing.type in polyTypes;const isFence=drawing.type==='fence';const pc=poly?polyTypes[drawing.type]:isFence?(drawing.kind==='wall'?FENCEWALL:FENCELOW):KC[drawing.type];ctx.strokeStyle=pc;ctx.lineWidth=Math.max(2.5,(poly?7:isFence?4:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
   // place pins
   ctx.font='11px sans-serif';
   for(const [id,p] of Object.entries(places)){const[x,y]=W2S(p.x,p.y);const on=sel&&sel.k==='place'&&sel.id===id;
@@ -198,11 +202,12 @@ function draw(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   set('cnt',paths.length);set('pacnt',pathareas.length);set('dcnt',doors.length);set('hcnt',houses.length);
   set('ocnt',obscured.length);set('wcnt',water.length);set('scnt',stands.length);set('fcnt',fences.length);
-  set('ltcnt',lamps.filter(l=>(l.kind||'light')==='light').length);set('lncnt',lamps.filter(l=>l.kind==='lantern').length);set('flcnt',floodlights.length);
+  set('ltcnt',lamps.filter(l=>(l.kind||'light')==='light').length);set('lncnt',lamps.filter(l=>l.kind==='lantern').length);set('flcnt',floodlights.length);set('mmcnt',moonmask.length);
 }
 function pickPath(mx,my){for(const p of paths)for(let i=0;i<p.pts.length;i++){const[x,y]=W2S(...p.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'path',o:p,pi:i}}return null}
 function pickPArea(mx,my){for(const z of pathareas)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'parea',o:z,pi:i}}return null}
 function pickHouse(mx,my){for(const z of houses)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'house',o:z,pi:i}}return null}
+function pickMoon(mx,my){for(const z of moonmask)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'moon',o:z,pi:i}}return null}
 function pickObs(mx,my){for(const z of obscured)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'obs',o:z,pi:i}}return null}
 function pickWat(mx,my){for(const z of water)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'wat',o:z,pi:i}}return null}
 function pickStand(mx,my){for(const z of stands)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'stand',o:z,pi:i}}return null}
@@ -216,6 +221,7 @@ function finishDrawing(){if(!drawing)return;
   if(drawing.type==='obscure'){if(drawing.pts.length>=3)obscured.push({pts:drawing.pts})}
   else if(drawing.type==='patharea'){if(drawing.pts.length>=3)pathareas.push({pts:drawing.pts})}
   else if(drawing.type==='house'){if(drawing.pts.length>=3)houses.push({pts:drawing.pts})}
+  else if(drawing.type==='moonhide'){if(drawing.pts.length>=3)moonmask.push({pts:drawing.pts})}
   else if(drawing.type==='water'){if(drawing.pts.length>=3)water.push({pts:drawing.pts})}
   else if(drawing.type==='stands'){if(drawing.pts.length>=3)stands.push({pts:drawing.pts})}
   else if(drawing.type==='fence'){if(drawing.pts.length>=2)fences.push({id:drawing.id,kind:drawing.kind,pts:drawing.pts})}
@@ -229,19 +235,20 @@ cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W
   if(mode==='path'){if(!drawing){pushUndo();drawing={id:'p'+(pid++),type:kind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='patharea'){if(!drawing){pushUndo();drawing={type:'patharea',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='house'){if(!drawing){pushUndo();drawing={type:'house',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='moonhide'){if(!drawing){pushUndo();drawing={type:'moonhide',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='obscure'){if(!drawing){pushUndo();drawing={type:'obscure',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='water'){if(!drawing){pushUndo();drawing={type:'water',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='stands'){if(!drawing){pushUndo();drawing={type:'stands',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='fence'){if(!drawing){pushUndo();drawing={id:'f'+(pid++),type:'fence',kind:fenceKind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='light'||mode==='lantern'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy,kind:mode};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
   if(mode==='flood'){const hit=pickFlood(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const F={x:wx,y:wy};floodlights.push(F);sel={k:'flood',o:F};dragging=sel;draw();return}
-  const hp=pickPlace(mx,my)||pickDoor(mx,my)||pickFlood(mx,my)||pickPath(mx,my)||pickFence(mx,my)||pickPArea(mx,my)||pickHouse(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
+  const hp=pickPlace(mx,my)||pickDoor(mx,my)||pickFlood(mx,my)||pickPath(mx,my)||pickFence(mx,my)||pickPArea(mx,my)||pickHouse(mx,my)||pickMoon(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
   if(hp){sel=hp;dragging=hp;if(hp.k==='path'){fromSel.value=hp.o.from||'';toSel.value=hp.o.to||''}draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
 });
 cnv.addEventListener('mousemove',e=>{
   if(panning){ox=panning[2]+(e.clientX-panning[0]);oy=panning[3]+(e.clientY-panning[1]);draw();return}
   if(!dragging)return;const[wx,wy]=S2W(e.offsetX,e.offsetY).map(Math.round);
-  if(['path','obs','wat','stand','fence','parea','house'].includes(dragging.k)&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
+  if(['path','obs','wat','stand','fence','parea','house','moon'].includes(dragging.k)&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
   else if(dragging.k==='lamp'||dragging.k==='door'||dragging.k==='flood'){dragging.o.x=wx;dragging.o.y=wy}
   else if(dragging.k==='place')places[dragging.id]={x:wx,y:wy};
   draw();
@@ -254,10 +261,11 @@ window.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.a
   else if(e.key==='Escape'){drawing=null;sel=null;draw()}
   else if(e.key==='Backspace'){e.preventDefault();
     if(drawing){drawing.pts.pop();if(!drawing.pts.length)drawing=null;draw()}
-    else if(sel&&['path','obs','wat','stand','fence','parea','house'].includes(sel.k)&&sel.pi!=null&&sel.o.pts.length>((sel.k==='path'||sel.k==='fence')?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
+    else if(sel&&['path','obs','wat','stand','fence','parea','house','moon'].includes(sel.k)&&sel.pi!=null&&sel.o.pts.length>((sel.k==='path'||sel.k==='fence')?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
     else if(sel&&sel.k==='path'){pushUndo();paths=paths.filter(p=>p!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='parea'){pushUndo();pathareas=pathareas.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='house'){pushUndo();houses=houses.filter(z=>z!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='moon'){pushUndo();moonmask=moonmask.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='fence'){pushUndo();fences=fences.filter(f=>f!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='obs'){pushUndo();obscured=obscured.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='wat'){pushUndo();water=water.filter(z=>z!==sel.o);sel=null;draw()}
@@ -282,12 +290,13 @@ const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' p
   stands:stands.map(z=>({pts:z.pts})),
   fences:fences.map(f=>({id:f.id,kind:f.kind,pts:f.pts})),
   lamps:lamps.map(l=>({x:l.x,y:l.y,kind:l.kind||'light'})),
-  floodlights:floodlights.map(l=>({x:l.x,y:l.y}))},null,1);
+  floodlights:floodlights.map(l=>({x:l.x,y:l.y})),
+  moonmask:moonmask.map(z=>({pts:z.pts}))},null,1);
 document.getElementById('exCopy').onclick=async()=>{document.getElementById('io').value=outJSON();try{await navigator.clipboard.writeText(outJSON());toast('copied — paste to Claude')}catch(_){toast('JSON in the box — copy it')}};
 document.getElementById('exDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([outJSON()],{type:'application/json'}));a.download='era-plate-map.json';a.click();toast('downloaded')};
-document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(j.pathareas||[]).map(z=>({pts:z.pts||z}));places=j.places||{};doors=(j.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(j.houses||[]).map(z=>({pts:z.pts||z}));obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));floodlights=(j.floodlights||[]).map(l=>({x:l.x,y:l.y}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
-document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;pathareas=s.pathareas||[];places=s.places;doors=s.doors||[];houses=s.houses||[];obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];fences=s.fences||[];lamps=s.lamps||[];floodlights=s.floodlights||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
-document.getElementById('clr').onclick=()=>{if(confirm('Clear EVERYTHING — paths, pathways, pins, doors, houses, obscured, water, stands, fences, lamps AND stadium lights?')){pushUndo();paths=[];pathareas=[];places={};doors=[];houses=[];obscured=[];water=[];stands=[];fences=[];lamps=[];floodlights=[];sel=null;drawing=null;refreshList();draw()}};
+document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(j.pathareas||[]).map(z=>({pts:z.pts||z}));places=j.places||{};doors=(j.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(j.houses||[]).map(z=>({pts:z.pts||z}));obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));floodlights=(j.floodlights||[]).map(l=>({x:l.x,y:l.y}));moonmask=(j.moonmask||[]).map(z=>({pts:z.pts||z}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
+document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;pathareas=s.pathareas||[];places=s.places;doors=s.doors||[];houses=s.houses||[];obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];fences=s.fences||[];lamps=s.lamps||[];floodlights=s.floodlights||[];moonmask=s.moonmask||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
+document.getElementById('clr').onclick=()=>{if(confirm('Clear EVERYTHING — paths, pathways, pins, doors, houses, obscured, water, stands, fences, lamps AND stadium lights?')){pushUndo();paths=[];pathareas=[];places={};doors=[];houses=[];obscured=[];water=[];stands=[];fences=[];lamps=[];floodlights=[];moonmask=[];sel=null;drawing=null;refreshList();draw()}};
 resize();
 </script>
 </body>
