@@ -163,7 +163,7 @@ impl Choreographer {
         {
             let p = layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle);
             pos.insert("the_old_dog", settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y()));
-            moving.insert("the_old_dog", false);
+            moving.insert("the_old_dog", sim.dog.trip().is_some());
         }
         for a in &sim.wildlife.animals {
             let (xy, mv) = animal_xy(a);

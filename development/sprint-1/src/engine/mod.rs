@@ -314,10 +314,16 @@ impl Engine {
             }
         }
         let dog_place_name = sim.world.location(sim.dog.place).map(|l| l.name).unwrap_or(sim.dog.place);
-        entities.push(make(
+        let mut dog_ev = make(
             "the_old_dog", "the old dog", "dog", layout::color_of("the_old_dog"),
             sim.dog.place, dog_place_name, "about the district".to_string(),
-        ));
+        );
+        if let Some(t) = sim.dog.trip() {
+            dog_ev.from = Some(t.from);
+            dog_ev.to = Some(t.to);
+            dog_ev.edge_t = if t.total == 0 { 0.0 } else { (t.total - t.left) as f64 / t.total as f64 };
+        }
+        entities.push(dog_ev);
         for a in &sim.wildlife.animals {
             let place_name = sim.world.location(a.place).map(|l| l.name).unwrap_or(a.place);
             let mut ev = make(a.id, a.name, a.species.tag(), a.color, a.place, place_name, a.doing());

@@ -9,6 +9,7 @@
 //! He is ambient life the world carries whether or not anyone is watching.
 
 use crate::world::location::LocationId;
+use crate::sim::wildlife::Trip;
 
 pub const DOG_ID: &str = "the_old_dog";
 pub const DOG_NAME: &str = "the old dog";
@@ -35,6 +36,8 @@ pub struct Dog {
     move_cooldown: u32,
     met_child_today: bool,
     last_day: u64,
+    /// A current amble-leg between two adjacent places (None when settled).
+    trip: Option<Trip>,
 }
 
 impl Default for Dog {
@@ -46,6 +49,7 @@ impl Default for Dog {
             move_cooldown: 0,
             met_child_today: false,
             last_day: 0,
+            trip: None,
         }
     }
 }
@@ -113,8 +117,24 @@ impl Dog {
     }
     pub(crate) fn arrive(&mut self, place: LocationId) {
         self.place = place;
+        self.trip = None;
         self.move_cooldown = self.move_interval();
     }
+    /// Set out along one nav edge, walked over `total` ticks (like residents/wildlife).
+    pub(crate) fn begin_trip(&mut self, to: LocationId, total: u32) {
+        let total = total.max(1);
+        self.trip = Some(Trip { from: self.place, to, total, left: total });
+    }
+    pub(crate) fn stepping(&self) -> bool { self.trip.is_some() }
+    /// Advance the current leg one tick; returns the destination the tick he arrives.
+    pub(crate) fn step_trip(&mut self) -> Option<LocationId> {
+        if let Some(t) = self.trip.as_mut() {
+            t.left = t.left.saturating_sub(1);
+            if t.left == 0 { let dest = t.to; self.trip = None; return Some(dest); }
+        }
+        None
+    }
+    pub(crate) fn trip(&self) -> Option<Trip> { self.trip }
     pub(crate) fn met_child_today(&self) -> bool {
         self.met_child_today
     }

@@ -854,17 +854,27 @@ impl Simulation {
         use crate::sim::dog::{Dog, CHILD_ID};
         self.dog.roll_day(day);
 
-        let pref = self.dog.preferred_spot(hour);
-        if self.dog.place != pref && self.dog.cooldown() == 0 {
-            if let Some(path) = self.world.nav.shortest_path(self.dog.place, pref) {
-                if path.len() >= 2 {
-                    let next = path[1];
-                    self.dog.arrive(next);
-                    if next == pref {
-                        self.log.push(Event {
-                            tick: self.clock.tick, day, hour, resident: crate::sim::dog::DOG_NAME,
-                            message: Dog::settle_phrase(next).to_string(),
-                        });
+        // Amble like a real being: if mid-stride, advance the leg and settle only on
+        // arrival; otherwise, when rested, set out along the paths toward where he'd
+        // rather be — one nav edge at a time (emits a proper moving leg for the view).
+        if self.dog.stepping() {
+            if let Some(arrived) = self.dog.step_trip() {
+                self.dog.arrive(arrived);
+                if arrived == self.dog.preferred_spot(hour) {
+                    self.log.push(Event {
+                        tick: self.clock.tick, day, hour, resident: crate::sim::dog::DOG_NAME,
+                        message: Dog::settle_phrase(arrived).to_string(),
+                    });
+                }
+            }
+        } else if self.dog.cooldown() == 0 {
+            let pref = self.dog.preferred_spot(hour);
+            if self.dog.place != pref {
+                if let Some(path) = self.world.nav.shortest_path(self.dog.place, pref) {
+                    if path.len() >= 2 {
+                        let next = path[1];
+                        let total = edge_weight(&self.world.nav, self.dog.place, next) * TRAVEL_TICKS_PER_WEIGHT;
+                        self.dog.begin_trip(next, total);
                     }
                 }
             }
