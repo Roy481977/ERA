@@ -676,6 +676,7 @@ const P2S = (x, y) => [view.ox + x * view.s, view.oy + y * view.s];
 
 // --- draw ---
 function draw() {
+  if (!cnv || cnv.width < 1 || cnv.height < 1 || !(view.s > 0)) return;   // no drawable surface yet
   const fi = Math.floor(state.t);
   const f = state.frames[fi];
   if (!f) return;
@@ -1748,6 +1749,7 @@ function drawLampPosts(lit) {
 // the buildings, ground and people near them, and unlit areas fall dark.
 function applyLightMap(n, lit, f) {
   const R = Math.ceil(PLATE_W * view.s), H = Math.ceil(PLATE_H * view.s);
+  if (R < 1 || H < 1) return;                                // stage has no size yet (loading/resize) — nothing to light
   let lc = state.lc;
   if (!lc) lc = state.lc = document.createElement('canvas');
   if (lc.width !== R || lc.height !== H) { lc.width = R; lc.height = H; }
