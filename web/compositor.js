@@ -1368,6 +1368,7 @@ function obscured(px, py) {
 // street, dissolves smoothly as it steps behind a building, and fades back in on the
 // far side — natural depth, no flicker. 1 = fully visible, 0 = hidden.
 const OCC_FADE = 12;
+const OCC_EDGE = 2.5;   // px past the occluder edge over which a figure vanishes — a hard hide, just anti-aliased
 function occlusionAlpha(px, py) {
   const zs = state.obscured;
   if (!zs || !zs.length) return 1;
@@ -1382,8 +1383,11 @@ function occlusionAlpha(px, py) {
       if (d < mind) mind = d;
     }
   }
-  const signed = inside ? mind : -mind;                 // + inside a building, - out on the open
-  return clamp(0.5 - signed / OCC_FADE, 0, 1);
+  // An object passing behind a wall should DISAPPEAR behind it, not dissolve: full
+  // opacity out in the open, then hidden once its feet cross the edge (a ~1px lip
+  // only to avoid a jagged pop). No long approach-fade.
+  if (!inside) return 1;
+  return clamp(1 - mind / OCC_EDGE, 0, 1);
 }
 // A walker whose feet fall behind the stands is hidden by the terracing (soft edge).
 // Outside the stands: fully visible. Seated fans are settled (not walkers) so this
@@ -1403,7 +1407,7 @@ function standsAlpha(px, py) {
     }
   }
   if (!inside) return 1;
-  return clamp(0.5 - mind / OCC_FADE, 0, 1);
+  return clamp(1 - mind / OCC_EDGE, 0, 1);   // hidden behind the stands, not a soft fade
 }
 function pointInPoly(x, y, poly) {
   let inside = false;
