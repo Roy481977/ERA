@@ -163,3 +163,41 @@ pub fn assign(id: &str, host: &str, salt: u64) -> Option<&'static Poi> {
     let i = (pick_hash(id, host, salt) % spots.len() as u64) as usize;
     Some(spots[i])
 }
+
+/// The kinds of spot a species keeps to — its "way" of inhabiting a place. A cat
+/// takes a nook, a low branch or an edge; the heron only ever the water's verge;
+/// the fox a den or shaded lee. Returns an empty slice for humans (they take any
+/// spot — a bench, the fountain — which is exactly what animals should NOT do).
+/// See design/animal-territories.md.
+pub fn kinds_for(species: &str) -> &'static [PoiKind] {
+    use PoiKind::*;
+    match species {
+        "cat" => &[Nook, Tree, Verge],
+        "fox" => &[Den, Verge, Wing, Tree],
+        "heron" => &[Verge],
+        "hedgehog" => &[Den, Tree],
+        "owl" => &[Tree, Wing],
+        "crow" => &[Tree, Nook, Verge],
+        "dog" => &[Nook, Verge, Wing, Tree],
+        _ => &[], // humans: no restriction
+    }
+}
+
+/// Choose a spot the way `species` does: prefer its characteristic kinds, and fall
+/// back to any spot only if the place offers none of them. Humans (empty kind set)
+/// get the plain `assign`. Deterministic — same inputs, same spot.
+pub fn assign_for(id: &str, host: &str, salt: u64, species: &str) -> Option<&'static Poi> {
+    let prefer = kinds_for(species);
+    if prefer.is_empty() {
+        return assign(id, host, salt);
+    }
+    let liked: Vec<&'static Poi> = at(host)
+        .into_iter()
+        .filter(|p| prefer.contains(&p.kind))
+        .collect();
+    if liked.is_empty() {
+        return assign(id, host, salt); // nothing in character here — take what there is
+    }
+    let i = (pick_hash(id, host, salt) % liked.len() as u64) as usize;
+    Some(liked[i])
+}

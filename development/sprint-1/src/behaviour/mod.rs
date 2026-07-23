@@ -157,7 +157,7 @@ impl Choreographer {
         for r in &sim.residents {
             let p = layout::entity_pos(&sim.world, r.place, &r.status);
             let mv = matches!(r.status, Status::Traveling { .. });
-            pos.insert(r.id, settled_xy(r.id, r.place, mv, day, p.x(), p.y()));
+            pos.insert(r.id, settled_xy(r.id, r.place, mv, day, p.x(), p.y(), ""));
             moving.insert(r.id, mv);
         }
         {
@@ -174,14 +174,14 @@ impl Choreographer {
                 (a.x() + (b.x() - a.x()) * tp, a.y() + (b.y() - a.y()) * tp)
             } else {
                 let p = layout::entity_pos(&sim.world, sim.dog.place, &Status::Idle);
-                settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y())
+                settled_xy("the_old_dog", sim.dog.place, false, day, p.x(), p.y(), "dog")
             };
             pos.insert("the_old_dog", dxy);
             moving.insert("the_old_dog", dog_moving);
         }
         for a in &sim.wildlife.animals {
             let (xy, mv) = animal_xy(a);
-            pos.insert(a.id, settled_xy(a.id, a.place, mv, day, xy.0, xy.1));
+            pos.insert(a.id, settled_xy(a.id, a.place, mv, day, xy.0, xy.1, a.species.tag()));
             moving.insert(a.id, mv);
         }
 
@@ -335,7 +335,7 @@ impl Choreographer {
             }
             // The spot he's settled at shapes his rest: deep shade or a den is for
             // napping (the east wing of the stadium), a rail is for watching.
-            match crate::world::poi::assign(id, sim.dog.place, day).map(|p| p.posture()) {
+            match crate::world::poi::assign_for(id, sim.dog.place, day, "dog").map(|p| p.posture()) {
                 Some(Posture::Rest) => return (Pose::Lie, Gesture::None, None, None),
                 Some(Posture::Watch) => return (Pose::Alert, Gesture::Glance, None, None),
                 _ => {}
@@ -370,11 +370,11 @@ impl Choreographer {
 /// A settled entity drifts to a nearby point of interest, so a place reads as
 /// inhabited at fine grain rather than a stack of figures on one node. Travellers
 /// keep their on-edge position. Deterministic (seeded by id + place + day).
-fn settled_xy(id: &str, place: &str, moving: bool, day: u64, bx: f64, by: f64) -> (f64, f64) {
+fn settled_xy(id: &str, place: &str, moving: bool, day: u64, bx: f64, by: f64, species: &str) -> (f64, f64) {
     if moving {
         return (bx, by);
     }
-    match crate::world::poi::assign(id, place, day) {
+    match crate::world::poi::assign_for(id, place, day, species) {
         Some(p) => {
             let (px, py) = p.xy();
             let (jx, jy) = jitter(id);
