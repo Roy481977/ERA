@@ -63,6 +63,11 @@ async function boot() {
   // pin-to-pin lines (which cut across the river and buildings).
   state.graph = buildPlateGraph(map);
   state.routeCache = {};
+  // low fences (jump-over): flatten to segments so a route crossing one triggers a hop
+  state.lowFences = [];
+  for (const f of (map.fences || [])) if ((f.kind || 'low') !== 'wall') {
+    const p = f.pts; for (let i = 1; i < p.length; i++) state.lowFences.push([p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]]);
+  }
 
   // river polyline (for animated shimmer) as an arc-length curve
   const rv = (map.paths || []).find(p => p.type === 'river');
@@ -302,7 +307,7 @@ function getRoute(fromId, toId) {
   const ck = fromId + '|' + toId;
   if (state.routeCache[ck] !== undefined) return state.routeCache[ck];
   const ex = explicitPath(fromId, toId);
-  if (ex) { state.routeCache[ck] = ex; return ex; }
+  if (ex) { state.routeCache[ck] = addHops(ex); return state.routeCache[ck]; }
   const g = state.graph; if (!g) return (state.routeCache[ck] = null);
   const s = g.pinIdx[fromId], t = g.pinIdx[toId];
   if (s == null || t == null) return (state.routeCache[ck] = null);
@@ -323,10 +328,28 @@ function getRoute(fromId, toId) {
     const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
     route = { pts, cum, len: cum[cum.length - 1] };
   }
-  state.routeCache[ck] = route;
-  return route;
+  state.routeCache[ck] = addHops(route);
+  return state.routeCache[ck];
 }
 
+// segment intersection point (or null) — for finding where a route crosses a fence
+function segCross(ax, ay, bx, by, cx, cy, dx, dy) {
+  const r1 = bx - ax, r2 = by - ay, s1 = dx - cx, s2 = dy - cy;
+  const den = r1 * s2 - r2 * s1; if (Math.abs(den) < 1e-9) return null;
+  const t = ((cx - ax) * s2 - (cy - ay) * s1) / den, u = ((cx - ax) * r2 - (cy - ay) * r1) / den;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return [ax + t * r1, ay + t * r2];
+}
+// annotate a route with the points where it crosses a low fence (computed once, cached on the route)
+function addHops(route) {
+  if (!route || route.hopPts) return route;
+  route.hopPts = [];
+  const F = state.lowFences;
+  if (F && F.length && route.pts && route.pts.length > 1)
+    for (let i = 1; i < route.pts.length; i++) { const a = route.pts[i - 1], b = route.pts[i];
+      for (const s of F) { const p = segCross(a.x, a.y, b.x, b.y, s[0], s[1], s[2], s[3]); if (p) route.hopPts.push(p); } }
+  return route;
+}
 function pointAlong(route, t) {
   const target = t * route.len, cum = route.cum, pts = route.pts;
   if (route.len < 1e-6) return [pts[0].x, pts[0].y];
@@ -548,7 +571,20 @@ function draw() {
     const wasX = prevById[e.id];            // emerging from a doorway: fade in over the first step out
     if (walking && wasX && !wasX.moving && wasX.place !== e.place && state.indoor.has(wasX.place)) alpha *= ease01(frac);
     if (alpha <= 0.02) continue;            // fully behind a building — skip
-    figs.push({ e, meta, px, py, walking, hd, alpha });
+    // hop over a low fence: a vertical lift as the mover passes a fence crossing on its route
+    let fenceHop = 0;
+    if (walking && e.moving && e.from && e.to) {
+      const r = getRoute(e.from, e.to);
+      if (r && r.hopPts && r.hopPts.length) {
+        const HOPR = 15;                                  // px around the crossing over which the hop rises & falls
+        for (const hp of r.hopPts) { const d = Math.hypot(px - hp[0], py - hp[1]); if (d < HOPR) fenceHop = Math.max(fenceHop, Math.cos(Math.PI / 2 * d / HOPR)); }
+        if (fenceHop > 0) { let A = meta.kind !== 'resident' ? 5.5 : 3.2;  // cats & the dog spring higher than people
+          const s = e.sig; if (s === 'load' || s === 'cane' || s === 'limp') A *= 0.35;   // laden / stiff / elderly step over, barely a hop
+          else if (s === 'skip') A *= 1.4;                                  // children bound over
+          fenceHop *= A; }
+      }
+    }
+    figs.push({ e, meta, px, py, walking, hd, alpha, hop: fenceHop });
   }
   figs.sort((a, b) => a.py - b.py);
   // remember screen positions for click-to-inspect
@@ -863,6 +899,7 @@ function drawFigure(fig, f) {
   let [x, y] = P2S(fig.px, fig.py);
   const sc = scaleAt(fig.py) * view.s;
   if (meta.kind !== 'resident') { drawAnimal(fig, f, x, y, sc); return; }
+  const hopY = (fig.hop || 0) * sc; const groundY = y; y -= hopY;   // airborne over a low fence; shadow stays on the ground
 
   const col = meta.color || '#c9cad3';
   const hs = hashId(e.id);
@@ -914,9 +951,10 @@ function drawFigure(fig, f) {
   x += sway + lean + danceSway;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 
-  // ground shadow
-  ctx.fillStyle = 'rgba(0,0,0,.20)';
-  ctx.beginPath(); ctx.ellipse(x, y, 7 * U, 2.6 * U, 0, 0, 7); ctx.fill();
+  // ground shadow — stays on the ground and shrinks while the figure is airborne
+  { const sh = 1 - Math.min(1, hopY / (7 * U)) * 0.5;
+    ctx.fillStyle = `rgba(0,0,0,${0.2 * sh})`;
+    ctx.beginPath(); ctx.ellipse(x, groundY, 7 * U * sh, 2.6 * U * sh, 0, 0, 7); ctx.fill(); }
 
   // legs — opposite swing; role-tinted trousers
   const trouser = role === 'keeper' ? '#3f4a37' : role === 'clerk' ? '#33384a' : shade(col, 0.6);
@@ -1074,10 +1112,12 @@ function drawFigure(fig, f) {
 
 function drawAnimal(fig, f, x, y, sc) {
   const { e, meta } = fig; const col = meta.color || '#b98a5a'; const k = sc * 1.25; const kind = meta.kind;
+  const hopY = (fig.hop || 0) * sc; const groundY = y; y -= hopY;   // airborne over a low fence; shadow stays down
   const trot = fig.walking ? state.t * 5.5 + (hashId(e.id) % 628) / 100 : null;   // leg-swing phase while walking
   const legSwing = (i) => trot != null ? Math.sin(trot + i * 1.7) * 1.7 * k : 0;
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.beginPath(); ctx.ellipse(x, y, 5 * k, 1.8 * k, 0, 0, 7); ctx.fill();
+  { const sh = 1 - Math.min(1, hopY / (6 * k)) * 0.5;
+    ctx.fillStyle = `rgba(0,0,0,${0.16 * sh})`; ctx.beginPath(); ctx.ellipse(x, groundY, 5 * k * sh, 1.8 * k * sh, 0, 0, 7); ctx.fill(); }
 
   if (kind === 'cat') {
     ctx.strokeStyle = shade(col, 0.75); ctx.lineWidth = 1.1 * k;
