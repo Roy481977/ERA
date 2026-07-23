@@ -375,6 +375,15 @@ function perchFor(id, f) {
   return list[(hashId(id) + drift) % list.length];
 }
 
+// Hand-placed rest spots (plate px), keyed by entity id then place id, so an animal
+// beds down somewhere believable instead of dead-centre on a doorway pin. Add spots
+// as Roy points out odd placements.
+const SETTLE_SPOTS = {
+  the_old_dog: {
+    loc_riverside: [768, 590],   // curls up on the grass under the oak, off the quay/doors
+  },
+};
+
 function placeEntity(e) {
   const P = state.map.places;
   if (e.moving && e.from && e.to && P[e.from] && P[e.to]) {
@@ -392,10 +401,13 @@ function placeEntity(e) {
     return [1020 + (h % 300), 388 + ((h >> 4) % 5) * 7];  // rows in the terracing
   }
   // animals settle at their place's ground spot (with a little jitter) rather than
-  // a drifted world point that can land on a rooftop
-  if (!e.moving && P[e.place] && (e.id === 'the_old_dog' || e.id.startsWith('ani_'))) {
-    const [jx, jy] = jitterPx(e.id, 3);
-    return [P[e.place].x + jx, P[e.place].y + jy];
+  // a drifted world point that can land on a rooftop. A hand-placed rest spot
+  // (plate px, per place) beds them down somewhere believable — a den on the grass,
+  // not dead-centre on a doorway pin.
+  if (!e.moving && (e.id === 'the_old_dog' || e.id.startsWith('ani_'))) {
+    const spot = SETTLE_SPOTS[e.id] && SETTLE_SPOTS[e.id][e.place];
+    if (spot) { const [jx, jy] = jitterPx(e.id, 2); return [spot[0] + jx, spot[1] + jy]; }
+    if (P[e.place]) { const [jx, jy] = jitterPx(e.id, 3); return [P[e.place].x + jx, P[e.place].y + jy]; }
   }
   return worldToPlate(e.x, e.y);
 }
@@ -627,6 +639,7 @@ function draw() {
   // lamps and lit windows genuinely illuminate the buildings, ground and people
   // around them — everything else falls into real darkness.
   if (night > 0) applyLightMap(night, lit, f);
+  drawMoon(night, f);      // the large slow moon, bright over the darkened sky (before rain)
   drawFloodBeams(flood);   // beam shafts + head flares over the lit scene
   drawFestival(festivalOn(f), f);   // strung lanterns + music over the square
   drawPrecip(wx, night);   // rain streaks / snow, wind-angled, over everything
@@ -687,6 +700,40 @@ function weatherOf(f) {
 
 // Drifting clouds over the plate's sky band. On grey days the puffs turn denser,
 // slatier and more numerous so the sky itself reads overcast, not just the ground.
+// The large slow moon — ERA grew under two moons (seen, never said; residents never
+// react). v1: one pale-cool moon with a warm-rimmed glow, hanging low over the
+// stadium and drifting slowly across the night, its spot seeded per night. Drawn
+// AFTER the night light-map so it reads bright against the dark sky, before rain.
+function drawMoon(night, f) {
+  if (night < 0.04) return;
+  const day = (f.day | 0), h = (f.hour || 0) + (f.minute || 0) / 60;
+  const s = ((day * 2654435761) >>> 0);
+  const mx = 1200 + (s % 100) - 50 + (h - 12) * 0.8;        // over the stadium, ±50px per night, a slow nightly drift
+  const my = 150 + ((s >> 8) % 24) - (h - 21) * 0.35;       // large & a bit low
+  const [sx, sy] = P2S(mx, my);
+  const r = 44 * view.s;
+  const a = clamp(night, 0, 1);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const halo = (rad, col) => { const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rad); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, rad, 0, 7); ctx.fill(); };
+  halo(r * 3.1, `rgba(190,208,234,${0.085 * a})`);          // broad cool halo
+  halo(r * 1.75, `rgba(206,221,240,${0.20 * a})`);          // mid glow
+  // face — pale cool disc, soft-edged (matte, not photoreal)
+  { const g = ctx.createRadialGradient(sx - r * 0.22, sy - r * 0.22, 0, sx, sy, r);
+    g.addColorStop(0, `rgba(236,241,249,${0.96 * a})`); g.addColorStop(0.72, `rgba(222,230,242,${0.82 * a})`); g.addColorStop(1, 'rgba(208,219,236,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill(); }
+  // a faint warm rim so it still belongs to the warm district
+  { const g = ctx.createRadialGradient(sx, sy, r * 0.78, sx, sy, r * 1.06);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.72, `rgba(255,224,180,${0.11 * a})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r * 1.06, 0, 7); ctx.fill(); }
+  ctx.restore();
+  // faint maria — a hint of clay texture on the face
+  ctx.save(); ctx.globalAlpha = 0.09 * a; ctx.fillStyle = 'rgba(150,166,192,1)';
+  ctx.beginPath(); ctx.ellipse(sx - r * 0.26, sy - r * 0.14, r * 0.26, r * 0.2, 0.4, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(sx + r * 0.22, sy + r * 0.24, r * 0.18, r * 0.15, -0.3, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
 function drawSky(night, wx) {
   if (!state.clouds) return;
   const grey = wx ? wx.grey : 0;
