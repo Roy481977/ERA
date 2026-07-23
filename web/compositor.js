@@ -373,14 +373,18 @@ function buildAreaGraph(map) {
   // building in the art, so a resident standing "at" a place stands on the path in
   // front of it, not on its roof. Homes are indoor (not drawn) so this is for the
   // visible places (plaza, café, the ground, riverside, the bridge…).
+  // Each place's ROUTE + PRESENCE node is the walkable ground node nearest its DOOR
+  // (Roy's marked entrance), not the rooftop pin — so residents arrive at, leave from,
+  // and stand at the door on the path, never mid-wall or on the roof. Falls back to the
+  // pin when no door is near.
+  const doors = (map.doors || []);
   const pinIdx = {}, ground = {};
   for (const [id, p] of Object.entries(map.places || {})) {
-    const pi = addV(p.x, p.y); pinIdx[id] = pi;
-    const near = [];
-    for (let i = 0; i < pi; i++) { if (comp[i] !== mainC) continue; near.push([(V[i].x - p.x) ** 2 + (V[i].y - p.y) ** 2, i]); }
-    near.sort((a, b) => a[0] - b[0]);
-    for (let k = 0; k < Math.min(3, near.length); k++) link(pi, near[k][1]);
-    if (near.length) ground[id] = { x: V[near[0][1]].x, y: V[near[0][1]].y };
+    let tx = p.x, ty = p.y, bd = 150 * 150;                 // aim at the nearest door to the pin
+    for (const d of doors) { const dd = (d.x - p.x) ** 2 + (d.y - p.y) ** 2; if (dd < bd) { bd = dd; tx = d.x; ty = d.y; } }
+    let best = Infinity, bi = -1;                            // nearest walkable node to that door/pin
+    for (let i = 0; i < V.length; i++) { if (comp[i] !== mainC) continue; const dd = (V[i].x - tx) ** 2 + (V[i].y - ty) ** 2; if (dd < best) { best = dd; bi = i; } }
+    if (bi >= 0) { pinIdx[id] = bi; ground[id] = { x: V[bi].x, y: V[bi].y }; }
   }
   return { V, adj, pinIdx, comp, mainC, ground };
 }
@@ -1778,9 +1782,13 @@ function applyLightMap(n, lit, f) {
   // So interleave lamp glows and house silhouettes by depth (near-edge y), back to
   // front: a house erases glow from lamps drawn before it (deeper/behind), and lamps
   // drawn after it (in front) light freely — including onto that house's near face.
+  // A house is keyed by its BACK edge (min y): only lamps deeper than that — genuinely
+  // behind the building — are erased. Lamps in front of or beside it (including the
+  // ones on the path/plaza at its foot) are drawn after, so they light its near face
+  // and base. The building stays lit and blocks only what's truly behind it.
   const glowItems = [];
   for (const L of state.lamps) if (L.x >= 0 && L.x <= PLATE_W) glowItems.push({ py: L.y, lamp: L });
-  for (const poly of (state.houses || [])) { let my = -1e9; for (const p of poly) my = Math.max(my, p[1]); glowItems.push({ py: my, house: poly }); }
+  for (const poly of (state.houses || [])) { let my = 1e9; for (const p of poly) my = Math.min(my, p[1]); glowItems.push({ py: my, house: poly }); }
   glowItems.sort((a, b) => a.py - b.py);
   for (const it of glowItems) {
     if (it.house) {
