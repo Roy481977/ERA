@@ -37,13 +37,6 @@ async function boot() {
   state.map = map;
   state.plate = plate;
 
-  // anchors: world (x,y) from the replay's static locations  <->  plate pixels
-  // from the plate-map. Both keyed by loc id, all 23 places.
-  const px = map.places;
-  state.anchors = state.world.locations
-    .filter(l => px[l.id])
-    .map(l => ({ id: l.id, wx: l.x, wy: l.y, px: px[l.id].x, py: px[l.id].y }));
-
   // roster: id -> {name, kind, color}; and place id -> name
   state.roster = {};
   for (const e of state.world.entities) state.roster[e.id] = e;
@@ -72,6 +65,23 @@ async function boot() {
   state.houses = (map.houses || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
   state.graph = state.areaMode ? buildAreaGraph(map) : buildPlateGraph(map);
   state.routeCache = {};
+  // presence point per place: on the disc, pins sit ON the buildings, so anchor the
+  // living layer to each place's ground doorstep (the path in front) instead of the
+  // rooftop pin — residents then stand and start/finish on the walkable ground.
+  state.ground = (state.areaMode && state.graph.ground) ? state.graph.ground : null;
+
+  // anchors: world (x,y) from the replay's static locations <-> plate pixels. In area
+  // mode these are the ground doorsteps (path in front of each building); otherwise the
+  // raw pins. worldToPlate interpolates over them, so the whole living layer lands on
+  // the walkable ground.
+  const px = map.places;
+  state.anchors = state.world.locations
+    .filter(l => px[l.id])
+    .map(l => { const g = state.ground && state.ground[l.id]; return { id: l.id, wx: l.x, wy: l.y, px: g ? g.x : px[l.id].x, py: g ? g.y : px[l.id].y }; });
+
+  // house occluders (plate-v2): cut each house's own pixels out of the plate so a
+  // resident walking BEHIND a house is covered by it (painter's algorithm, by depth).
+  if (state.areaMode) buildHouseOccluder();
   // low fences (jump-over): flatten to segments so a route crossing one triggers a hop
   state.lowFences = [];
   for (const f of (map.fences || [])) if ((f.kind || 'low') !== 'wall') {
@@ -94,6 +104,8 @@ async function boot() {
   // (sample along streets/lanes + a few centre and back-of-town extras).
   if (map.lamps && map.lamps.length) {
     state.lamps = map.lamps.map(l => ({ x: l.x, y: l.y, small: !!l.small }));
+  } else if (map.pathareas && map.pathareas.length) {
+    state.lamps = [];   // plate-v2: no v1 auto-lamps (they'd land off-place); add lamps in the mapper
   } else {
     state.lamps = [];
     for (const p of (map.paths || [])) {
@@ -128,17 +140,19 @@ async function boot() {
 
   // stadium floodlights: four tall masts at the pitch corners, aimed into the pitch.
   // Use masts placed in the mapper if present, else these estimates (Roy can nudge).
+  const discPlate = !!(map.pathareas && map.pathareas.length);
   state.floods = (map.floodlights && map.floodlights.length)
     ? map.floodlights.map(F => ({ x: F.x, y: F.y }))
+    : discPlate ? [{ x: 600, y: 520 }, { x: 1080, y: 560 }, { x: 620, y: 700 }, { x: 1050, y: 720 }]  // plate-v2 bowl corners
     : [{ x: 1012, y: 430 }, { x: 1300, y: 452 }, { x: 1055, y: 512 }, { x: 1312, y: 504 }];
-  state.floodAim = { x: 1160, y: 470 };   // pitch centre
+  state.floodAim = discPlate ? { x: 830, y: 620 } : { x: 1160, y: 470 };   // pitch centre
 
   // Game-night crowd: seats across the visible stands. On a match evening the terracing
   // fills with anonymous supporters (green & white) — a decorative crowd, not sim
   // residents. If Roy has outlined the stands in the mapper (map.stands polygons) the
   // seats are sampled inside those; otherwise a built-in estimate of the main + side
   // stand. Ordered by distance from the north gate so they populate from the entrance out.
-  const gate = { x: 1070, y: 408 };
+  const gate = (map.places && map.places.loc_north_gate) || { x: 1070, y: 408 };
   const seats = [];
   const stands = (map.stands || []).map(z => z.pts || z);
   if (stands.length) {
@@ -351,16 +365,21 @@ function buildAreaGraph(map) {
     while (st.length) { const u = st.pop(); sz++; for (const [v] of adj[u]) if (comp[v] < 0) { comp[v] = nc; st.push(v); } }
     if (sz > mainSz) { mainSz = sz; mainC = nc; } nc++;
   }
-  // hook each place pin to the nearest node in the main component (its doorstep onto the ground)
-  const pinIdx = {};
+  // hook each place pin to the nearest node in the main component (its doorstep onto
+  // the ground). The doorstep is also the place's PRESENCE point: pins sit on the
+  // building in the art, so a resident standing "at" a place stands on the path in
+  // front of it, not on its roof. Homes are indoor (not drawn) so this is for the
+  // visible places (plaza, café, the ground, riverside, the bridge…).
+  const pinIdx = {}, ground = {};
   for (const [id, p] of Object.entries(map.places || {})) {
     const pi = addV(p.x, p.y); pinIdx[id] = pi;
     const near = [];
     for (let i = 0; i < pi; i++) { if (comp[i] !== mainC) continue; near.push([(V[i].x - p.x) ** 2 + (V[i].y - p.y) ** 2, i]); }
     near.sort((a, b) => a[0] - b[0]);
     for (let k = 0; k < Math.min(3, near.length); k++) link(pi, near[k][1]);
+    if (near.length) ground[id] = { x: V[near[0][1]].x, y: V[near[0][1]].y };
   }
-  return { V, adj, pinIdx, comp, mainC };
+  return { V, adj, pinIdx, comp, mainC, ground };
 }
 
 // Turn a raw polyline into a route {pts, cum, len}.
@@ -725,9 +744,19 @@ function draw() {
     const lf = state.lastFigs.find(l => l.id === state.selected);
     if (lf) { ctx.strokeStyle = 'rgba(255,215,90,.95)'; ctx.lineWidth = Math.max(1.5, 1.6 * lf.sc); ctx.beginPath(); ctx.ellipse(lf.sx, lf.sy, 8 * lf.sc, 3 * lf.sc, 0, 0, 7); ctx.stroke(); }
   }
-  for (const fig of figs) { ctx.globalAlpha = fig.alpha != null ? fig.alpha : 1;
+  // Depth draw: figures and house-occluders sorted together by their near (bottom)
+  // edge. A figure behind a house is drawn before that house's silhouette and so is
+  // covered by it; a figure in front is drawn after and stays visible.
+  const items = figs.map(fig => ({ py: fig.py, fig }));
+  if (state.houseMeta && state.houseMeta.length) for (const hm of state.houseMeta) items.push({ py: hm.frontY, hm });
+  items.sort((a, b) => a.py - b.py);
+  for (const it of items) {
+    if (it.hm) { blitHouse(it.hm); continue; }
+    const fig = it.fig; ctx.globalAlpha = fig.alpha != null ? fig.alpha : 1;
     if (fig.e.id === 'res_milo' && state.miloSheet) drawMiloSprite(fig);
-    else drawFigure(fig, f); } ctx.globalAlpha = 1;
+    else drawFigure(fig, f);
+    ctx.globalAlpha = 1;
+  }
 
   // foreground occluder: front greenery over the living layer (2.5D depth).
   if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
@@ -803,14 +832,43 @@ function weatherOf(f) {
 // react). v1: one pale-cool moon with a warm-rimmed glow, hanging low over the
 // stadium and drifting slowly across the night, its spot seeded per night. Drawn
 // AFTER the night light-map so it reads bright against the dark sky, before rain.
+// Build a foreground occluder from the house polygons: the plate's own pixels kept
+// only inside each house footprint, transparent elsewhere. Drawn back-to-front,
+// interleaved with the figures by depth, it re-covers anyone standing behind it.
+function buildHouseOccluder() {
+  state.houseOcc = null; state.houseMeta = [];
+  if (!state.houses || !state.houses.length || !state.plate) return;
+  const oc = document.createElement('canvas'); oc.width = PLATE_W; oc.height = PLATE_H;
+  const g = oc.getContext('2d');
+  g.drawImage(state.plate, 0, 0, PLATE_W, PLATE_H);
+  g.globalCompositeOperation = 'destination-in';           // keep plate pixels only inside the houses
+  g.fillStyle = '#fff';
+  for (const poly of state.houses) { g.beginPath(); poly.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.fill(); }
+  state.houseOcc = oc;
+  state.houseMeta = state.houses.map(poly => {
+    let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+    for (const [x, y] of poly) { minx = Math.min(minx, x); miny = Math.min(miny, y); maxx = Math.max(maxx, x); maxy = Math.max(maxy, y); }
+    return { minx, miny, maxx, maxy, frontY: maxy };         // frontY = the house's near (bottom) edge
+  });
+}
+// Blit one house's silhouette (its own plate pixels) over whatever's been drawn so far.
+function blitHouse(hm) {
+  if (!state.houseOcc) return;
+  const w = hm.maxx - hm.minx, h = hm.maxy - hm.miny;
+  ctx.drawImage(state.houseOcc, hm.minx, hm.miny, w, h,
+    view.ox + hm.minx * view.s, view.oy + hm.miny * view.s, w * view.s, h * view.s);
+}
+
 function drawMoon(night, f) {
   if (night < 0.04) return;
   const day = (f.day | 0), h = (f.hour || 0) + (f.minute || 0) / 60;
   const s = ((day * 2654435761) >>> 0);
-  const mx = 1200 + (s % 100) - 50 + (h - 12) * 0.8;        // over the stadium, ±50px per night, a slow nightly drift
-  const my = 150 + ((s >> 8) % 24) - (h - 21) * 0.35;       // large & a bit low
+  const disc = PLATE_H > 1200;                              // plate-v2: over the disc's stadium
+  const bx = disc ? 830 : 1200, by = disc ? 250 : 150;     // base position (over the ground)
+  const mx = bx + (s % 100) - 50 + (h - 12) * 0.8;         // ±50px per night, a slow nightly drift
+  const my = by + ((s >> 8) % 24) - (h - 21) * 0.35;      // large & a bit low
   const [sx, sy] = P2S(mx, my);
-  const r = 44 * view.s;
+  const r = (disc ? 66 : 44) * view.s;
   const a = clamp(night, 0, 1);
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
