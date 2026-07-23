@@ -76,6 +76,10 @@ pub struct EntityView {
     pub from: Option<LocationId>,
     pub to: Option<LocationId>,
     pub edge_t: f64,
+    /// A stable, hand-authored physical signature tag ("limp", "cane", …) or
+    /// "none". Drives how the renderer draws this figure. See
+    /// design/resident-traits-and-signatures.md.
+    pub signature: &'static str,
 }
 
 /// The day's weather, as a live reading.
@@ -270,6 +274,7 @@ impl Engine {
                 from: None,
                 to: None,
                 edge_t: 0.0,
+                signature: "none",
             }
         };
 
@@ -291,6 +296,7 @@ impl Engine {
             };
             let place_name = sim.world.location(r.place).map(|l| l.name).unwrap_or(r.place);
             let mut ev = make(r.id, r.name, "resident", layout::color_of(r.id), r.place, place_name, doing);
+            ev.signature = r.signature.tag();
             ev.soc = r.sociability;
             ev.mood = r.mood as f64;
             ev.energy = r.energy as f64;

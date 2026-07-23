@@ -7,7 +7,7 @@
 //! (HOME -> the resident's own home); a `dest` override pins an exact place when
 //! an affordance is shared by several locations.
 
-use crate::sim::resident::Resident;
+use crate::sim::resident::{Resident, Signature};
 use crate::sim::routine::{Activity, Condition};
 use crate::world::location::LocationId;
 
@@ -109,7 +109,7 @@ pub fn cast() -> Vec<Resident> {
             act("victor_corner", "holds court in his café corner", "LEGENDS_CORNER", 12, 3, 8, 2),
             act("victor_pub", "a pint at the Anchor", "DRINK", 18, 1, 6, 1).on_weekdays(FRIDAY),
             act("victor_home", "home for the evening", "HOME", 20, 4, 7, 3),
-        ]),
+        ]).with_sig(Signature::Limp),
         Resident::new("res_elias", "Elias", 66, "Groundskeeper", "loc_oakside", vec![
             act("elias_sleep", "sleeps at Oakside Cottages", "HOME", 0, 1, 10, 5),
             act("elias_work_am", "mows the pitch at first light", "WORK_GROUNDSKEEP", 6, 2, 9, 3),
@@ -140,7 +140,7 @@ pub fn cast() -> Vec<Resident> {
             act("agnes_museum", "revisits the club museum", "VISIT_MUSEUM", 14, 3, 7, 2).on_weekdays(&[2, 4]),
             act_at("agnes_shop", "browses the club shop for a new scarf", "BUY_KIT", "loc_club_shop", 13, 3, 6, 2).on_weekdays(&[5]),
             act("agnes_home", "home before dark", "HOME", 20, 4, 9, 3),
-        ]),
+        ]).with_sig(Signature::Cane),
         Resident::new("res_milo", "Milo", 22, "Street musician", "loc_high_street", vec![
             act("milo_sleep", "sleeps off the late crowd", "HOME", 0, 1, 10, 9),
             act("milo_coffee", "a slow late-morning coffee", "DRINK_COFFEE", 9, 2, 6, 2),

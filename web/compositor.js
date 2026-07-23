@@ -861,6 +861,7 @@ function drawFigure(fig, f) {
   const tr = idTraits(e.id);                 // this resident's individual way of moving
   // behaviour → motion parameters (all straight from the deterministic stream)
   const spd = e.spd || 0;
+  const sig = e.sig || 'none';               // a memorable physical signature (limp / cane / …)
   const vigor = clamp(((e.energy != null ? e.energy : 0.8) - 0.4) / 0.6, 0, 1);   // tired … lively
   const cheer = clamp(e.mood != null ? e.mood : 0.6, 0, 1);                        // low … bright mood
   const openness = clamp(((e.soc != null ? e.soc : 0) + 1) / 4, 0, 1);            // introvert … extrovert
@@ -876,21 +877,23 @@ function drawFigure(fig, f) {
   const moving = fig.walking != null ? fig.walking : (e.moving && (e.spd || 0) > 0.05);
   const gaitRate = (3.0 + spd * 2.4 + vigor * 0.7) * tr.gait;                                  // hurry & vigour quicken the step
   const wph = moving ? Math.sin(state.t * gaitRate + ph) : 0;
-  const strideAmp = (0.55 + spd * 1.0 + vigor * 0.25) * tr.stride;                              // stride length
+  const strideAmp = (0.55 + spd * 1.0 + vigor * 0.25) * tr.stride * (sig === 'cane' ? 0.6 : 1);  // stride length (a cane shortens it)
   const workPhase = working ? Math.sin(state.t * 2.6 + ph) : 0;                    // rhythmic task
   const playHop = playing ? Math.abs(Math.sin(state.t * 3.2 + ph)) : 0;           // child's hop
 
   // proportions — broader shoulders than hips
   const legH = (sit ? 2.4 : 5.4) * U, torsoH = (sit ? 6 : 8) * U;
   const shoulderW = 7 * U, hipW = 5.4 * U, headR = 3.0 * U * (e.child ? 1.2 : 1);
-  const slump = (((1 - vigor) * 0.6 + (1 - cheer) * 0.35) - tr.upright * 0.5) * U;                     // tired/low-mood shoulders drop
+  const slump = (((1 - vigor) * 0.6 + (1 - cheer) * 0.35) - tr.upright * 0.5 + (sig === 'cane' ? 1.4 : 0)) * U;   // tired/low-mood shoulders drop; a cane bends the back into a stoop
   const idle = moving ? 0 : Math.sin(state.t * (1.1 + vigor * 0.9) * tr.idle + ph);
   const sway = moving ? 0 : Math.sin(state.t * 0.9 + (hs % 314) / 100) * (0.32 + openness * 0.4) * U;
   const bob = moving ? Math.abs(wph) * (0.55 + vigor * 0.5) * U * tr.bob
     : (playing ? playHop * 1.7 * U : dancing ? (0.4 + Math.abs(Math.sin(dancePh))) * 1.2 * U : idle * 0.22 * U);
   const lean = working ? faceS * 0.9 * U : 0;                                     // stoop over the work
   const danceSway = dancing ? Math.sin(dancePh * 0.5) * 1.7 * U : 0;              // hips side to side
-  const hipY = y - legH + bob, shoulderY = hipY - torsoH + slump;
+  // a limp hitches the body down each time the stiff leg takes the weight
+  const limpHitch = (sig === 'limp' && moving) ? Math.max(0, Math.sin(state.t * gaitRate + ph)) * 0.9 * U : 0;
+  const hipY = y - legH + bob + limpHitch, shoulderY = hipY - torsoH + slump;
   const nod = gest === 'nod' ? Math.abs(Math.sin(state.t * 3.2 + ph)) * 0.7 * U : 0;      // agreeing
   const glance = gest === 'glance' ? Math.sin(state.t * 1.3 + ph) * 0.9 * U : 0;          // looking about
   const headDroop = (1 - cheer) * 0.5 * U;                                        // low mood: head dips
@@ -910,8 +913,15 @@ function drawFigure(fig, f) {
     ctx.beginPath(); ctx.moveTo(x, hipY); ctx.lineTo(x + faceS * 3.6 * U, hipY + 0.4 * U); ctx.stroke();
   } else {
     const st = moving ? wph * strideAmp * 2.7 * U : (playing ? Math.sin(state.t * 3.2 + ph) * 1.5 * U : dancing ? Math.sin(dancePh) * 1.7 * U : 0.8 * U);
+    const stiff = sig === 'limp' ? 0.4 : 1;   // the limped leg barely swings — a stiff, dragged step
     ctx.beginPath(); ctx.moveTo(hipL, hipY); ctx.lineTo(hipL + st * faceS, y + bob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(hipR, hipY); ctx.lineTo(hipR - st * faceS, y + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hipR, hipY); ctx.lineTo(hipR - st * faceS * stiff, y + bob); ctx.stroke();
+  }
+  // a cane: a stick from the forward hand down to the ground ahead, taking weight
+  if (sig === 'cane' && !sit) {
+    ctx.strokeStyle = '#6b5330'; ctx.lineWidth = 1.4 * U; ctx.lineCap = 'round';
+    const handY = shoulderY + 2.4 * U;
+    ctx.beginPath(); ctx.moveTo(x + faceS * 2.4 * U, handY); ctx.lineTo(x + faceS * 4.4 * U, y); ctx.stroke();
   }
 
   // torso — clay-shaded trapezoid, colour = identity

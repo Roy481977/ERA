@@ -48,6 +48,32 @@ pub enum Status {
     },
 }
 
+/// A discrete, hand-authored piece of flavour that makes a resident *memorable* —
+/// read in how they move (a limp, a cane, a carried load). Only a memorable subset
+/// of the cast has one; scarcity is what makes them characters. See
+/// design/resident-traits-and-signatures.md. Rendered by the compositor from the
+/// entity's `sig` tag; every variant has a stable tag and is explainable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Signature {
+    #[default]
+    None,
+    /// An old injury — an uneven gait, favouring one leg (Victor's footballer knee).
+    Limp,
+    /// Age and a walking stick — a stoop and a cane stroke (Agnes, Otto).
+    Cane,
+}
+
+impl Signature {
+    /// A stable tag emitted in the snapshot for the renderer.
+    pub fn tag(&self) -> &'static str {
+        match self {
+            Signature::None => "none",
+            Signature::Limp => "limp",
+            Signature::Cane => "cane",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Resident {
     pub id: &'static str,
@@ -56,6 +82,8 @@ pub struct Resident {
     pub occupation: &'static str,
     pub home: LocationId,
     pub routine: Routine,
+    /// A memorable, hand-authored physical signature (or `None`). Stable.
+    pub signature: Signature,
 
     // disposition — social personality and the shape of a day
     /// A stable trait: how much this person seeks company. Roughly -2..=3.
@@ -126,6 +154,7 @@ impl Resident {
             occupation,
             home,
             routine: Routine::new(activities),
+            signature: Signature::None,
             sociability: default_sociability(id),
             mood: 0.0,
             energy: 1.0,
@@ -137,6 +166,13 @@ impl Resident {
             lingered_today: 0,
             waited_today: 0,
         }
+    }
+
+    /// Author a memorable physical signature onto this resident (chainable in the
+    /// cast). Only a handful of the cast get one.
+    pub fn with_sig(mut self, signature: Signature) -> Self {
+        self.signature = signature;
+        self
     }
 
     /// Whether the resident is socially available (present and not travelling).
