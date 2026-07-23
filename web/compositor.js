@@ -65,6 +65,7 @@ async function boot() {
   // resident routes A->B across the painted ground (a nav-mesh), not along a rail.
   state.areaMode = !!(map.pathareas && map.pathareas.length);
   state.houses = (map.houses || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
+  state.pathareas = (map.pathareas || []).map(z => z.pts || z).filter(z => z && z.length >= 3);
   state.graph = state.areaMode ? buildAreaGraph(map) : buildPlateGraph(map);
   state.routeCache = {};
   // presence point per place: on the disc, pins sit ON the buildings, so anchor the
@@ -528,6 +529,23 @@ function placeEntity(e) {
   return worldToPlate(e.x, e.y);
 }
 
+// Keep a walker's FEET on the painted pathway: if the point has strayed off every
+// pathway area (the nav-mesh is dilated for connectivity, so a route can clip a verge),
+// pull it to the nearest point just inside the nearest pathway edge.
+function clampToPath(px, py) {
+  const areas = state.pathareas;
+  if (!areas || !areas.length) return [px, py];
+  for (const a of areas) if (pointInPoly(px, py, a)) return [px, py];   // already on a path
+  let best = Infinity, fx = px, fy = py;
+  for (const a of areas) for (let i = 0, j = a.length - 1; i < a.length; j = i++) {
+    const ax = a[j][0], ay = a[j][1], bx = a[i][0], by = a[i][1], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+    let t = ((px - ax) * dx + (py - ay) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const cx = ax + t * dx, cy = ay + t * dy, d = (px - cx) ** 2 + (py - cy) ** 2;
+    if (d < best) { best = d; fx = cx; fy = cy; }
+  }
+  return [fx, fy];
+}
+
 // small stable per-id pixel offset so figures sharing a spot don't perfectly stack
 function jitterPx(id, r) {
   let h = 2166136261;
@@ -768,6 +786,8 @@ function draw() {
           fenceHop *= A; }
       }
     }
+    // keep people (and the dog) with their feet on the painted pathways; wild animals roam freely
+    if (meta.kind === 'resident' || e.id === 'the_old_dog') { const [cx, cy] = clampToPath(px, py); px = cx; py = cy; }
     figs.push({ e, meta, px, py, walking, hd, alpha, hop: fenceHop });
   }
   figs.sort((a, b) => a.py - b.py);
@@ -904,12 +924,14 @@ function drawMoon(night, f) {
   const [sx, sy] = P2S(mx, my);
   const r = (disc ? 66 : 44) * view.s;
   const a = clamp(night, 0, 1);
-  // clip the moon to everything EXCEPT the marked rooflines, so it ducks behind them
-  const mm = state.moonmask;
+  // clip the moon to everything EXCEPT the buildings/rooflines, so it ducks behind the
+  // skyline. The moon is sky — always behind the town — so houses occlude it as well as
+  // any explicit moon-hide rooflines (a tower, a tree not marked as a house).
+  const occ = [...(state.houses || []), ...(state.moonmask || [])];
   ctx.save();
-  if (mm && mm.length) {
+  if (occ.length) {
     ctx.beginPath(); ctx.rect(0, 0, cnv.width, cnv.height);
-    for (const poly of mm) { poly.forEach((p, i) => { const [x, y] = P2S(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
+    for (const poly of occ) { poly.forEach((p, i) => { const [x, y] = P2S(p[0], p[1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); }
     ctx.clip('evenodd');
   }
   ctx.save();
@@ -1382,6 +1404,7 @@ function drawAnimal(fig, f, x, y, sc) {
   const hopY = (fig.hop || 0) * sc; const groundY = y; y -= hopY;   // airborne over a low fence; shadow stays down
   const trot = fig.walking ? state.t * 5.5 + (hashId(e.id) % 628) / 100 : null;   // leg-swing phase while walking
   const legSwing = (i) => trot != null ? Math.sin(trot + i * 1.7) * 1.7 * k : 0;
+  const faceS = Math.cos(fig.hd || 0) >= 0 ? 1 : -1;   // which way the animal faces (head toward travel)
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   { const sh = 1 - Math.min(1, hopY / (6 * k)) * 0.5;
     ctx.fillStyle = `rgba(0,0,0,${0.16 * sh})`; ctx.beginPath(); ctx.ellipse(x, groundY, 5 * k * sh, 1.8 * k * sh, 0, 0, 7); ctx.fill(); }
@@ -1400,13 +1423,39 @@ function drawAnimal(fig, f, x, y, sc) {
     return;
   }
   if (kind === 'dog' || kind === 'fox') {
-    ctx.strokeStyle = shade(col, 0.7); ctx.lineWidth = 1.3 * k;
-    [-2.5, -1, 1, 2.5].forEach((dx, i) => { ctx.beginPath(); ctx.moveTo(x + dx * k, y - 3 * k); ctx.lineTo(x + dx * k + legSwing(i), y); ctx.stroke(); });
-    ctx.fillStyle = col; roundRect(x - 4 * k, y - 6 * k, 8 * k, 3.4 * k, 1.7 * k); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + 4.2 * k, y - 6.2 * k, 2 * k, 0, 7); ctx.fill();
-    ctx.strokeStyle = col; ctx.lineWidth = 1.3 * k;
-    ctx.beginPath(); ctx.moveTo(x - 4 * k, y - 5.5 * k); ctx.lineTo(x - 6.4 * k, y - (kind === 'fox' ? 6 : 7.6) * k); ctx.stroke();
-    if (kind === 'fox') { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + 3.5 * k, y - 7.6 * k); ctx.lineTo(x + 4.2 * k, y - 9.2 * k); ctx.lineTo(x + 4.9 * k, y - 7.6 * k); ctx.fill(); }
+    const fox = kind === 'fox', fs = faceS, old = e.id === 'the_old_dog';
+    const dark = shade(col, 0.72), belly = shade(col, fox ? 1.35 : 1.18);
+    const wag = fig.walking ? Math.sin(state.t * 7) * 0.9 * k : Math.sin(state.t * 1.6) * 0.4 * k;
+    // far legs (behind the body) darker, near legs lighter — a little depth
+    const leg = (dx, i, cc) => { const bx = x + dx * k * fs, sw = legSwing(i); ctx.strokeStyle = cc; ctx.lineWidth = 1.5 * k;
+      ctx.beginPath(); ctx.moveTo(bx, y - 3.3 * k); ctx.quadraticCurveTo(bx + sw * 0.5, y - 1.5 * k, bx + sw, y); ctx.stroke(); };
+    leg(-2.4, 1, dark); leg(2.7, 3, dark);                    // far pair
+    // tail (bushy for the fox), gently wagging
+    ctx.strokeStyle = fox ? col : dark; ctx.lineWidth = (fox ? 3.0 : 1.7) * k;
+    const tx = x - 4.2 * k * fs, ty = y - 4.9 * k;
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(tx - 3.0 * k * fs, ty - (fox ? 1.6 : 3.0) * k + wag, tx - 3.4 * k * fs, ty - (fox ? 3.4 : 4.4) * k + wag); ctx.stroke();
+    if (fox) { ctx.strokeStyle = 'rgba(245,244,240,.92)'; ctx.lineWidth = 1.7 * k; ctx.beginPath(); ctx.moveTo(tx - 3.1 * k * fs, ty - 2.6 * k + wag); ctx.lineTo(tx - 3.5 * k * fs, ty - 3.6 * k + wag); ctx.stroke(); }
+    // body — a rounded torso with a chest bump toward the head; old dog dips at the back
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(x - 0.4 * k * fs, y - (old ? 4.6 : 5.0) * k, 4.7 * k, 2.9 * k, old ? 0.05 * fs : -0.05 * fs, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 3.1 * k * fs, y - 5.4 * k, 2.5 * k, 2.7 * k, 0, 0, 7); ctx.fill();   // shoulder/chest
+    // belly highlight
+    ctx.fillStyle = belly; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(x + 0.4 * k * fs, y - 3.5 * k, 3.8 * k, 1.3 * k, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    // near legs on top
+    leg(-1.0, 0, col); leg(1.3, 2, col);
+    // head
+    const hx = x + 4.7 * k * fs, hy = y - 6.6 * k;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(hx, hy, 2.3 * k, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx + 1.9 * k * fs, hy + 0.7 * k, 1.6 * k, 1.05 * k, 0.1 * fs, 0, 7); ctx.fill();   // snout
+    if (old) { ctx.fillStyle = 'rgba(214,209,201,.65)'; ctx.beginPath(); ctx.ellipse(hx + 2.0 * k * fs, hy + 0.8 * k, 1.7 * k, 1.0 * k, 0.1 * fs, 0, 7); ctx.fill(); }   // grey muzzle
+    // ears
+    if (fox) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(hx - 0.5 * k * fs, hy - 1.4 * k); ctx.lineTo(hx - 0.1 * k * fs, hy - 3.7 * k); ctx.lineTo(hx + 1.5 * k * fs, hy - 1.7 * k); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(hx + 0.3 * k * fs, hy - 1.7 * k); ctx.lineTo(hx + 0.6 * k * fs, hy - 3.2 * k); ctx.lineTo(hx + 1.4 * k * fs, hy - 1.8 * k); ctx.closePath(); ctx.fill(); }
+    else { ctx.fillStyle = dark; ctx.beginPath(); ctx.ellipse(hx - 1.1 * k * fs, hy - 0.1 * k, 1.05 * k, 2.1 * k, -0.35 * fs, 0, 7); ctx.fill(); }   // floppy ear
+    // nose + eye
+    ctx.fillStyle = '#2a2320'; ctx.beginPath(); ctx.arc(hx + 3.2 * k * fs, hy + 0.5 * k, 0.62 * k, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + 0.9 * k * fs, hy - 0.5 * k, 0.5 * k, 0, 7); ctx.fill();
+    return;
   } else if (kind === 'heron') {
     ctx.strokeStyle = '#b9c0c5'; ctx.lineWidth = 1.1 * k;
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 6 * k); ctx.stroke();
@@ -1725,26 +1774,32 @@ function applyLightMap(n, lit, f) {
     rg.addColorStop(0, c0); rg.addColorStop(0.62, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
     gg.fillStyle = rg; gg.beginPath(); gg.arc(lx, ly, rad, 0, 7); gg.fill();
   };
-  for (const L of state.lamps) {
-    if (L.x < 0 || L.x > PLATE_W) continue;
-    const sc = scaleAt(L.y) * view.s;
-    const lantern = (L.kind || 'light') === 'lantern';
-    const headOff = lantern ? 0 : 14;    // lights pool at the head; lanterns pool at the point (no post)
-    const lx = L.x * view.s, ly = L.y * view.s - headOff * sc;
+  // A building blocks only what is BEHIND it, never what is between it and the camera.
+  // So interleave lamp glows and house silhouettes by depth (near-edge y), back to
+  // front: a house erases glow from lamps drawn before it (deeper/behind), and lamps
+  // drawn after it (in front) light freely — including onto that house's near face.
+  const glowItems = [];
+  for (const L of state.lamps) if (L.x >= 0 && L.x <= PLATE_W) glowItems.push({ py: L.y, lamp: L });
+  for (const poly of (state.houses || [])) { let my = -1e9; for (const p of poly) my = Math.max(my, p[1]); glowItems.push({ py: my, house: poly }); }
+  glowItems.sort((a, b) => a.py - b.py);
+  for (const it of glowItems) {
+    if (it.house) {
+      gg.globalCompositeOperation = 'destination-out'; gg.fillStyle = '#000';
+      gg.beginPath(); it.house.forEach((p, i) => { const x = p[0] * view.s, y = p[1] * view.s; i ? gg.lineTo(x, y) : gg.moveTo(x, y); }); gg.closePath(); gg.fill();
+      gg.globalCompositeOperation = 'lighter';
+      continue;
+    }
+    const L = it.lamp, sc = scaleAt(L.y) * view.s, lantern = (L.kind || 'light') === 'lantern';
+    const lx = L.x * view.s, ly = L.y * view.s - (lantern ? 0 : 14) * sc;
     if (lantern) {   // softer, warmer, a closer reach
-      glow(lx, ly, 82 * sc, `rgba(255,168,96,${0.36 * n})`, `rgba(255,146,78,${0.14 * n})`);  // warm, gently spread
-      glow(lx, ly, 34 * sc, `rgba(255,190,120,${0.72 * n})`, `rgba(255,164,92,${0.30 * n})`); // soft core
+      glow(lx, ly, 82 * sc, `rgba(255,168,96,${0.36 * n})`, `rgba(255,146,78,${0.14 * n})`);
+      glow(lx, ly, 34 * sc, `rgba(255,190,120,${0.72 * n})`, `rgba(255,164,92,${0.30 * n})`);
     } else {
-      glow(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
-      glow(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
+      glow(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`);
+      glow(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`);
     }
   }
-  // buildings block lamp light: erase every house silhouette (and walls) from the glow
-  if (state.houses && state.houses.length) {
-    gg.globalCompositeOperation = 'destination-out'; gg.fillStyle = '#000';
-    for (const poly of state.houses) { gg.beginPath(); poly.forEach((p, i) => { const x = p[0] * view.s, y = p[1] * view.s; i ? gg.lineTo(x, y) : gg.moveTo(x, y); }); gg.closePath(); gg.fill(); }
-  }
-  g.drawImage(gc, 0, 0);   // composite the house-occluded lamp glow onto the light map
+  g.drawImage(gc, 0, 0);   // composite the depth-occluded lamp glow onto the light map
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
     const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
