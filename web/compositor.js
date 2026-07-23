@@ -569,6 +569,7 @@ function scaleAt(py) {
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
+const PSCALE = 1.7;   // people read too small against the disc — scale residents up ~70%
 
 // --- motion-quality helpers (presence & individuality pass) ---
 const ease01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };   // smoothstep: accel out of a place, decel into the next
@@ -1176,7 +1177,7 @@ function drawMiloSprite(fig) {
   const cellW = sheet.width / MILO_FRAMES, cellH = sheet.height;
   const moving = fig.walking;
   const idx = moving ? ((Math.floor(state.t * 8) % MILO_FRAMES) + MILO_FRAMES) % MILO_FRAMES : 3;
-  const targetH = 23 * sc;                          // match the procedural adult's height
+  const targetH = 23 * sc * PSCALE;                 // match the procedural adult's height
   const dh = targetH, dw = targetH * (cellW / cellH);
   const hd = fig.hd != null ? fig.hd : (fig.e.h || 0);
   const faceS = easeFace(fig.e.id, Math.cos(hd) >= 0 ? 1 : -1) >= 0 ? 1 : -1;  // eased turn to face travel
@@ -1197,7 +1198,7 @@ function drawFigure(fig, f) {
   const col = meta.color || '#c9cad3';
   const hs = hashId(e.id);
   const k = e.child ? 0.74 : 1.0;
-  const U = sc * k;
+  const U = sc * k * PSCALE;
   const hd = fig.hd != null ? fig.hd : (e.h || 0);
   const faceS = easeFace(e.id, Math.cos(hd) >= 0 ? 1 : -1) >= 0 ? 1 : -1;   // eased turn, not an instant mirror
   const ph = (hs % 628) / 100;
