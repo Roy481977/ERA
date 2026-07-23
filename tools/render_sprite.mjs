@@ -1,0 +1,22 @@
+import { createRequire } from 'module';
+const require = createRequire('/home/claude/plate_tools/');
+const { chromium } = require('playwright');
+import fs from 'fs';
+const N = parseInt(process.env.N||'16');
+const CLIP = process.env.CLIP||'Walking';
+const FACE = parseFloat(process.env.FACE||'0');
+const OUT = process.env.OUT||'/tmp/milo_frames';
+fs.rmSync(OUT,{recursive:true,force:true}); fs.mkdirSync(OUT,{recursive:true});
+const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium', args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox'] });
+const p = await b.newPage({ viewport:{width:500,height:640} });
+const errs=[]; p.on('pageerror',e=>errs.push(String(e))); p.on('console',m=>{if(m.type()==='error')errs.push('con:'+m.text());});
+await p.goto('http://127.0.0.1:8399/milo/render_sprite.html',{waitUntil:'domcontentloaded'});
+await p.waitForFunction('window.__ready===true',null,{timeout:60000});
+const info = await p.evaluate((c)=>({names:window.__names(),dur:window.__setClip(c),h:window.__height}),CLIP);
+console.log('clips',info.names,'dur',info.dur,'height',info.h);
+await p.evaluate((f)=>window.__face(f),FACE);
+const canvas = await p.$('#c');
+for(let i=0;i<N;i++){ await p.evaluate((u)=>window.__seek(u), i/N); await p.waitForTimeout(20);
+  await canvas.screenshot({path:`${OUT}/f${String(i).padStart(2,'0')}.png`, omitBackground:true}); }
+console.log('errors:', errs.length?errs.slice(0,6):'NONE');
+await b.close();

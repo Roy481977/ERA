@@ -13,10 +13,12 @@ replay = (web / "assets/replay.json").read_text()
 mp = (web / "assets/era-plate-map.json").read_text()
 plate_b64 = base64.b64encode((web / "assets/plate-v1-graded.jpeg").read_bytes()).decode()
 occ_b64 = base64.b64encode((web / "assets/occluder.png").read_bytes()).decode()
+milo_b64 = base64.b64encode((web / "milo/milo_walk_sheet.png").read_bytes()).decode()
 
 inline = ('<script>window.__INLINE={replay:' + replay + ',map:' + mp +
           ',plate:"data:image/jpeg;base64,' + plate_b64 + '"' +
-          ',occluder:"data:image/png;base64,' + occ_b64 + '"};</script>\n')
+          ',occluder:"data:image/png;base64,' + occ_b64 + '"' +
+          ',miloSheet:"data:image/png;base64,' + milo_b64 + '"};</script>\n')
 html = html.replace('<script src="compositor.js"></script>',
                     inline + "<script>\n" + js + "\n</script>")
 out.write_text(html)

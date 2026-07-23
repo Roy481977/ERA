@@ -14,3 +14,6 @@ assets/replay.json
 assets/plate-v1-graded.jpeg
 assets/era-plate-map.json
 assets/occluder.png
+
+# resident 3D source models (Meshy exports; the runtime sprite SHEET is committed, the glb is not)
+milo/*.glb

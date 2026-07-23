@@ -21,6 +21,7 @@ async function boot() {
     map = window.__INLINE.map;
     plate = await loadImg(window.__INLINE.plate);
     state.occluder = window.__INLINE.occluder ? await loadImg(window.__INLINE.occluder) : null;
+    state.miloSheet = window.__INLINE.miloSheet ? await loadImg(window.__INLINE.miloSheet) : null;
   } else {                                      // served build
     [replay, map, plate] = await Promise.all([
       fetch('assets/replay.json').then(r => r.json()),
@@ -28,6 +29,7 @@ async function boot() {
       loadImg(PLATE_IMG),
     ]);
     state.occluder = await loadImg('assets/occluder.png').catch(() => null);
+    state.miloSheet = await loadImg('milo/milo_walk_sheet.png').catch(() => null);
   }
   state.world = replay.world;
   state.frames = replay.frames;
@@ -377,6 +379,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 
 // --- canvas / layout ---
 let cnv, ctx, view = { s: 1, ox: 0, oy: 0 };
+let fit = { s: 1, ox: 0, oy: 0 };                          // plate-fit transform (no zoom)
+let zoom = { z: 1, cx: PLATE_W / 2, cy: PLATE_H / 2 };     // double-click zoom-to-area
 function sizeCanvas() {
   cnv = document.getElementById('c'); ctx = cnv.getContext('2d');
   const wrap = document.getElementById('stage');
@@ -386,9 +390,35 @@ function sizeCanvas() {
   cnv.style.width = cw + 'px'; cnv.style.height = ch + 'px';
   // fit the plate into the stage (contain)
   const s = Math.min(cw / PLATE_W, ch / PLATE_H);
-  view.s = s * dpr;
-  view.ox = (cw * dpr - PLATE_W * view.s) / 2;
-  view.oy = (ch * dpr - PLATE_H * view.s) / 2;
+  fit.s = s * dpr;
+  fit.ox = (cw * dpr - PLATE_W * fit.s) / 2;
+  fit.oy = (ch * dpr - PLATE_H * fit.s) / 2;
+  if (!cnv.__zoomBound) { cnv.__zoomBound = true;
+    cnv.style.cursor = 'zoom-in';
+    cnv.addEventListener('dblclick', onDblClick); }
+  applyView();
+}
+// Compose the plate-fit with the current double-click zoom. The focus point stays
+// centred; the plate is kept covering the view (no panning past the edges); z==1
+// returns exactly the fit. Everything downstream reads view.s/ox/oy + P2S, so the
+// whole living layer (figures, lights, weather, pins) zooms with it for free.
+function applyView() {
+  view.s = fit.s * zoom.z;
+  view.ox = cnv.width / 2 - zoom.cx * view.s;
+  view.oy = cnv.height / 2 - zoom.cy * view.s;
+  if (PLATE_W * view.s <= cnv.width) view.ox = (cnv.width - PLATE_W * view.s) / 2;
+  else view.ox = clamp(view.ox, cnv.width - PLATE_W * view.s, 0);
+  if (PLATE_H * view.s <= cnv.height) view.oy = (cnv.height - PLATE_H * view.s) / 2;
+  else view.oy = clamp(view.oy, cnv.height - PLATE_H * view.s, 0);
+}
+// Double-click an area to zoom into it; double-click again to zoom back out.
+function onDblClick(e) {
+  const rect = cnv.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (cnv.width / rect.width);
+  const my = (e.clientY - rect.top) * (cnv.height / rect.height);
+  if (zoom.z > 1.01) { zoom.z = 1; cnv.style.cursor = 'zoom-in'; }
+  else { zoom.z = 2.6; zoom.cx = (mx - view.ox) / view.s; zoom.cy = (my - view.oy) / view.s; cnv.style.cursor = 'zoom-out'; }
+  applyView(); draw();
 }
 const P2S = (x, y) => [view.ox + x * view.s, view.oy + y * view.s];
 
@@ -471,7 +501,9 @@ function draw() {
     const lf = state.lastFigs.find(l => l.id === state.selected);
     if (lf) { ctx.strokeStyle = 'rgba(255,215,90,.95)'; ctx.lineWidth = Math.max(1.5, 1.6 * lf.sc); ctx.beginPath(); ctx.ellipse(lf.sx, lf.sy, 8 * lf.sc, 3 * lf.sc, 0, 0, 7); ctx.stroke(); }
   }
-  for (const fig of figs) { ctx.globalAlpha = fig.alpha != null ? fig.alpha : 1; drawFigure(fig, f); } ctx.globalAlpha = 1;
+  for (const fig of figs) { ctx.globalAlpha = fig.alpha != null ? fig.alpha : 1;
+    if (fig.e.id === 'res_milo' && state.miloSheet) drawMiloSprite(fig);
+    else drawFigure(fig, f); } ctx.globalAlpha = 1;
 
   // foreground occluder: front greenery over the living layer (2.5D depth).
   if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
@@ -744,6 +776,29 @@ function roleOf(e) {
   if (/ledger|club-office|club office|admin/.test(d) || p === 'loc_club_offices') return 'clerk';
   if (/kit|club shop/.test(d) || p === 'loc_club_shop') return 'shop';
   return null;
+}
+
+// Milo rendered as a real clay sprite (Meshy 3D -> plate-camera walk sheet) instead
+// of the procedural figure. Walk cycle when moving; a near-still frame when settled.
+// Anchored at the feet, scaled to the same on-screen height as the procedural adult
+// (~20*sc), occlusion-faded via the caller's globalAlpha, flipped to face travel.
+const MILO_FRAMES = 16;
+function drawMiloSprite(fig) {
+  const [x, y] = P2S(fig.px, fig.py);
+  const sc = scaleAt(fig.py) * view.s;
+  const sheet = state.miloSheet;
+  const cellW = sheet.width / MILO_FRAMES, cellH = sheet.height;
+  const moving = fig.walking;
+  const idx = moving ? ((Math.floor(state.t * 8) % MILO_FRAMES) + MILO_FRAMES) % MILO_FRAMES : 3;
+  const targetH = 23 * sc;                          // match the procedural adult's height
+  const dh = targetH, dw = targetH * (cellW / cellH);
+  const hd = fig.hd != null ? fig.hd : (fig.e.h || 0);
+  const faceS = Math.cos(hd) >= 0 ? 1 : -1;         // flip to face direction of travel
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(faceS, 1);
+  ctx.drawImage(sheet, idx * cellW, 0, cellW, cellH, -dw / 2, -dh, dw, dh);
+  ctx.restore();
 }
 
 function drawFigure(fig, f) {
