@@ -103,7 +103,7 @@ async function boot() {
   // lamps: use the ones placed in the mapper if present; otherwise auto-place
   // (sample along streets/lanes + a few centre and back-of-town extras).
   if (map.lamps && map.lamps.length) {
-    state.lamps = map.lamps.map(l => ({ x: l.x, y: l.y, small: !!l.small }));
+    state.lamps = map.lamps.map(l => ({ x: l.x, y: l.y, kind: l.kind || 'light', small: !!l.small }));
   } else if (map.pathareas && map.pathareas.length) {
     state.lamps = [];   // plate-v2: no v1 auto-lamps (they'd land off-place); add lamps in the mapper
   } else {
@@ -1627,6 +1627,7 @@ function pointInPoly(x, y, poly) {
 // come from applyLightMap; this is the physical fixture.
 function drawLampPosts(lit) {
   for (const L of state.lamps) {
+    if ((L.kind || 'light') === 'lantern') continue;   // lanterns have no visible fixture — ever (only their light shows, at night)
     if (L.x < 0 || L.x > PLATE_W) continue;
     if (obscured(L.x, L.y)) continue;   // behind a building: hide the post (light still spills in applyLightMap)
     const [x, y] = P2S(L.x, L.y);
@@ -1669,9 +1670,16 @@ function applyLightMap(n, lit, f) {
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const sc = scaleAt(L.y) * view.s;
-    const lx = L.x * view.s, ly = L.y * view.s - 14 * sc;   // pool centred at the lantern head
-    lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
-    lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
+    const lantern = (L.kind || 'light') === 'lantern';
+    const headOff = lantern ? 0 : 14;    // lights pool at the head; lanterns pool at the point (no post)
+    const lx = L.x * view.s, ly = L.y * view.s - headOff * sc;
+    if (lantern) {   // softer, warmer, a closer reach
+      lamp(lx, ly, 82 * sc, `rgba(255,168,96,${0.36 * n})`, `rgba(255,146,78,${0.14 * n})`);  // warm, gently spread
+      lamp(lx, ly, 34 * sc, `rgba(255,190,120,${0.72 * n})`, `rgba(255,164,92,${0.30 * n})`); // soft core
+    } else {
+      lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
+      lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
+    }
   }
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
@@ -1708,8 +1716,9 @@ function applyLightMap(n, lit, f) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     if (obscured(L.x, L.y)) continue;   // behind a wall: hide the visible source too, not just the post — you don't see a light through a wall (its spill in the light-map above still lights the surroundings)
     const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
+    const headOff = (L.kind || 'light') === 'lantern' ? 0 : 14;   // lantern: bright point at its spot; light: at the head
     ctx.fillStyle = `rgba(255,240,206,${0.8 * n})`;
-    ctx.beginPath(); ctx.arc(x, y - 14 * sc, 1.5 * sc, 0, 7); ctx.fill();  // glow at the lantern head
+    ctx.beginPath(); ctx.arc(x, y - headOff * sc, (L.kind === 'lantern' ? 2.0 : 1.5) * sc, 0, 7); ctx.fill();  // the lit source itself
   }
   ctx.restore();
 }

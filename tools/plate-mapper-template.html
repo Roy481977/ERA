@@ -46,7 +46,8 @@
       <button data-m="water">💧 Water</button>
       <button data-m="stands">🟩 Stands</button>
       <button data-m="fence">🚧 Fence</button>
-      <button data-m="lamp">💡 Lamp</button>
+      <button data-m="light">💡 Light</button>
+      <button data-m="lantern">🏮 Lantern</button>
       <button data-m="select">Select</button>
     </div>
 
@@ -78,7 +79,7 @@
     <div id="plist"></div>
 
     <h2>Paths <span id="cnt">0</span> · Pathways <span id="pacnt">0</span> · Doors <span id="dcnt">0</span> · Houses <span id="hcnt">0</span></h2>
-    <h2>Obscured <span id="ocnt">0</span> · Water <span id="wcnt">0</span> · Stands <span id="scnt">0</span> · Fences <span id="fcnt">0</span> · Lamps <span id="lcnt">0</span></h2>
+    <h2>Obscured <span id="ocnt">0</span> · Water <span id="wcnt">0</span> · Stands <span id="scnt">0</span> · Fences <span id="fcnt">0</span> · Lights <span id="ltcnt">0</span> · Lanterns <span id="lncnt">0</span></h2>
     <div class="row">
       <button id="exCopy">Copy JSON</button>
       <button id="exDl">⬇ Download</button>
@@ -87,7 +88,7 @@
     <div class="row"><button id="imp">Import</button><button id="undo">↶ Undo</button><button id="clr" class="warn">Clear</button></div>
 
     <h2>How</h2>
-    <div class="hint"><b>Path (line):</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point. A thin walk-line, taggable from→to.<br><b>Pathway (area):</b> click around a walkable <em>surface</em> — the ring road, the plaza, a wide apron — <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. Anyone may wander anywhere inside it (not just along a line).<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Door:</b> click once on each door. It's where a resident steps <em>inside</em> the nearest building (and out again) — so nobody stands awkwardly in a doorway. Mark them all.<br><b>House:</b> click around a house's footprint, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It becomes an <em>occluder</em>: anyone walking behind it is hidden by it (depth-sorted), so figures pass behind houses instead of over them.<br><b>Obscure:</b> a general area the camera can't see past (a tunnel mouth, deep shade) — anyone inside is hidden. Use <b>House</b> for buildings; this is for the rest.<br><b>Water:</b> outline the river's edge; it ripples in the game.<br><b>Stands:</b> outline the terracing; the game-night crowd fills inside it.<br><b>Fence:</b> click along a fence line. <b>Low</b> (dashed) = hop-over where a path crosses; <b>wall</b> (solid) = blocks and hides who's behind.<br><b>Lamp:</b> click to drop a lamp post (drag to place).<br><b>Select:</b> drag points, pins, lamps or doors; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
+    <div class="hint"><b>Path (line):</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point. A thin walk-line, taggable from→to.<br><b>Pathway (area):</b> click around a walkable <em>surface</em> — the ring road, the plaza, a wide apron — <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. Anyone may wander anywhere inside it (not just along a line).<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Door:</b> click once on each door. It's where a resident steps <em>inside</em> the nearest building (and out again) — so nobody stands awkwardly in a doorway. Mark them all.<br><b>House:</b> click around a house's footprint, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It becomes an <em>occluder</em>: anyone walking behind it is hidden by it (depth-sorted), so figures pass behind houses instead of over them.<br><b>Obscure:</b> a general area the camera can't see past (a tunnel mouth, deep shade) — anyone inside is hidden. Use <b>House</b> for buildings; this is for the rest.<br><b>Water:</b> outline the river's edge; it ripples in the game.<br><b>Stands:</b> outline the terracing; the game-night crowd fills inside it.<br><b>Fence:</b> click along a fence line. <b>Low</b> (dashed) = hop-over where a path crosses; <b>wall</b> (solid) = blocks and hides who's behind.<br><b>Light:</b> click to drop a street light — a <em>visible</em> post with a warm head that glows at night (drag to place).<br><b>Lantern:</b> click to drop a lantern — its light <em>only</em> shows at night and <em>nothing</em> of it appears by day; the post is <em>never</em> drawn in-game (the dashed ring here is just so you can see where it sits).<br><b>Select:</b> drag points, pins, lights or doors; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
   </div>
   <canvas id="cnv"></canvas>
 </div>
@@ -118,7 +119,7 @@ function pushUndo(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.
 function resize(){cnv.width=cnv.clientWidth*devicePixelRatio;cnv.height=cnv.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);if(ready)draw()}
 window.addEventListener('resize',resize);
 img.onload=()=>{ready=true;const w=cnv.clientWidth,h=cnv.clientHeight;scale=Math.min(w/img.width,h/img.height)*0.98;ox=(w-img.width*scale)/2;oy=(h-img.height*scale)/2;
-  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(INIT.pathareas||[]).map(z=>({pts:z.pts||z}));places=INIT.places||{};doors=(INIT.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(INIT.houses||[]).map(z=>({pts:z.pts||z}));obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
+  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(INIT.pathareas||[]).map(z=>({pts:z.pts||z}));places=INIT.places||{};doors=(INIT.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(INIT.houses||[]).map(z=>({pts:z.pts||z}));obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));pid=paths.length+1}
   draw();refreshList();refreshRouteSels()};
 
 // FROM / TO route dropdowns for tagging paths as explicit A->B ways
@@ -176,13 +177,23 @@ function draw(){
     ctx.fillStyle=on?'#111':DOORCOL;ctx.strokeStyle=DOOREDGE;ctx.lineWidth=1.4;
     ctx.beginPath();ctx.moveTo(x-wd,y);ctx.lineTo(x-wd,y-ht+wd);ctx.arc(x,y-ht+wd,wd,Math.PI,0);ctx.lineTo(x+wd,y);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.strokeStyle=on?'#fff':'#5a3a12';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x+wd*0.4,y-ht*0.4,0.9,0,7);ctx.stroke()}
-  // lamps (little posts with a warm head)
-  for(const L of lamps){const[x,y]=W2S(L.x,L.y);const on=sel&&sel.k==='lamp'&&sel.o===L;const ph=L.small?9:13;
-    ctx.strokeStyle=on?'#111':'rgba(60,55,40,0.9)';ctx.lineWidth=on?2.4:1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
-    ctx.fillStyle=on?'#111':'#f0b429';ctx.strokeStyle='#5a4a1e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-ph,on?4:3,0,7);ctx.fill();ctx.stroke()}
+  // lights (a post with a warm head — the post shows in-game) and
+  // lanterns (a dashed ring at the base — the fixture is NEVER drawn in-game, only
+  // its light glows at night; the ring here is just so you can see where it sits).
+  for(const L of lamps){const[x,y]=W2S(L.x,L.y);const on=sel&&sel.k==='lamp'&&sel.o===L;
+    if((L.kind||'light')==='lantern'){
+      ctx.setLineDash([3,3]);ctx.strokeStyle=on?'#111':'rgba(240,180,40,0.95)';ctx.lineWidth=on?2.2:1.5;
+      ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=on?'#111':'#ffca3a';ctx.beginPath();ctx.arc(x,y,on?3:2.2,0,7);ctx.fill();
+    } else {
+      const ph=13;
+      ctx.strokeStyle=on?'#111':'rgba(60,55,40,0.9)';ctx.lineWidth=on?2.4:1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
+      ctx.fillStyle=on?'#111':'#f0b429';ctx.strokeStyle='#5a4a1e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-ph,on?4:3,0,7);ctx.fill();ctx.stroke();
+    }}
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   set('cnt',paths.length);set('pacnt',pathareas.length);set('dcnt',doors.length);set('hcnt',houses.length);
-  set('ocnt',obscured.length);set('wcnt',water.length);set('scnt',stands.length);set('fcnt',fences.length);set('lcnt',lamps.length);
+  set('ocnt',obscured.length);set('wcnt',water.length);set('scnt',stands.length);set('fcnt',fences.length);
+  set('ltcnt',lamps.filter(l=>(l.kind||'light')==='light').length);set('lncnt',lamps.filter(l=>l.kind==='lantern').length);
 }
 function pickPath(mx,my){for(const p of paths)for(let i=0;i<p.pts.length;i++){const[x,y]=W2S(...p.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'path',o:p,pi:i}}return null}
 function pickPArea(mx,my){for(const z of pathareas)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'parea',o:z,pi:i}}return null}
@@ -192,7 +203,7 @@ function pickWat(mx,my){for(const z of water)for(let i=0;i<z.pts.length;i++){con
 function pickStand(mx,my){for(const z of stands)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'stand',o:z,pi:i}}return null}
 function pickFence(mx,my){for(const f of fences)for(let i=0;i<f.pts.length;i++){const[x,y]=W2S(...f.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'fence',o:f,pi:i}}return null}
 function pickDoor(mx,my){for(const D of doors){const[x,y]=W2S(D.x,D.y);if(Math.hypot(mx-x,my-(y-5))<9)return{k:'door',o:D}}return null}
-function pickLamp(mx,my){for(const L of lamps){const[x,y]=W2S(L.x,L.y);if(Math.hypot(mx-x,my-y)<9||Math.hypot(mx-x,my-(y-(L.small?9:13)))<8)return{k:'lamp',o:L}}return null}
+function pickLamp(mx,my){for(const L of lamps){const[x,y]=W2S(L.x,L.y);const ph=(L.kind||'light')==='lantern'?0:13;if(Math.hypot(mx-x,my-y)<9||Math.hypot(mx-x,my-(y-ph))<8)return{k:'lamp',o:L}}return null}
 function pickPlace(mx,my){for(const[id,p]of Object.entries(places)){const[x,y]=W2S(p.x,p.y);if(Math.hypot(mx-x,my-y)<9)return{k:'place',id}}return null}
 
 function finishDrawing(){if(!drawing)return;
@@ -216,7 +227,7 @@ cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W
   if(mode==='water'){if(!drawing){pushUndo();drawing={type:'water',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='stands'){if(!drawing){pushUndo();drawing={type:'stands',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='fence'){if(!drawing){pushUndo();drawing={id:'f'+(pid++),type:'fence',kind:fenceKind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
-  if(mode==='lamp'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
+  if(mode==='light'||mode==='lantern'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy,kind:mode};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
   const hp=pickPlace(mx,my)||pickDoor(mx,my)||pickPath(mx,my)||pickFence(mx,my)||pickPArea(mx,my)||pickHouse(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
   if(hp){sel=hp;dragging=hp;if(hp.k==='path'){fromSel.value=hp.o.from||'';toSel.value=hp.o.to||''}draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
 });
@@ -262,10 +273,10 @@ const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' p
   water:water.map(z=>({pts:z.pts})),
   stands:stands.map(z=>({pts:z.pts})),
   fences:fences.map(f=>({id:f.id,kind:f.kind,pts:f.pts})),
-  lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
+  lamps:lamps.map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}))},null,1);
 document.getElementById('exCopy').onclick=async()=>{document.getElementById('io').value=outJSON();try{await navigator.clipboard.writeText(outJSON());toast('copied — paste to Claude')}catch(_){toast('JSON in the box — copy it')}};
 document.getElementById('exDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([outJSON()],{type:'application/json'}));a.download='era-plate-map.json';a.click();toast('downloaded')};
-document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(j.pathareas||[]).map(z=>({pts:z.pts||z}));places=j.places||{};doors=(j.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(j.houses||[]).map(z=>({pts:z.pts||z}));obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
+document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(j.pathareas||[]).map(z=>({pts:z.pts||z}));places=j.places||{};doors=(j.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(j.houses||[]).map(z=>({pts:z.pts||z}));obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,kind:l.kind||'light'}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
 document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;pathareas=s.pathareas||[];places=s.places;doors=s.doors||[];houses=s.houses||[];obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];fences=s.fences||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
 document.getElementById('clr').onclick=()=>{if(confirm('Clear EVERYTHING — paths, pathways, pins, doors, houses, obscured, water, stands, fences AND lamps?')){pushUndo();paths=[];pathareas=[];places={};doors=[];houses=[];obscured=[];water=[];stands=[];fences=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
 resize();
