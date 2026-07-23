@@ -359,6 +359,18 @@ function pointAlong(route, t) {
   return [lerp(pts[i - 1].x, pts[i].x, f), lerp(pts[i - 1].y, pts[i].y, f)];
 }
 
+// Elevated perch points (plate px) — a bird lands UP here (a steeple, a rooftop),
+// not on the ground like a pigeon. Keyed by entity id; extend as Roy sends the
+// places each bird flies to. A bird with perches drifts between them over a day.
+const PERCHES = {
+  ani_owl: [{ x: 855, y: 251, name: 'the clock tower' }],
+};
+function perchFor(id, f) {
+  const list = PERCHES[id]; if (!list || !list.length) return null;
+  const drift = f ? (f.day | 0) * 2 + Math.floor((f.hour || 0) / 6) : 0;   // move a few times a day
+  return list[(hashId(id) + drift) % list.length];
+}
+
 function placeEntity(e) {
   const P = state.map.places;
   if (e.moving && e.from && e.to && P[e.from] && P[e.to]) {
@@ -541,9 +553,12 @@ function draw() {
       continue;
     }
     let [px, py] = placeEntity(e); let hd = null;
+    // a bird at rest perches UP on a steeple/rooftop, not the ground like a pigeon
+    const perched = !walking && !!PERCHES[e.id];
+    if (perched) { const per = perchFor(e.id, f); if (per) { px = per.x; py = per.y; } }
     const conv = !walking && pairPose[e.id];                   // arranged conversation position
     if (conv) { px = conv.px; py = conv.py; hd = conv.hd; }
-    else if (eN && frac > 0) {
+    else if (!perched && eN && frac > 0) {
       // On a real travel leg, follow the TRACED ROUTE continuously within the tick,
       // so the figure traces the curved street — not a straight chord between two
       // sparse per-tick samples (which, with few ticks per leg, read as a bee-line
