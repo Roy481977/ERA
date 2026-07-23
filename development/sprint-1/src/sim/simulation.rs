@@ -870,7 +870,13 @@ impl Simulation {
         } else if self.dog.cooldown() == 0 {
             let pref = self.dog.preferred_spot(hour);
             if self.dog.place != pref {
-                if let Some(path) = self.world.nav.shortest_path(self.dog.place, pref) {
+                // Route ONLY within his range so he never paths across the pitch or
+                // any ground outside his territory to reach where he'd rather be.
+                if let Some(path) = self
+                    .world
+                    .nav
+                    .shortest_path_within(self.dog.place, pref, crate::sim::dog::DOG_RANGE)
+                {
                     if path.len() >= 2 {
                         let next = path[1];
                         let total = edge_weight(&self.world.nav, self.dog.place, next) * TRAVEL_TICKS_PER_WEIGHT;

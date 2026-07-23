@@ -17,9 +17,26 @@ pub const DOG_NAME: &str = "the old dog";
 /// The child he may come to know (Book IV: "He may form a quiet bond with a child").
 pub const CHILD_ID: &str = "res_tomas";
 
-/// After roaming this many days he tires of the long walk to the Stadium and keeps
-/// closer to the Oak. (Compressed for observability — see the repo status note.)
-const STADIUM_STOP_DAY: u64 = 28;
+/// The old dog's territory — the public places he keeps to. A believable town-dog
+/// range: the quays, greens and gathering spots. He routes ONLY within this set
+/// (see `dog_pass`), so he never crosses the pitch, the training ground, the club,
+/// the museum, or a stranger's private close. See design/animal-territories.md.
+pub const DOG_RANGE: &[LocationId] = &[
+    "loc_riverside",
+    "loc_bridge",
+    "loc_oakside",
+    "loc_main_square",
+    "loc_cafe",
+    "loc_high_street",
+    "loc_bakery",
+    "loc_pub",
+    "loc_millers_row",
+    "loc_school",
+];
+
+/// After roaming this many days he tires of the longer ambles and keeps closer to
+/// the square and the Oak. (Compressed for observability — see the repo status note.)
+const KEEPS_CLOSE_DAY: u64 = 28;
 /// He slows by one rest-tick roughly every fortnight.
 const SLOW_EVERY: u64 = 14;
 
@@ -59,22 +76,20 @@ impl Dog {
         Self::default()
     }
 
-    /// Where he would rather be at this hour. Older, he skips the far Stadium and
-    /// keeps to the Oak and the square.
+    /// Where he would rather be at this hour. A gentle daily round through his
+    /// territory (never the pitch — he keeps among the townsfolk). Younger, he
+    /// ambles the wider spots (the bakery, the green); older, he keeps closer to
+    /// the square and the Oak. Every spot is in `DOG_RANGE`.
     pub fn preferred_spot(&self, hour: u64) -> LocationId {
-        let roams_far = self.age_days < STADIUM_STOP_DAY;
+        let roams_far = self.age_days < KEEPS_CLOSE_DAY;
         match hour {
-            6..=11 => "loc_cafe",         // by the café door, where they set down water
-            12..=15 => "loc_main_square", // a patch of warm light by the fountain
-            16..=18 => {
-                if roams_far {
-                    "loc_stadium" // lies outside the Club
-                } else {
-                    "loc_main_square"
-                }
-            }
-            19..=21 => "loc_bridge", // an evening by the old bridge
-            _ => "loc_riverside",    // night, beneath the Old Oak
+            6..=8 => "loc_cafe",                                              // by the café door, where they set down water
+            9..=10 => if roams_far { "loc_bakery" } else { "loc_cafe" },      // nosing round the bakery's warm smell
+            11..=13 => "loc_main_square",                                     // a patch of warm light by the fountain
+            14..=15 => if roams_far { "loc_oakside" } else { "loc_main_square" }, // the shade of the Old Oak on the green
+            16..=18 => "loc_main_square",                                     // among the townsfolk on the square
+            19..=21 => "loc_bridge",                                          // an evening by the old bridge
+            _ => "loc_riverside",                                            // night, beneath the Old Oak
         }
     }
 

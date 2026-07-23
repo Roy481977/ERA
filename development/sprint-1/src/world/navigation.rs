@@ -129,6 +129,67 @@ impl NavGraph {
         Some(path)
     }
 
+    /// Dijkstra restricted to `allowed` nodes — an edge into a node outside the
+    /// set is never taken. Used for animals bound to a home range, so a creature
+    /// never routes across ground it would not actually walk (the pitch, a private
+    /// close) just because the shortest path happens to run through it.
+    fn dijkstra_within(
+        &self,
+        src: LocationId,
+        allowed: &[LocationId],
+    ) -> (HashMap<LocationId, u32>, HashMap<LocationId, LocationId>) {
+        let ok = |n: LocationId| allowed.contains(&n);
+        let mut dist: HashMap<LocationId, u32> = HashMap::new();
+        let mut prev: HashMap<LocationId, LocationId> = HashMap::new();
+        let mut pq: BinaryHeap<Reverse<(u32, LocationId)>> = BinaryHeap::new();
+        if !ok(src) {
+            return (dist, prev);
+        }
+        dist.insert(src, 0);
+        pq.push(Reverse((0, src)));
+        while let Some(Reverse((d, u))) = pq.pop() {
+            if d > *dist.get(u).unwrap_or(&u32::MAX) {
+                continue;
+            }
+            for (v, w) in self.neighbors(u) {
+                if !ok(v) {
+                    continue;
+                }
+                let nd = d + w;
+                if nd < *dist.get(v).unwrap_or(&u32::MAX) {
+                    dist.insert(v, nd);
+                    prev.insert(v, u);
+                    pq.push(Reverse((nd, v)));
+                }
+            }
+        }
+        (dist, prev)
+    }
+
+    /// Node path from a to b (inclusive) that stays entirely within `allowed`, if
+    /// such a path exists. Both endpoints must be in `allowed`.
+    pub fn shortest_path_within(
+        &self,
+        a: LocationId,
+        b: LocationId,
+        allowed: &[LocationId],
+    ) -> Option<Vec<LocationId>> {
+        if a == b {
+            return if allowed.contains(&a) { Some(vec![a]) } else { None };
+        }
+        let (dist, prev) = self.dijkstra_within(a, allowed);
+        if !dist.contains_key(b) {
+            return None;
+        }
+        let mut path = vec![b];
+        while *path.last().unwrap() != a {
+            let p = *prev.get(path.last().unwrap())?;
+            path.push(p);
+        }
+        path.reverse();
+        Some(path)
+    }
+
     pub fn is_connected(&self) -> bool {
         let nodes = self.nodes();
         if nodes.is_empty() {

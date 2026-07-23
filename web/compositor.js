@@ -501,7 +501,11 @@ function draw() {
     // slides across a roof.
     const hop = !!(eN && frac > 0 && !e.moving && e.place && eN.place && e.place !== eN.place);
     const hopRoute = hop ? getRoute(e.place, eN.place) : null;
-    const walking = (e.moving && (e.spd || 0) > 0.03) || (hop && hopRoute && hopRoute.len > 4);
+    // On a real travel leg (from/to set) the entity IS walking, even on the one
+    // tick its instantaneous speed reads ~0 (leg start) — so the legs never freeze
+    // mid-journey. Otherwise fall back to the speed test / a network hop.
+    const onLeg = e.moving && e.from && e.to;
+    const walking = (e.moving && ((e.spd || 0) > 0.03 || onLeg)) || (hop && hopRoute && hopRoute.len > 4);
     // Physical presence: instead of blinking out on arrival, a resident holds at the
     // doorway for a beat and fades under the building's occlusion (and reverses on exit).
     if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) {
