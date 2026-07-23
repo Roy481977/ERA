@@ -521,10 +521,23 @@ function draw() {
     const conv = !walking && pairPose[e.id];                   // arranged conversation position
     if (conv) { px = conv.px; py = conv.py; hd = conv.hd; }
     else if (eN && frac > 0) {
-      if (hopRoute && hopRoute.len > 4) {                      // glide along the network
+      // On a real travel leg, follow the TRACED ROUTE continuously within the tick,
+      // so the figure traces the curved street — not a straight chord between two
+      // sparse per-tick samples (which, with few ticks per leg, read as a bee-line
+      // through walls and fences). Applies to the dog, every animal, and residents.
+      const legRoute = (e.moving && e.from && e.to) ? getRoute(e.from, e.to) : null;
+      if (legRoute) {
+        const sameLeg = eN.moving && eN.from === e.from && eN.to === e.to;
+        const etNow = clamp(sameLeg ? e.et + (eN.et - e.et) * frac : e.et + (1 - e.et) * frac, 0, 1);
+        const [jx, jy] = jitterPx(e.id, 2);
+        const [rx, ry] = pointAlong(legRoute, ease01(etNow));
+        px = rx + jx; py = ry + jy;
+        const [ax, ay] = pointAlong(legRoute, ease01(Math.min(1, etNow + 0.02)));  // face along the route
+        hd = (ax - rx) >= 0 ? 0 : Math.PI;
+      } else if (hopRoute && hopRoute.len > 4) {                // glide along the network (a place hop)
         [px, py] = pointAlong(hopRoute, frac);
         const [ax, ay] = pointAlong(hopRoute, Math.min(1, frac + 0.03));
-        hd = (ax - px) >= 0 ? 0 : Math.PI;                     // face travel direction
+        hd = (ax - px) >= 0 ? 0 : Math.PI;
       } else {
         const [nx, ny] = placeEntity(eN);
         if (Math.hypot(nx - px, ny - py) < 130) { px += (nx - px) * frac; py += (ny - py) * frac; }
