@@ -17,3 +17,4 @@ assets/occluder.png
 
 # resident 3D source models (Meshy exports; the runtime sprite SHEET is committed, the glb is not)
 milo/*.glb
+assets/plate-v2.jpeg
