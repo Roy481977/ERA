@@ -38,7 +38,10 @@
     <h2>Mode</h2>
     <div class="row" id="modes">
       <button data-m="path" class="on">✏ Path</button>
+      <button data-m="patharea">▰ Pathway</button>
       <button data-m="place">📍 Place</button>
+      <button data-m="door">🚪 Door</button>
+      <button data-m="house">⌂ House</button>
       <button data-m="obscure">▨ Obscure</button>
       <button data-m="water">💧 Water</button>
       <button data-m="stands">🟩 Stands</button>
@@ -47,7 +50,7 @@
       <button data-m="select">Select</button>
     </div>
 
-    <h2>Path kind</h2>
+    <h2>Path kind (✏ line paths)</h2>
     <div class="chip" id="kinds">
       <button data-k="street" class="on" style="--k:#e8b93a">street</button>
       <button data-k="lane" style="--k:#e8843a">lane</button>
@@ -65,7 +68,7 @@
       <select id="fromSel"></select>
       <select id="toSel"></select>
     </div>
-    <div class="hint">Tag a path with the place it runs <b>from</b> and <b>to</b>. In the game, a journey between those two places follows <em>this exact path</em> (either direction) — no shortcuts. Set these <b>before</b> drawing a new path, or pick a path in <b>Select</b> mode and change them to re-tag it. Leave both “— any —” for a plain connector.</div>
+    <div class="hint">Tag a <b>line path</b> with the place it runs <b>from</b> and <b>to</b>. In the game, a journey between those two places follows <em>this exact path</em> (either direction) — no shortcuts. Set these <b>before</b> drawing a new path, or pick a path in <b>Select</b> mode and change them to re-tag it. Leave both “— any —” for a plain connector.</div>
 
     <h2>Place to drop next</h2>
     <select id="placeSel"></select>
@@ -74,7 +77,8 @@
     <h2>Places (<span id="pdone">0</span>/23)</h2>
     <div id="plist"></div>
 
-    <h2>Paths: <span id="cnt">0</span> · Obscured: <span id="ocnt">0</span> · Water: <span id="wcnt">0</span> · Fences: <span id="fcnt">0</span> · Lamps: <span id="lcnt">0</span></h2>
+    <h2>Paths <span id="cnt">0</span> · Pathways <span id="pacnt">0</span> · Doors <span id="dcnt">0</span> · Houses <span id="hcnt">0</span></h2>
+    <h2>Obscured <span id="ocnt">0</span> · Water <span id="wcnt">0</span> · Stands <span id="scnt">0</span> · Fences <span id="fcnt">0</span> · Lamps <span id="lcnt">0</span></h2>
     <div class="row">
       <button id="exCopy">Copy JSON</button>
       <button id="exDl">⬇ Download</button>
@@ -83,7 +87,7 @@
     <div class="row"><button id="imp">Import</button><button id="undo">↶ Undo</button><button id="clr" class="warn">Clear</button></div>
 
     <h2>How</h2>
-    <div class="hint"><b>Path:</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point.<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Obscure:</b> click around an area the camera can't see (behind a house); <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close it. Anyone standing there is hidden.<br><b>Water:</b> click around the river's edge to outline the water surface; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It ripples in the game.<br><b>Stands:</b> outline the terracing where the crowd sits; <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. The game-night crowd fills inside it.<br><b>Fence:</b> click points along a fence line, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish. <b>Low</b> (dashed) = animals & people <em>hop over</em> where a path crosses it; <b>wall</b> (solid) = it blocks the way and hides who's behind. Choose the kind above; in Select, pick a fence and switch its kind.<br><b>Lamp:</b> click to drop a lamp post (drag to place). A lamp inside an obscured zone hides its post but still casts light.<br><b>Select:</b> drag points, pins or lamps; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
+    <div class="hint"><b>Path (line):</b> click points, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to finish, <kbd>Esc</kbd> cancel, <kbd>Backspace</kbd> undo point. A thin walk-line, taggable from→to.<br><b>Pathway (area):</b> click around a walkable <em>surface</em> — the ring road, the plaza, a wide apron — <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. Anyone may wander anywhere inside it (not just along a line).<br><b>Place:</b> pick from the dropdown, click the plate.<br><b>Door:</b> click once on each door. It's where a resident steps <em>inside</em> the nearest building (and out again) — so nobody stands awkwardly in a doorway. Mark them all.<br><b>House:</b> click around a house's footprint, <kbd>dbl-click</kbd>/<kbd>Enter</kbd> to close. It becomes an <em>occluder</em>: anyone walking behind it is hidden by it (depth-sorted), so figures pass behind houses instead of over them.<br><b>Obscure:</b> a general area the camera can't see past (a tunnel mouth, deep shade) — anyone inside is hidden. Use <b>House</b> for buildings; this is for the rest.<br><b>Water:</b> outline the river's edge; it ripples in the game.<br><b>Stands:</b> outline the terracing; the game-night crowd fills inside it.<br><b>Fence:</b> click along a fence line. <b>Low</b> (dashed) = hop-over where a path crosses; <b>wall</b> (solid) = blocks and hides who's behind.<br><b>Lamp:</b> click to drop a lamp post (drag to place).<br><b>Select:</b> drag points, pins, lamps or doors; <kbd>Backspace</kbd> deletes.<br>Wheel = zoom, drag empty = pan.</div>
   </div>
   <canvas id="cnv"></canvas>
 </div>
@@ -98,19 +102,23 @@ const KW={street:9,lane:7,path:6,river:12};
 const OBSCOL='rgba(150,80,190,0.95)', OBSFILL='rgba(140,70,180,0.22)';
 const WATCOL='rgba(58,159,232,0.95)', WATFILL='rgba(58,159,232,0.22)';
 const STANDCOL='rgba(70,190,110,0.95)', STANDFILL='rgba(70,190,110,0.22)';
+const PACOL='rgba(224,188,104,0.95)', PAFILL='rgba(224,188,104,0.28)';   // pathway area (paved/tan)
+const HOUSECOL='rgba(206,92,66,0.96)', HOUSEFILL='rgba(206,92,66,0.20)'; // house occluder (terracotta)
+const DOORCOL='#ffca3a', DOOREDGE='#5a3a12';
 const FENCELOW='rgba(201,138,58,0.98)', FENCEWALL='rgba(110,80,52,0.98)';
 const cnv=document.getElementById('cnv'),ctx=cnv.getContext('2d');
 const img=new Image(); let scale=1,ox=0,oy=0,ready=false;
 let mode='path',kind='street',fenceKind='low';
-let paths=[],places={},obscured=[],water=[],stands=[],fences=[],lamps=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
+let paths=[],pathareas=[],places={},doors=[],houses=[],obscured=[],water=[],stands=[],fences=[],lamps=[],drawing=null,sel=null,dragging=null,panning=null,pid=1;
 const undoStack=[];
 function W2S(x,y){return[x*scale+ox,y*scale+oy]} function S2W(x,y){return[(x-ox)/scale,(y-oy)/scale]}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,1500)}
-function pushUndo(){undoStack.push(JSON.stringify({paths,places,obscured,water,stands,fences,lamps}));if(undoStack.length>60)undoStack.shift()}
+function snapshot(){return JSON.stringify({paths,pathareas,places,doors,houses,obscured,water,stands,fences,lamps})}
+function pushUndo(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift()}
 function resize(){cnv.width=cnv.clientWidth*devicePixelRatio;cnv.height=cnv.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);if(ready)draw()}
 window.addEventListener('resize',resize);
 img.onload=()=>{ready=true;const w=cnv.clientWidth,h=cnv.clientHeight;scale=Math.min(w/img.width,h/img.height)*0.98;ox=(w-img.width*scale)/2;oy=(h-img.height*scale)/2;
-  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=INIT.places||{};obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
+  if(INIT){paths=(INIT.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(INIT.pathareas||[]).map(z=>({pts:z.pts||z}));places=INIT.places||{};doors=(INIT.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(INIT.houses||[]).map(z=>({pts:z.pts||z}));obscured=(INIT.obscured||[]).map(z=>({pts:z.pts||z}));water=(INIT.water||[]).map(z=>({pts:z.pts||z}));stands=(INIT.stands||[]).map(z=>({pts:z.pts||z}));fences=(INIT.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(INIT.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1}
   draw();refreshList();refreshRouteSels()};
 
 // FROM / TO route dropdowns for tagging paths as explicit A->B ways
@@ -128,65 +136,69 @@ function refreshSel(){sel0.innerHTML='';LOCS.forEach(l=>{const o=document.create
 function refreshList(){refreshSel();const el=document.getElementById('plist');el.innerHTML=LOCS.map(l=>`<div class="${places[l.id]?'done':'todo'}">${places[l.id]?'✓':'○'} ${l.name}</div>`).join('');
   document.getElementById('pdone').textContent=Object.keys(places).length;}
 
+function fillPoly(pts,fill,stroke,on){ctx.beginPath();pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=stroke;ctx.stroke();ctx.setLineDash([]);}
+function handles(pts){pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+
 function draw(){
   const w=cnv.clientWidth,h=cnv.clientHeight;ctx.fillStyle='#20241c';ctx.fillRect(0,0,w,h);
   ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.drawImage(img,0,0);ctx.restore();
-  // obscured zones (dotted purple areas — the camera can't see past here)
-  for(const z of obscured){const on=sel&&sel.k==='obs'&&sel.o===z;
-    ctx.beginPath();z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
-    ctx.fillStyle=OBSFILL;ctx.fill();
-    ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=OBSCOL;ctx.stroke();ctx.setLineDash([]);
-    if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  // pathway areas (tan walkable surfaces) — drawn under everything else
+  for(const z of pathareas){const on=sel&&sel.k==='parea'&&sel.o===z;fillPoly(z.pts,PAFILL,PACOL,on);if(on)handles(z.pts)}
+  // obscured zones (dotted purple — the camera can't see past here)
+  for(const z of obscured){const on=sel&&sel.k==='obs'&&sel.o===z;fillPoly(z.pts,OBSFILL,OBSCOL,on);if(on)handles(z.pts)}
   // water areas (blue) — the animated water surface
-  for(const z of water){const on=sel&&sel.k==='wat'&&sel.o===z;
-    ctx.beginPath();z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
-    ctx.fillStyle=WATFILL;ctx.fill();
-    ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=WATCOL;ctx.stroke();ctx.setLineDash([]);
-    if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  for(const z of water){const on=sel&&sel.k==='wat'&&sel.o===z;fillPoly(z.pts,WATFILL,WATCOL,on);if(on)handles(z.pts)}
   // stands (green) — the terracing the game-night crowd fills
-  for(const z of stands){const on=sel&&sel.k==='stand'&&sel.o===z;
-    ctx.beginPath();z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
-    ctx.fillStyle=STANDFILL;ctx.fill();
-    ctx.setLineDash([5,4]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=STANDCOL;ctx.stroke();ctx.setLineDash([]);
-    if(on)z.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+  for(const z of stands){const on=sel&&sel.k==='stand'&&sel.o===z;fillPoly(z.pts,STANDFILL,STANDCOL,on);if(on)handles(z.pts)}
+  // houses (terracotta) — building footprints that occlude figures behind them
+  for(const z of houses){const on=sel&&sel.k==='house'&&sel.o===z;fillPoly(z.pts,HOUSEFILL,HOUSECOL,on);if(on)handles(z.pts)}
   // fences (open lines) — low = jump-over (dashed brown with pickets), wall = blocks (solid dark)
   for(const f of fences){const on=sel&&sel.k==='fence'&&sel.o===f;const low=f.kind!=='wall';
     ctx.strokeStyle=low?FENCELOW:FENCEWALL;ctx.lineWidth=(low?2.4:4)*(on?1.4:1);ctx.lineJoin='round';ctx.lineCap='round';
     if(low)ctx.setLineDash([5,4]);
     ctx.beginPath();f.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([]);
     if(low){ctx.lineWidth=1.4;for(let i=0;i<f.pts.length;i++){const[x,y]=W2S(...f.pts[i]);ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x,y+2);ctx.stroke()}}
-    if(on)f.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
-  // paths
+    if(on)handles(f.pts)}
+  // line paths
   for(const p of paths){const on=sel&&sel.k==='path'&&sel.o===p;const tagged=p.from||p.to;ctx.strokeStyle=KC[p.type];ctx.lineWidth=Math.max(2.5,KW[p.type]*scale*0.5);ctx.lineJoin='round';ctx.lineCap='round';ctx.globalAlpha=on?1:(tagged?.95:.62);ctx.beginPath();p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.globalAlpha=1;
     if(tagged){const mid=p.pts[Math.floor(p.pts.length/2)];const[lx,ly]=W2S(...mid);const nm=id=>(LOCS.find(l=>l.id===id)||{}).name||'?';const lab=nm(p.from)+' → '+nm(p.to);ctx.font='11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.fillStyle='#ffe08a';ctx.strokeText(lab,lx+6,ly-4);ctx.fillText(lab,lx+6,ly-4)}
-    if(on)p.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);ctx.fillStyle=sel.pi===i?'#111':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();ctx.stroke()})}
+    if(on)handles(p.pts)}
   // in-progress drawing
-  if(drawing){const poly=drawing.type==='obscure'||drawing.type==='water'||drawing.type==='stands';const isFence=drawing.type==='fence';const pc=drawing.type==='water'?WATCOL:drawing.type==='stands'?STANDCOL:isFence?(drawing.kind==='wall'?FENCEWALL:FENCELOW):OBSCOL;ctx.strokeStyle=poly?pc:isFence?pc:KC[drawing.type];ctx.lineWidth=Math.max(2.5,(poly?7:isFence?4:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
+  if(drawing){const polyTypes={obscure:OBSCOL,water:WATCOL,stands:STANDCOL,patharea:PACOL,house:HOUSECOL};const poly=drawing.type in polyTypes;const isFence=drawing.type==='fence';const pc=poly?polyTypes[drawing.type]:isFence?(drawing.kind==='wall'?FENCEWALL:FENCELOW):KC[drawing.type];ctx.strokeStyle=pc;ctx.lineWidth=Math.max(2.5,(poly?7:isFence?4:KW[drawing.type])*scale*.5);ctx.setLineDash([6,5]);ctx.beginPath();drawing.pts.forEach((pt,i)=>{const[x,y]=W2S(...pt);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])}
   // place pins
   ctx.font='11px sans-serif';
   for(const [id,p] of Object.entries(places)){const[x,y]=W2S(p.x,p.y);const on=sel&&sel.k==='place'&&sel.id===id;
     ctx.fillStyle=on?'#111':'#c62828';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();ctx.stroke();
     const nm=(LOCS.find(l=>l.id===id)||{}).name||id;ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=3;ctx.strokeText(nm,x+9,y+4);ctx.fillText(nm,x+9,y+4)}
+  // doors (a little arched door glyph where a resident steps inside)
+  for(const D of doors){const[x,y]=W2S(D.x,D.y);const on=sel&&sel.k==='door'&&sel.o===D;const wd=on?5:4,ht=on?12:10;
+    ctx.fillStyle=on?'#111':DOORCOL;ctx.strokeStyle=DOOREDGE;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(x-wd,y);ctx.lineTo(x-wd,y-ht+wd);ctx.arc(x,y-ht+wd,wd,Math.PI,0);ctx.lineTo(x+wd,y);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle=on?'#fff':'#5a3a12';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x+wd*0.4,y-ht*0.4,0.9,0,7);ctx.stroke()}
   // lamps (little posts with a warm head)
   for(const L of lamps){const[x,y]=W2S(L.x,L.y);const on=sel&&sel.k==='lamp'&&sel.o===L;const ph=L.small?9:13;
     ctx.strokeStyle=on?'#111':'rgba(60,55,40,0.9)';ctx.lineWidth=on?2.4:1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
     ctx.fillStyle=on?'#111':'#f0b429';ctx.strokeStyle='#5a4a1e';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-ph,on?4:3,0,7);ctx.fill();ctx.stroke()}
-  document.getElementById('cnt').textContent=paths.length;
-  document.getElementById('ocnt').textContent=obscured.length;
-  const we=document.getElementById('wcnt');if(we)we.textContent=water.length;
-  const fe=document.getElementById('fcnt');if(fe)fe.textContent=fences.length;
-  const le=document.getElementById('lcnt');if(le)le.textContent=lamps.length;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set('cnt',paths.length);set('pacnt',pathareas.length);set('dcnt',doors.length);set('hcnt',houses.length);
+  set('ocnt',obscured.length);set('wcnt',water.length);set('scnt',stands.length);set('fcnt',fences.length);set('lcnt',lamps.length);
 }
 function pickPath(mx,my){for(const p of paths)for(let i=0;i<p.pts.length;i++){const[x,y]=W2S(...p.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'path',o:p,pi:i}}return null}
+function pickPArea(mx,my){for(const z of pathareas)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'parea',o:z,pi:i}}return null}
+function pickHouse(mx,my){for(const z of houses)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'house',o:z,pi:i}}return null}
 function pickObs(mx,my){for(const z of obscured)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'obs',o:z,pi:i}}return null}
 function pickWat(mx,my){for(const z of water)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'wat',o:z,pi:i}}return null}
 function pickStand(mx,my){for(const z of stands)for(let i=0;i<z.pts.length;i++){const[x,y]=W2S(...z.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'stand',o:z,pi:i}}return null}
 function pickFence(mx,my){for(const f of fences)for(let i=0;i<f.pts.length;i++){const[x,y]=W2S(...f.pts[i]);if(Math.hypot(mx-x,my-y)<8)return{k:'fence',o:f,pi:i}}return null}
+function pickDoor(mx,my){for(const D of doors){const[x,y]=W2S(D.x,D.y);if(Math.hypot(mx-x,my-(y-5))<9)return{k:'door',o:D}}return null}
 function pickLamp(mx,my){for(const L of lamps){const[x,y]=W2S(L.x,L.y);if(Math.hypot(mx-x,my-y)<9||Math.hypot(mx-x,my-(y-(L.small?9:13)))<8)return{k:'lamp',o:L}}return null}
 function pickPlace(mx,my){for(const[id,p]of Object.entries(places)){const[x,y]=W2S(p.x,p.y);if(Math.hypot(mx-x,my-y)<9)return{k:'place',id}}return null}
 
 function finishDrawing(){if(!drawing)return;
   if(drawing.type==='obscure'){if(drawing.pts.length>=3)obscured.push({pts:drawing.pts})}
+  else if(drawing.type==='patharea'){if(drawing.pts.length>=3)pathareas.push({pts:drawing.pts})}
+  else if(drawing.type==='house'){if(drawing.pts.length>=3)houses.push({pts:drawing.pts})}
   else if(drawing.type==='water'){if(drawing.pts.length>=3)water.push({pts:drawing.pts})}
   else if(drawing.type==='stands'){if(drawing.pts.length>=3)stands.push({pts:drawing.pts})}
   else if(drawing.type==='fence'){if(drawing.pts.length>=2)fences.push({id:drawing.id,kind:drawing.kind,pts:drawing.pts})}
@@ -196,20 +208,23 @@ function finishDrawing(){if(!drawing)return;
 cnv.addEventListener('mousedown',e=>{const mx=e.offsetX,my=e.offsetY,[wx,wy]=S2W(mx,my).map(Math.round);
   if(mode==='place'){const id=sel0.value;if(!id)return;pushUndo();places[id]={x:wx,y:wy};refreshList();
     const nxt=LOCS.find(l=>!places[l.id]);if(nxt)sel0.value=nxt.id;toast('placed '+(LOCS.find(l=>l.id===id).name));draw();return}
+  if(mode==='door'){const hit=pickDoor(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const D={x:wx,y:wy};doors.push(D);sel={k:'door',o:D};dragging=sel;draw();return}
   if(mode==='path'){if(!drawing){pushUndo();drawing={id:'p'+(pid++),type:kind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='patharea'){if(!drawing){pushUndo();drawing={type:'patharea',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
+  if(mode==='house'){if(!drawing){pushUndo();drawing={type:'house',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='obscure'){if(!drawing){pushUndo();drawing={type:'obscure',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='water'){if(!drawing){pushUndo();drawing={type:'water',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='stands'){if(!drawing){pushUndo();drawing={type:'stands',pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='fence'){if(!drawing){pushUndo();drawing={id:'f'+(pid++),type:'fence',kind:fenceKind,pts:[]}}drawing.pts.push([wx,wy]);draw();return}
   if(mode==='lamp'){const hit=pickLamp(mx,my);if(hit){sel=hit;dragging=hit;draw();return}pushUndo();const L={x:wx,y:wy};lamps.push(L);sel={k:'lamp',o:L};dragging=sel;draw();return}
-  const hp=pickPlace(mx,my)||pickPath(mx,my)||pickFence(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
+  const hp=pickPlace(mx,my)||pickDoor(mx,my)||pickPath(mx,my)||pickFence(mx,my)||pickPArea(mx,my)||pickHouse(mx,my)||pickObs(mx,my)||pickWat(mx,my)||pickStand(mx,my)||pickLamp(mx,my);
   if(hp){sel=hp;dragging=hp;if(hp.k==='path'){fromSel.value=hp.o.from||'';toSel.value=hp.o.to||''}draw()}else{sel=null;panning=[e.clientX,e.clientY,ox,oy];cnv.style.cursor='grabbing';draw()}
 });
 cnv.addEventListener('mousemove',e=>{
   if(panning){ox=panning[2]+(e.clientX-panning[0]);oy=panning[3]+(e.clientY-panning[1]);draw();return}
   if(!dragging)return;const[wx,wy]=S2W(e.offsetX,e.offsetY).map(Math.round);
-  if((dragging.k==='path'||dragging.k==='obs'||dragging.k==='wat'||dragging.k==='stand'||dragging.k==='fence')&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
-  else if(dragging.k==='lamp'){dragging.o.x=wx;dragging.o.y=wy}
+  if(['path','obs','wat','stand','fence','parea','house'].includes(dragging.k)&&dragging.pi!=null)dragging.o.pts[dragging.pi]=[wx,wy];
+  else if(dragging.k==='lamp'||dragging.k==='door'){dragging.o.x=wx;dragging.o.y=wy}
   else if(dragging.k==='place')places[dragging.id]={x:wx,y:wy};
   draw();
 });
@@ -221,12 +236,15 @@ window.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.a
   else if(e.key==='Escape'){drawing=null;sel=null;draw()}
   else if(e.key==='Backspace'){e.preventDefault();
     if(drawing){drawing.pts.pop();if(!drawing.pts.length)drawing=null;draw()}
-    else if(sel&&(sel.k==='path'||sel.k==='obs'||sel.k==='wat'||sel.k==='stand'||sel.k==='fence')&&sel.pi!=null&&sel.o.pts.length>((sel.k==='path'||sel.k==='fence')?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
+    else if(sel&&['path','obs','wat','stand','fence','parea','house'].includes(sel.k)&&sel.pi!=null&&sel.o.pts.length>((sel.k==='path'||sel.k==='fence')?2:3)){pushUndo();sel.o.pts.splice(sel.pi,1);sel.pi=null;draw()}
     else if(sel&&sel.k==='path'){pushUndo();paths=paths.filter(p=>p!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='parea'){pushUndo();pathareas=pathareas.filter(z=>z!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='house'){pushUndo();houses=houses.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='fence'){pushUndo();fences=fences.filter(f=>f!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='obs'){pushUndo();obscured=obscured.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='wat'){pushUndo();water=water.filter(z=>z!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='stand'){pushUndo();stands=stands.filter(z=>z!==sel.o);sel=null;draw()}
+    else if(sel&&sel.k==='door'){pushUndo();doors=doors.filter(d=>d!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='lamp'){pushUndo();lamps=lamps.filter(l=>l!==sel.o);sel=null;draw()}
     else if(sel&&sel.k==='place'){pushUndo();delete places[sel.id];sel=null;refreshList();draw()}}
 });
@@ -234,12 +252,22 @@ function setMode(m){mode=m;document.querySelectorAll('#modes button').forEach(b=
 document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 document.querySelectorAll('#kinds button').forEach(b=>b.onclick=()=>{kind=b.dataset.k;document.querySelectorAll('#kinds button').forEach(x=>x.classList.toggle('on',x===b))});
 document.querySelectorAll('#fkinds button').forEach(b=>b.onclick=()=>{fenceKind=b.dataset.fk;document.querySelectorAll('#fkinds button').forEach(x=>x.classList.toggle('on',x===b));if(sel&&sel.k==='fence'){pushUndo();sel.o.kind=fenceKind;draw()}});
-const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' px',paths:paths.map(p=>Object.assign({id:p.id,type:p.type},p.from?{from:p.from}:{},p.to?{to:p.to}:{},{pts:p.pts})),places,obscured:obscured.map(z=>({pts:z.pts})),water:water.map(z=>({pts:z.pts})),stands:stands.map(z=>({pts:z.pts})),fences:fences.map(f=>({id:f.id,kind:f.kind,pts:f.pts})),lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
+const outJSON=()=>JSON.stringify({space:'plate-v1 '+img.width+'x'+img.height+' px',
+  paths:paths.map(p=>Object.assign({id:p.id,type:p.type},p.from?{from:p.from}:{},p.to?{to:p.to}:{},{pts:p.pts})),
+  pathareas:pathareas.map(z=>({pts:z.pts})),
+  places,
+  doors:doors.map(d=>({x:d.x,y:d.y})),
+  houses:houses.map(z=>({pts:z.pts})),
+  obscured:obscured.map(z=>({pts:z.pts})),
+  water:water.map(z=>({pts:z.pts})),
+  stands:stands.map(z=>({pts:z.pts})),
+  fences:fences.map(f=>({id:f.id,kind:f.kind,pts:f.pts})),
+  lamps:lamps.map(l=>Object.assign({x:l.x,y:l.y},l.small?{small:true}:{}))},null,1);
 document.getElementById('exCopy').onclick=async()=>{document.getElementById('io').value=outJSON();try{await navigator.clipboard.writeText(outJSON());toast('copied — paste to Claude')}catch(_){toast('JSON in the box — copy it')}};
 document.getElementById('exDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([outJSON()],{type:'application/json'}));a.download='era-plate-map.json';a.click();toast('downloaded')};
-document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));places=j.places||{};obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
-document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;places=s.places;obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];fences=s.fences||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
-document.getElementById('clr').onclick=()=>{if(confirm('Clear paths, pins, obscured zones, water, stands, fences AND lamps?')){pushUndo();paths=[];places={};obscured=[];water=[];stands=[];fences=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
+document.getElementById('imp').onclick=()=>{try{const j=JSON.parse(document.getElementById('io').value);paths=(j.paths||[]).map(p=>({id:p.id||'p'+(pid++),type:p.type||'street',pts:p.pts,from:p.from||'',to:p.to||''}));pathareas=(j.pathareas||[]).map(z=>({pts:z.pts||z}));places=j.places||{};doors=(j.doors||[]).map(d=>({x:d.x,y:d.y}));houses=(j.houses||[]).map(z=>({pts:z.pts||z}));obscured=(j.obscured||[]).map(z=>({pts:z.pts||z}));water=(j.water||[]).map(z=>({pts:z.pts||z}));stands=(j.stands||[]).map(z=>({pts:z.pts||z}));fences=(j.fences||[]).map(f=>({id:f.id||'f'+(pid++),kind:f.kind||'low',pts:f.pts}));lamps=(j.lamps||[]).map(l=>({x:l.x,y:l.y,small:!!l.small}));pid=paths.length+1;sel=null;refreshList();draw();toast('imported')}catch(_){toast('bad JSON')}};
+document.getElementById('undo').onclick=()=>{if(undoStack.length){const s=JSON.parse(undoStack.pop());paths=s.paths;pathareas=s.pathareas||[];places=s.places;doors=s.doors||[];houses=s.houses||[];obscured=s.obscured||[];water=s.water||[];stands=s.stands||[];fences=s.fences||[];lamps=s.lamps||[];sel=null;drawing=null;refreshList();draw();toast('undo')}};
+document.getElementById('clr').onclick=()=>{if(confirm('Clear EVERYTHING — paths, pathways, pins, doors, houses, obscured, water, stands, fences AND lamps?')){pushUndo();paths=[];pathareas=[];places={};doors=[];houses=[];obscured=[];water=[];stands=[];fences=[];lamps=[];sel=null;drawing=null;refreshList();draw()}};
 resize();
 </script>
 </body>
