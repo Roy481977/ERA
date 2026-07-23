@@ -3203,5 +3203,411 @@
    ]
   }
  ],
- "lamps": []
+ "lamps": [
+  {
+   "x": 996,
+   "y": 1228,
+   "kind": "lantern"
+  },
+  {
+   "x": 729,
+   "y": 1301,
+   "kind": "lantern"
+  },
+  {
+   "x": 816,
+   "y": 1253,
+   "kind": "lantern"
+  },
+  {
+   "x": 894,
+   "y": 1208,
+   "kind": "lantern"
+  },
+  {
+   "x": 828,
+   "y": 1174,
+   "kind": "lantern"
+  },
+  {
+   "x": 764,
+   "y": 1141,
+   "kind": "lantern"
+  },
+  {
+   "x": 663,
+   "y": 1096,
+   "kind": "lantern"
+  },
+  {
+   "x": 658,
+   "y": 1041,
+   "kind": "lantern"
+  },
+  {
+   "x": 753,
+   "y": 1032,
+   "kind": "lantern"
+  },
+  {
+   "x": 857,
+   "y": 998,
+   "kind": "lantern"
+  },
+  {
+   "x": 948,
+   "y": 957,
+   "kind": "lantern"
+  },
+  {
+   "x": 1030,
+   "y": 923,
+   "kind": "lantern"
+  },
+  {
+   "x": 1120,
+   "y": 875,
+   "kind": "lantern"
+  },
+  {
+   "x": 1184,
+   "y": 840,
+   "kind": "lantern"
+  },
+  {
+   "x": 1252,
+   "y": 782,
+   "kind": "lantern"
+  },
+  {
+   "x": 1256,
+   "y": 724,
+   "kind": "lantern"
+  },
+  {
+   "x": 1239,
+   "y": 691,
+   "kind": "lantern"
+  },
+  {
+   "x": 1274,
+   "y": 691,
+   "kind": "lantern"
+  },
+  {
+   "x": 1317,
+   "y": 740,
+   "kind": "lantern"
+  },
+  {
+   "x": 1293,
+   "y": 808,
+   "kind": "lantern"
+  },
+  {
+   "x": 1242,
+   "y": 841,
+   "kind": "lantern"
+  },
+  {
+   "x": 1158,
+   "y": 894,
+   "kind": "lantern"
+  },
+  {
+   "x": 1081,
+   "y": 932,
+   "kind": "lantern"
+  },
+  {
+   "x": 998,
+   "y": 967,
+   "kind": "lantern"
+  },
+  {
+   "x": 914,
+   "y": 1005,
+   "kind": "lantern"
+  },
+  {
+   "x": 810,
+   "y": 1054,
+   "kind": "lantern"
+  },
+  {
+   "x": 759,
+   "y": 1079,
+   "kind": "lantern"
+  },
+  {
+   "x": 835,
+   "y": 1131,
+   "kind": "lantern"
+  },
+  {
+   "x": 911,
+   "y": 1160,
+   "kind": "lantern"
+  },
+  {
+   "x": 992,
+   "y": 1170,
+   "kind": "lantern"
+  },
+  {
+   "x": 1046,
+   "y": 1131,
+   "kind": "lantern"
+  },
+  {
+   "x": 1114,
+   "y": 1093,
+   "kind": "lantern"
+  },
+  {
+   "x": 1176,
+   "y": 1051,
+   "kind": "lantern"
+  },
+  {
+   "x": 1235,
+   "y": 1006,
+   "kind": "lantern"
+  },
+  {
+   "x": 1275,
+   "y": 977,
+   "kind": "lantern"
+  },
+  {
+   "x": 1314,
+   "y": 983,
+   "kind": "lantern"
+  },
+  {
+   "x": 1373,
+   "y": 959,
+   "kind": "lantern"
+  },
+  {
+   "x": 1431,
+   "y": 919,
+   "kind": "lantern"
+  },
+  {
+   "x": 1488,
+   "y": 870,
+   "kind": "lantern"
+  },
+  {
+   "x": 1541,
+   "y": 823,
+   "kind": "lantern"
+  },
+  {
+   "x": 1608,
+   "y": 829,
+   "kind": "lantern"
+  },
+  {
+   "x": 1560,
+   "y": 872,
+   "kind": "lantern"
+  },
+  {
+   "x": 1519,
+   "y": 906,
+   "kind": "lantern"
+  },
+  {
+   "x": 1470,
+   "y": 951,
+   "kind": "lantern"
+  },
+  {
+   "x": 1563,
+   "y": 976,
+   "kind": "lantern"
+  },
+  {
+   "x": 1582,
+   "y": 1022,
+   "kind": "lantern"
+  },
+  {
+   "x": 1530,
+   "y": 1060,
+   "kind": "lantern"
+  },
+  {
+   "x": 1446,
+   "y": 1131,
+   "kind": "lantern"
+  },
+  {
+   "x": 1393,
+   "y": 1174,
+   "kind": "lantern"
+  },
+  {
+   "x": 1306,
+   "y": 1227,
+   "kind": "lantern"
+  },
+  {
+   "x": 1219,
+   "y": 1262,
+   "kind": "lantern"
+  },
+  {
+   "x": 1110,
+   "y": 1264,
+   "kind": "lantern"
+  },
+  {
+   "x": 1019,
+   "y": 1238,
+   "kind": "lantern"
+  },
+  {
+   "x": 925,
+   "y": 1251,
+   "kind": "lantern"
+  },
+  {
+   "x": 825,
+   "y": 1312,
+   "kind": "lantern"
+  },
+  {
+   "x": 758,
+   "y": 1354,
+   "kind": "lantern"
+  },
+  {
+   "x": 617,
+   "y": 1341,
+   "kind": "lantern"
+  },
+  {
+   "x": 465,
+   "y": 1304,
+   "kind": "lantern"
+  },
+  {
+   "x": 559,
+   "y": 1056,
+   "kind": "lantern"
+  },
+  {
+   "x": 451,
+   "y": 1016,
+   "kind": "lantern"
+  },
+  {
+   "x": 373,
+   "y": 951,
+   "kind": "lantern"
+  },
+  {
+   "x": 302,
+   "y": 878,
+   "kind": "lantern"
+  },
+  {
+   "x": 293,
+   "y": 769,
+   "kind": "lantern"
+  },
+  {
+   "x": 342,
+   "y": 692,
+   "kind": "lantern"
+  },
+  {
+   "x": 257,
+   "y": 716,
+   "kind": "lantern"
+  },
+  {
+   "x": 241,
+   "y": 832,
+   "kind": "lantern"
+  },
+  {
+   "x": 281,
+   "y": 947,
+   "kind": "lantern"
+  },
+  {
+   "x": 389,
+   "y": 1019,
+   "kind": "lantern"
+  },
+  {
+   "x": 344,
+   "y": 642,
+   "kind": "lantern"
+  },
+  {
+   "x": 459,
+   "y": 605,
+   "kind": "lantern"
+  },
+  {
+   "x": 1635,
+   "y": 1113,
+   "kind": "lantern"
+  },
+  {
+   "x": 1782,
+   "y": 1166,
+   "kind": "lantern"
+  },
+  {
+   "x": 1907,
+   "y": 1249,
+   "kind": "lantern"
+  },
+  {
+   "x": 1865,
+   "y": 1304,
+   "kind": "lantern"
+  },
+  {
+   "x": 1466,
+   "y": 1547,
+   "kind": "lantern"
+  },
+  {
+   "x": 555,
+   "y": 1528,
+   "kind": "lantern"
+  },
+  {
+   "x": 195,
+   "y": 1369,
+   "kind": "lantern"
+  },
+  {
+   "x": 20,
+   "y": 875,
+   "kind": "lantern"
+  },
+  {
+   "x": 1719,
+   "y": 902,
+   "kind": "lantern"
+  },
+  {
+   "x": 696,
+   "y": 927,
+   "kind": "lantern"
+  },
+  {
+   "x": 675,
+   "y": 515,
+   "kind": "lantern"
+  }
+ ]
 }

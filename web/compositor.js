@@ -1713,12 +1713,12 @@ function applyLightMap(n, lit, f) {
   // bright bulb cores + window squares on top (additive) so the sources sparkle
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   for (const L of state.lamps) {
+    if ((L.kind || 'light') === 'lantern') continue;   // a lantern's SOURCE is never seen (only its spill, from the light-map above) — it sits hidden behind houses
     if (L.x < 0 || L.x > PLATE_W) continue;
     if (obscured(L.x, L.y)) continue;   // behind a wall: hide the visible source too, not just the post — you don't see a light through a wall (its spill in the light-map above still lights the surroundings)
     const [x, y] = P2S(L.x, L.y); const sc = scaleAt(L.y) * view.s;
-    const headOff = (L.kind || 'light') === 'lantern' ? 0 : 14;   // lantern: bright point at its spot; light: at the head
     ctx.fillStyle = `rgba(255,240,206,${0.8 * n})`;
-    ctx.beginPath(); ctx.arc(x, y - headOff * sc, (L.kind === 'lantern' ? 2.0 : 1.5) * sc, 0, 7); ctx.fill();  // the lit source itself
+    ctx.beginPath(); ctx.arc(x, y - 14 * sc, 1.5 * sc, 0, 7); ctx.fill();  // the lit lamp head
   }
   ctx.restore();
 }
