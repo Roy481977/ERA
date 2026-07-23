@@ -1667,6 +1667,21 @@ function applyLightMap(n, lit, f) {
     rg.addColorStop(0, c0); rg.addColorStop(0.62, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = rg; g.beginPath(); g.arc(lx, ly, rad, 0, 7); g.fill();
   };
+  // Lamp glow (lanterns + street lights) goes onto its OWN layer so we can then
+  // ERASE the house silhouettes from it — a building blocks the light, it doesn't
+  // pass through. (Window/floodlight glows stay on the main map: a window lights its
+  // own house.) The lamp sits hidden behind a house; only its spill on open ground shows.
+  let gc = state.gc; if (!gc) gc = state.gc = document.createElement('canvas');
+  if (gc.width !== R || gc.height !== H) { gc.width = R; gc.height = H; }
+  const gg = gc.getContext('2d');
+  gg.clearRect(0, 0, R, H);
+  gg.globalCompositeOperation = 'lighter';
+  const glow = (lx, ly, rad, c0, c1) => {
+    if (!isFinite(lx) || !isFinite(ly) || !isFinite(rad) || rad <= 0) return;
+    const rg = gg.createRadialGradient(lx, ly, 0, lx, ly, rad);
+    rg.addColorStop(0, c0); rg.addColorStop(0.62, c1); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    gg.fillStyle = rg; gg.beginPath(); gg.arc(lx, ly, rad, 0, 7); gg.fill();
+  };
   for (const L of state.lamps) {
     if (L.x < 0 || L.x > PLATE_W) continue;
     const sc = scaleAt(L.y) * view.s;
@@ -1674,13 +1689,19 @@ function applyLightMap(n, lit, f) {
     const headOff = lantern ? 0 : 14;    // lights pool at the head; lanterns pool at the point (no post)
     const lx = L.x * view.s, ly = L.y * view.s - headOff * sc;
     if (lantern) {   // softer, warmer, a closer reach
-      lamp(lx, ly, 82 * sc, `rgba(255,168,96,${0.36 * n})`, `rgba(255,146,78,${0.14 * n})`);  // warm, gently spread
-      lamp(lx, ly, 34 * sc, `rgba(255,190,120,${0.72 * n})`, `rgba(255,164,92,${0.30 * n})`); // soft core
+      glow(lx, ly, 82 * sc, `rgba(255,168,96,${0.36 * n})`, `rgba(255,146,78,${0.14 * n})`);  // warm, gently spread
+      glow(lx, ly, 34 * sc, `rgba(255,190,120,${0.72 * n})`, `rgba(255,164,92,${0.30 * n})`); // soft core
     } else {
-      lamp(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
-      lamp(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
+      glow(lx, ly, 108 * sc, `rgba(255,186,116,${0.44 * n})`, `rgba(255,166,96,${0.17 * n})`); // wide soft spill
+      glow(lx, ly, 46 * sc, `rgba(255,202,142,${0.85 * n})`, `rgba(255,180,108,${0.34 * n})`); // brighter core
     }
   }
+  // buildings block lamp light: erase every house silhouette (and walls) from the glow
+  if (state.houses && state.houses.length) {
+    gg.globalCompositeOperation = 'destination-out'; gg.fillStyle = '#000';
+    for (const poly of state.houses) { gg.beginPath(); poly.forEach((p, i) => { const x = p[0] * view.s, y = p[1] * view.s; i ? gg.lineTo(x, y) : gg.moveTo(x, y); }); gg.closePath(); gg.fill(); }
+  }
+  g.drawImage(gc, 0, 0);   // composite the house-occluded lamp glow onto the light map
   for (const [pid, cnt] of Object.entries(f.occupancy || {})) {
     if (!cnt || !state.indoor.has(pid) || !state.map.places[pid]) continue;
     const p = state.map.places[pid]; if (p.x < 0 || p.x > PLATE_W) continue;
