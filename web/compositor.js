@@ -138,6 +138,9 @@ async function boot() {
     state.owl = O ? { perch: await loadImg(O.perch).catch(() => null), takeoff: await loadImg(O.takeoff).catch(() => null),
       soar: await loadImg(O.soar).catch(() => null), land: await loadImg(O.land).catch(() => null) } : null;
     if (state.owl && !state.owl.soar) state.owl = null;
+    const A = window.__INLINE.animals || {};
+    state.animalSheets = {};
+    for (const k of Object.keys(A)) state.animalSheets[k] = await loadImg(A[k]).catch(() => null);
   } else {                                      // served build
     [replay, map, plate] = await Promise.all([
       fetch('assets/replay.json').then(r => r.json()),
@@ -154,6 +157,11 @@ async function boot() {
       land:    await loadImg('owl/owl_land_sheet.png').catch(() => null),
     };
     if (!state.owl.soar) state.owl = null;
+    state.animalSheets = {
+      ani_fox:      await loadImg('animals/fox_walk_sheet.png').catch(() => null),
+      ani_tabby:    await loadImg('animals/tabby_walk_sheet.png').catch(() => null),
+      ani_blackcat: await loadImg('animals/blackcat_walk_sheet.png').catch(() => null),
+    };
   }
   state.world = replay.world;
   state.frames = replay.frames;
@@ -1326,11 +1334,39 @@ function drawMiloSprite(fig) {
   ctx.restore();
 }
 
+// Ground animals as real Meshy clay sprites (walk sheet) instead of the procedural
+// figure — same anchor-at-feet, flip-to-travel treatment as Milo. `h` is the on-plate
+// cell height (px at unit scale); the low quadruped body fills ~half the cell.
+const ANIMAL_SPRITE = {
+  ani_fox:      { key: 'ani_fox',      frames: 16, h: 28, rate: 9 },
+  ani_tabby:    { key: 'ani_tabby',    frames: 16, h: 24, rate: 9 },
+  ani_blackcat: { key: 'ani_blackcat', frames: 16, h: 24, rate: 9 },
+};
+function drawQuadSprite(fig, cfg) {
+  const sheet = state.animalSheets && state.animalSheets[cfg.key]; if (!sheet) return false;
+  const [x, y] = P2S(fig.px, fig.py);
+  const sc = scaleAt(fig.py) * view.s;
+  const cellW = sheet.width / cfg.frames, cellH = sheet.height;
+  const idx = fig.walking ? ((Math.floor(state.t * cfg.rate) % cfg.frames) + cfg.frames) % cfg.frames : 0;
+  const targetH = cfg.h * sc * PSCALE;
+  const dh = targetH, dw = targetH * (cellW / cellH);
+  const hd = fig.hd != null ? fig.hd : (fig.e.h || 0);
+  const faceS = easeFace(fig.e.id, Math.cos(hd) >= 0 ? 1 : -1) >= 0 ? 1 : -1;
+  ctx.save(); ctx.translate(x, y); ctx.scale(faceS, 1);
+  ctx.drawImage(sheet, idx * cellW, 0, cellW, cellH, -dw / 2, -dh, dw, dh);
+  ctx.restore();
+  return true;
+}
+
 function drawFigure(fig, f) {
   const { e, meta } = fig;
   let [x, y] = P2S(fig.px, fig.py);
   const sc = scaleAt(fig.py) * view.s;
-  if (meta.kind !== 'resident') { drawAnimal(fig, f, x, y, sc); return; }
+  if (meta.kind !== 'resident') {
+    const cfg = ANIMAL_SPRITE[e.id];
+    if (cfg && drawQuadSprite(fig, cfg)) return;   // real clay sprite (fox / cats)
+    drawAnimal(fig, f, x, y, sc); return;           // procedural fallback (dog, others)
+  }
   const hopY = (fig.hop || 0) * sc; const groundY = y; y -= hopY;   // airborne over a low fence; shadow stays on the ground
 
   const col = meta.color || '#c9cad3';

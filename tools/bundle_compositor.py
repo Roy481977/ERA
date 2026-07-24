@@ -17,12 +17,15 @@ mp = (web / "assets/era-plate-map-v2.json").read_text()
 plate_b64 = b64("assets/plate-v2.jpeg")
 milo_b64 = b64("milo/milo_walk_sheet.png")
 owl = {k: b64(f"owl/owl_{k}_sheet.png") for k in ("perch", "takeoff", "soar", "land")}
+animals = {f"ani_{n}": b64(f"animals/{n}_walk_sheet.png") for n in ("fox", "tabby", "blackcat")}
 
 owl_js = ",".join(f'{k}:"data:image/png;base64,{v}"' for k, v in owl.items())
+ani_js = ",".join(f'{k}:"data:image/png;base64,{v}"' for k, v in animals.items())
 inline = ('<script>window.__INLINE={replay:' + replay + ',map:' + mp +
           ',plate:"data:image/jpeg;base64,' + plate_b64 + '"' +
           ',miloSheet:"data:image/png;base64,' + milo_b64 + '"' +
-          ',owl:{' + owl_js + '}};</script>\n')
+          ',owl:{' + owl_js + '}' +
+          ',animals:{' + ani_js + '}};</script>\n')
 html = html.replace('<script src="compositor.js"></script>',
                     inline + "<script>\n" + js + "\n</script>")
 out.write_text(html)
