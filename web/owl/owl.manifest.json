@@ -1,0 +1,9 @@
+{
+  "id": "ani_owl",
+  "cell": 256,
+  "perch":   { "sheet": "owl/owl_perch_sheet.png",   "frames": 8,  "pivot": "bottom" },
+  "takeoff": { "sheet": "owl/owl_takeoff_sheet.png", "frames": 8,  "pivot": "center" },
+  "soar":    { "sheet": "owl/owl_soar_sheet.png",    "frames": 14, "pivot": "center" },
+  "land":    { "sheet": "owl/owl_land_sheet.png",    "frames": 8,  "pivot": "center" },
+  "provenance": "Krea spread-wing flight design -> Meshy image->3D/texture/Smart Rig -> author_owl_flight.py (soar/takeoff/land) + owl_rigged.glb perch idle -> render_owl_sheets.py"
+}

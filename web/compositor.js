@@ -4,6 +4,83 @@
 // from the plate-map pins, perspective-scaled and y-sorted.
 
 const PLATE_W = 2048, PLATE_H = 2048;
+
+// ===== Real-world scale & speeds (Roy's realism pass) ======================
+// The built town spans ~1649 plate-px (measured across the place pixels). At a
+// real town width of ~175 m that is ~9.4 px per metre. A sim tick is ultimately
+// REAL TIME (Roy), so on-plate motion is paced in real seconds: a mover at v m/s
+// covers v*PX_PER_M px per real second (state.anim, which runs continuously).
+const TOWN_WIDTH_M = 175;                     // whole town ~150-200 m (Roy) -> use 175
+const TOWN_PX = 1649;                         // measured px span of the town's places
+const PX_PER_M = TOWN_PX / TOWN_WIDTH_M;      // ~9.42 px / metre
+// A sim tick is ultimately REAL TIME (Roy), so motion is paced by a real-time
+// clock (state.anim, seconds) at v*PX_PER_M px/sec — real speed on the plate,
+// independent of the time-lapse pace slider.
+const SPEED = {                               // real ground/air speeds, m/s
+  walk: 1.35, hurry: 2.6, run: 4.5,           // people
+  dog_amble: 1.0, fox_trot: 2.2, fox_run: 5.5,
+  cat_walk: 1.0, cat_run: 4.0, hedgehog: 0.35,
+  owl_soar: 5.0, crow_fly: 9.0, heron_fly: 9.0,
+};
+const pxPerSec = v => v * PX_PER_M;                  // px/sec on the plate at v m/s
+
+// ===== Owl flight (compositor sky atmosphere) ==============================
+// Owl launches from its perch, soars a slow wide loop over the town, and lands.
+// Real speed: paced by state.anim (real seconds) at owl_soar m/s -> px/sec, so the
+// soar is a genuine ~5 m/s glide regardless of the playback pace. Compositor-side
+// proof; the sim's Act::Fly will later choose real crossings between perches.
+const OWL_PERCH = { x: 855, y: 251 };                       // the clock tower
+// A slow, low hunting glide over the town — a wide flat loop over the pitch and
+// square, low enough to read against the rooftops (and in the default framed view).
+const OWL_LOOP  = { cx: 890, cy: 660, ax: 450, ay: 82 };
+const OWL_FRAMES = { perch: 8, takeoff: 8, soar: 14, land: 8 };
+function owlLoopPt(s) { const a = -Math.PI / 2 + s * 2 * Math.PI;
+  return { x: OWL_LOOP.cx + OWL_LOOP.ax * Math.cos(a), y: OWL_LOOP.cy + OWL_LOOP.ay * Math.sin(a) }; }
+function owlFlight(rt) {                                     // rt = real seconds
+  const a = OWL_LOOP.ax, b = OWL_LOOP.ay;
+  const perim = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+  const start = owlLoopPt(0), end = owlLoopPt(1);
+  const upPx = Math.hypot(start.x - OWL_PERCH.x, start.y - OWL_PERCH.y);
+  const dnPx = Math.hypot(end.x - OWL_PERCH.x, end.y - OWL_PERCH.y);
+  const soarDur = perim / pxPerSec(SPEED.owl_soar);         // seconds to fly the loop
+  const upDur = upPx / pxPerSec(SPEED.owl_soar * 0.7);      // launch a touch slower
+  const dnDur = dnPx / pxPerSec(SPEED.owl_soar * 0.6);      // land slower still
+  const restDur = 9;                                        // perched between loops (s)
+  const cycle = restDur + upDur + soarDur + dnDur;
+  let u = ((rt % cycle) + cycle) % cycle;
+  if (u < restDur) return { clip: 'perch', x: OWL_PERCH.x, y: OWL_PERCH.y, dir: 1 };
+  u -= restDur;
+  if (u < upDur) { const k = u / upDur; return { clip: 'takeoff', aloft: true,
+    x: lerp(OWL_PERCH.x, start.x, k), y: lerp(OWL_PERCH.y, start.y, k), dir: start.x >= OWL_PERCH.x ? 1 : -1 }; }
+  u -= upDur;
+  if (u < soarDur) { const s = u / soarDur; const p = owlLoopPt(s), p2 = owlLoopPt(s + 0.01);
+    return { clip: 'soar', aloft: true, x: p.x, y: p.y, dir: p2.x >= p.x ? 1 : -1 }; }
+  u -= soarDur;
+  const k = u / dnDur; return { clip: 'land', aloft: true,
+    x: lerp(end.x, OWL_PERCH.x, k), y: lerp(end.y, OWL_PERCH.y, k), dir: OWL_PERCH.x >= end.x ? 1 : -1 };
+}
+function drawOwl() {
+  if (!state.owl) return;
+  const fs = owlFlight(state.anim || 0);
+  const sheet = state.owl[fs.clip]; if (!sheet) return;
+  const frames = OWL_FRAMES[fs.clip];
+  const [sx, sy] = P2S(fs.x, fs.y);
+  const cellW = sheet.width / frames, cellH = sheet.height;
+  const rate = fs.clip === 'takeoff' ? 12 : fs.clip === 'soar' ? 10 : fs.clip === 'land' ? 9 : 4;  // sprite fps
+  const fi = ((Math.floor((state.anim || 0) * rate) % frames) + frames) % frames;
+  // stylised size (matches the plate's figurine scale, not literal 0.9 m), a
+  // touch larger when aloft so the spread wings read; scaled by view + a gentle
+  // perspective. Anchored at centre when flying, at the feet when perched.
+  const skySc = 0.62 * view.s;
+  const targetH = (fs.aloft ? 84 : 40) * (fs.aloft ? skySc : scaleAt(fs.y) * view.s);
+  const dh = targetH, dw = targetH * (cellW / cellH);
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.scale(fs.dir < 0 ? -1 : 1, 1);
+  if (fs.aloft) ctx.drawImage(sheet, fi * cellW, 0, cellW, cellH, -dw / 2, -dh / 2, dw, dh);
+  else ctx.drawImage(sheet, fi * cellW, 0, cellW, cellH, -dw / 2, -dh, dw, dh);   // feet on the perch
+  ctx.restore();
+}
 const PLATE_IMG = 'assets/plate-v2.jpeg';
 
 const state = {
@@ -31,6 +108,13 @@ async function boot() {
     // plate-v2 uses per-house occluder polygons from the map (not the v1 mask png).
     state.occluder = null;
     state.miloSheet = await loadImg('milo/milo_walk_sheet.png').catch(() => null);
+    state.owl = {
+      perch:   await loadImg('owl/owl_perch_sheet.png').catch(() => null),
+      takeoff: await loadImg('owl/owl_takeoff_sheet.png').catch(() => null),
+      soar:    await loadImg('owl/owl_soar_sheet.png').catch(() => null),
+      land:    await loadImg('owl/owl_land_sheet.png').catch(() => null),
+    };
+    if (!state.owl.soar) state.owl = null;
   }
   state.world = replay.world;
   state.frames = replay.frames;
@@ -186,6 +270,8 @@ async function boot() {
   window.__state = state; window.__draw = draw; window.__ready = true;
   window.__seek = (frame) => { state.playing = false; state.t = frame; draw(); };
   window.__getRoute = getRoute;
+  window.__view = () => ({ s: view.s, ox: view.ox, oy: view.oy, z: zoom.z, cx: zoom.cx, cy: zoom.cy, cw: cnv.width, ch: cnv.height });
+  window.__s2w = (sx, sy) => [ (sx - view.ox) / view.s, (sy - view.oy) / view.s ];
   window.__debugDraw = (arg) => { state.__dbg = Array.isArray(arg) ? { routes: arg } : arg; draw(); };
   requestAnimationFrame(loop);
 }
@@ -720,6 +806,9 @@ function draw() {
   // living layer on the lit plate: map every entity, y-sort, draw back-to-front
   const figs = [];
   for (const e of f.entities) {
+    // the owl is drawn by drawOwl() as a real-speed sky element (perch + flight),
+    // not as a procedural ground figure.
+    if (e.id === 'ani_owl' && state.owl) continue;
     const meta = state.roster[e.id] || { color: '#eee', kind: 'resident', name: e.id };
     const eN = nextById[e.id];                                 // next tick's state, for continuous motion
     // A "hop": the sim records some journeys (notably the dog & wildlife) as an
@@ -817,6 +906,8 @@ function draw() {
     else drawFigure(fig, f);
     ctx.globalAlpha = 1;
   }
+
+  drawOwl();   // the owl: perched on the clock tower, or soaring its slow sky loop
 
   // foreground occluder: front greenery over the living layer (2.5D depth).
   if (state.occluder) ctx.drawImage(state.occluder, view.ox, view.oy, PLATE_W * view.s, PLATE_H * view.s);
