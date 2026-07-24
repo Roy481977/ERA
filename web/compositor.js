@@ -683,6 +683,19 @@ function clampToPath(px, py) {
   return [fx, fy];
 }
 
+// Keep a wild animal off the rooftops: if its ground point falls inside a house
+// footprint, drop it to just below that house's near (front) edge so it stands on
+// the ground beside the building, not on the roof. Wild animals still roam grass
+// and gardens freely (unlike people, who are clamped to the paths).
+function offRoof(px, py) {
+  if (!state.houses || !state.houseMeta) return [px, py];
+  let ny = py, hit = false;
+  for (let i = 0; i < state.houses.length; i++) {
+    if (pointInPoly(px, py, state.houses[i])) { ny = Math.max(ny, state.houseMeta[i].frontY + 5); hit = true; }
+  }
+  return hit ? [px, ny] : [px, py];
+}
+
 // small stable per-id pixel offset so figures sharing a spot don't perfectly stack
 function jitterPx(id, r) {
   let h = 2166136261;
@@ -935,8 +948,10 @@ function draw() {
           fenceHop *= A; }
       }
     }
-    // keep people (and the dog) with their feet on the painted pathways; wild animals roam freely
+    // keep people (and the dog) with their feet on the painted pathways; wild animals
+    // roam grass/gardens freely but must stay OFF the rooftops.
     if (meta.kind === 'resident' || e.id === 'the_old_dog') { const [cx, cy] = clampToPath(px, py); px = cx; py = cy; }
+    else if (e.id.startsWith('ani_')) { const [cx, cy] = offRoof(px, py); px = cx; py = cy; }
     figs.push({ e, meta, px, py, walking, hd, alpha, hop: fenceHop });
   }
   figs.sort((a, b) => a.py - b.py);
