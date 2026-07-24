@@ -29,35 +29,38 @@ const pxPerSec = v => v * PX_PER_M;                  // px/sec on the plate at v
 // Real speed: paced by state.anim (real seconds) at owl_soar m/s -> px/sec, so the
 // soar is a genuine ~5 m/s glide regardless of the playback pace. Compositor-side
 // proof; the sim's Act::Fly will later choose real crossings between perches.
-const OWL_PERCH = { x: 855, y: 251 };                       // the clock tower
+// Two perches: the clock tower (lore home, high) and a visible stadium-rim ledge
+// so landings are seen. The owl alternates — leaves one, soars, lands on the other.
+const OWL_PERCHES = [ { x: 855, y: 251 }, { x: 880, y: 780 } ];
 // A slow, low hunting glide over the town — a wide flat loop over the pitch and
 // square, low enough to read against the rooftops (and in the default framed view).
-const OWL_LOOP  = { cx: 890, cy: 660, ax: 450, ay: 82 };
+const OWL_LOOP  = { cx: 890, cy: 640, ax: 450, ay: 90 };
 const OWL_FRAMES = { perch: 8, takeoff: 8, soar: 14, land: 8 };
+const OWL_REST = 15, OWL_UP = 3.5, OWL_DN = 4.5;            // fixed launch/land/rest (s)
 function owlLoopPt(s) { const a = -Math.PI / 2 + s * 2 * Math.PI;
-  return { x: OWL_LOOP.cx + OWL_LOOP.ax * Math.cos(a), y: OWL_LOOP.cy + OWL_LOOP.ay * Math.sin(a) }; }
-function owlFlight(rt) {                                     // rt = real seconds
-  const a = OWL_LOOP.ax, b = OWL_LOOP.ay;
+  return { x: OWL_LOOP.cx + OWL_LOOP.ax * Math.cos(a),
+           y: OWL_LOOP.cy + OWL_LOOP.ay * Math.sin(a) + 7 * Math.sin(s * 4 * Math.PI) }; }  // gentle bob
+function owlSoarDur() { const a = OWL_LOOP.ax, b = OWL_LOOP.ay;
   const perim = Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+  return perim / pxPerSec(SPEED.owl_soar); }
+function owlFlight(rt) {                                     // rt = real seconds
+  const soarDur = owlSoarDur();
+  const cycle = OWL_REST + OWL_UP + soarDur + OWL_DN;        // constant -> stable cycle index
+  const ci = Math.floor(rt / cycle);
+  const fromP = OWL_PERCHES[((ci % 2) + 2) % 2], toP = OWL_PERCHES[((ci + 1) % 2 + 2) % 2];
   const start = owlLoopPt(0), end = owlLoopPt(1);
-  const upPx = Math.hypot(start.x - OWL_PERCH.x, start.y - OWL_PERCH.y);
-  const dnPx = Math.hypot(end.x - OWL_PERCH.x, end.y - OWL_PERCH.y);
-  const soarDur = perim / pxPerSec(SPEED.owl_soar);         // seconds to fly the loop
-  const upDur = upPx / pxPerSec(SPEED.owl_soar * 0.7);      // launch a touch slower
-  const dnDur = dnPx / pxPerSec(SPEED.owl_soar * 0.6);      // land slower still
-  const restDur = 9;                                        // perched between loops (s)
-  const cycle = restDur + upDur + soarDur + dnDur;
-  let u = ((rt % cycle) + cycle) % cycle;
-  if (u < restDur) return { clip: 'perch', x: OWL_PERCH.x, y: OWL_PERCH.y, dir: 1 };
-  u -= restDur;
-  if (u < upDur) { const k = u / upDur; return { clip: 'takeoff', aloft: true,
-    x: lerp(OWL_PERCH.x, start.x, k), y: lerp(OWL_PERCH.y, start.y, k), dir: start.x >= OWL_PERCH.x ? 1 : -1 }; }
-  u -= upDur;
-  if (u < soarDur) { const s = u / soarDur; const p = owlLoopPt(s), p2 = owlLoopPt(s + 0.01);
-    return { clip: 'soar', aloft: true, x: p.x, y: p.y, dir: p2.x >= p.x ? 1 : -1 }; }
+  let u = rt - ci * cycle;
+  if (u < OWL_REST) return { clip: 'perch', x: fromP.x, y: fromP.y, dir: 1 };
+  u -= OWL_REST;
+  if (u < OWL_UP) { const k = ease01(u / OWL_UP); return { clip: 'takeoff', aloft: true,
+    x: lerp(fromP.x, start.x, k), y: lerp(fromP.y, start.y, k), dir: start.x >= fromP.x ? 1 : -1, bank: 0.25 * k }; }
+  u -= OWL_UP;
+  if (u < soarDur) { const s = u / soarDur; const p = owlLoopPt(s), p2 = owlLoopPt((s + 0.02) % 1);
+    const dx = p2.x - p.x; return { clip: 'soar', aloft: true, x: p.x, y: p.y,
+    dir: dx >= 0 ? 1 : -1, bank: 0.30 * Math.sin(s * 2 * Math.PI) }; }
   u -= soarDur;
-  const k = u / dnDur; return { clip: 'land', aloft: true,
-    x: lerp(end.x, OWL_PERCH.x, k), y: lerp(end.y, OWL_PERCH.y, k), dir: OWL_PERCH.x >= end.x ? 1 : -1 };
+  const k = ease01(u / OWL_DN); return { clip: 'land', aloft: true,
+    x: lerp(end.x, toP.x, k), y: lerp(end.y, toP.y, k), dir: toP.x >= end.x ? 1 : -1, bank: 0.22 * (1 - k) };
 }
 function drawOwl() {
   if (!state.owl) return;
@@ -74,9 +77,22 @@ function drawOwl() {
   const skySc = 0.62 * view.s;
   const targetH = (fs.aloft ? 84 : 40) * (fs.aloft ? skySc : scaleAt(fs.y) * view.s);
   const dh = targetH, dw = targetH * (cellW / cellH);
+  // soft ground shadow below the aloft owl — sells altitude. Falls down and a
+  // little away from the upper-right sun; fainter/smaller the higher it flies.
+  if (fs.aloft) {
+    const drop = dh * 0.9;                         // screen px between bird and its shadow
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(sx - drop * 0.18, sy + drop, dw * 0.32, dw * 0.11, 0, 0, 7);
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
   ctx.translate(sx, sy);
-  ctx.scale(fs.dir < 0 ? -1 : 1, 1);
+  ctx.scale(fs.dir < 0 ? -1 : 1, 1);              // face travel
+  if (fs.bank) ctx.rotate((fs.dir < 0 ? -1 : 1) * fs.bank);   // lean into the turn
   if (fs.aloft) ctx.drawImage(sheet, fi * cellW, 0, cellW, cellH, -dw / 2, -dh / 2, dw, dh);
   else ctx.drawImage(sheet, fi * cellW, 0, cellW, cellH, -dw / 2, -dh, dw, dh);   // feet on the perch
   ctx.restore();
