@@ -161,6 +161,7 @@ async function boot() {
       ani_fox:      await loadImg('animals/fox_walk_sheet.png').catch(() => null),
       ani_tabby:    await loadImg('animals/tabby_walk_sheet.png').catch(() => null),
       ani_blackcat: await loadImg('animals/blackcat_walk_sheet.png').catch(() => null),
+      ani_hedgehog: await loadImg('animals/hedgehog_walk_sheet.png').catch(() => null),
     };
   }
   state.world = replay.world;
@@ -1356,6 +1357,7 @@ const ANIMAL_SPRITE = {
   ani_fox:      { key: 'ani_fox',      frames: 16, h: 28, rate: 9 },
   ani_tabby:    { key: 'ani_tabby',    frames: 16, h: 24, rate: 9 },
   ani_blackcat: { key: 'ani_blackcat', frames: 16, h: 24, rate: 9 },
+  ani_hedgehog: { key: 'ani_hedgehog', frames: 8,  h: 17, rate: 6 },
 };
 function drawQuadSprite(fig, cfg) {
   const sheet = state.animalSheets && state.animalSheets[cfg.key]; if (!sheet) return false;
