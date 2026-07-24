@@ -29,8 +29,29 @@ Bone names are consistent across Quadruped-Dog rigs (fox, both cats). **Smart-Ri
 animals (owl, crow, heron, hedgehog) will have different skeletons** — inspect each
 with `inspect_rig.py` before authoring.
 
+## The bird skeleton (Meshy "Smart Rig (Beta)" — 26 generic bones)
+Owl, crow, heron, hedgehog go through **Smart Rig (Beta)**: fully automatic (no
+manual markers, unlike the Quadruped-Dog rig) but it produces a GENERIC skeleton —
+bones named `Bone_000 … Bone_025` inside a `UniRigArmature`, and it does **NOT**
+support Meshy's motion library, so there's no canned Walking clip either. Every
+clip is authored in Blender. Because the names carry no meaning, run `map_bones.py`
+first to identify root / spine / wing chains by their position, then edit the bone
+constants in `author_bird.py`.
+
+Proven on the owl 2026-07-24: `Bone_000` = root (whole-body pitch/roll),
+`Bone_002` = spine/head, `Bone_005`/`Bone_009` = long fore/aft chains used as
+candidate wings. From the plate's overhead ¾ view the soar clip reads as gliding
+flight, but those candidate bones don't yet spread the wing — the true wing bones
+still need confirming per animal via `map_bones.py`.
+
 ## Scripts (proven)
 - `inspect_rig.py <glb>` — dump objects, armature bones, meshes, actions.
+- `map_bones.py <glb>` — position-map a generic Smart-Rig skeleton (per-bone world
+  head, length, parent + normalized position vs mesh center/size). Run before
+  authoring any Smart-Rig (bird) behaviour.
+- `author_bird.py <glb> <perch|soar> <outdir>` — bird behaviour authoring on the
+  Smart-Rig skeleton. `perch` = upright + slow head turn; `soar` = pitch to gliding
+  attitude + slow roll/rise + candidate wing beat. Plate ¾ ortho, Cycles-CPU.
 - `render_cyc2.py <glb> <out.png>` — import, frame the *deformed* mesh (evaluated
   depsgraph — the rest bound-box is wrong for skinned meshes), plate ¾ ortho camera,
   Cycles-CPU render, transparent bg. The core render step.
@@ -52,10 +73,27 @@ Author, per animal, cycles mapped to the sim's `Act` enum:
 - Groom/Play → optional extras
 Still states (sit/watch/rest) can be single posed frames; only locomotion needs a cycle.
 
+## Status (2026-07-24)
+- **Fox** (Quadruped-Dog rig): idle / run / sniff / sit authored + Meshy Walk. ✅
+- **Bakery cat, black cat** (same 27-bone Quadruped-Dog rig): fox templates reused
+  verbatim → idle / run / sniff / sit. ✅
+- **Church owl** (Smart Rig): perch + soar authored. ✅ First bird path proven.
+- **Crow / heron / hedgehog**: mechanical repetition of a proven path (crow → owl's
+  bird path; heron → bird path with long-legs tuning; hedgehog → small-ground). 3D
+  meshes generated; texture → remesh → Smart Rig → author remain.
+
+## Roy's flight-atmosphere requirement (birds)
+Birds should "free-roam slowly in the sky on flight, then land where they should."
+`soar` is the airborne glide clip. Still open:
+1. Confirm the true wing bones per bird (`map_bones.py`) for real wing-spread/flap.
+2. Author **take-off** + **land** clips to bracket soar.
+3. **Compositor change**: move birds along slow sky paths (the atmosphere) and
+   trigger the land clip at the destination — this is where flight actually lands
+   on-plate, in `web/compositor.js`.
+
 ## Remaining phases
 1. Tune + lock the plate camera to the compositor's exact projection.
-2. Author the full behaviour set for the fox (template), review, lock the parametric
-   recipes per body-plan (quadruped / bird / wader / small-ground).
-3. Meshy-rig + export the other 6 animals; author their sets.
+2. Finish crow / heron / hedgehog behaviour sets.
+3. Bird flight: wing-bone ID, take-off/land clips, compositor sky traversal (above).
 4. Render sprite sheets (N frames/behaviour × headings) → asset manifest
    `id → {reference, glb, sheets, pivot, states, provenance}` → compositor sprite swap.
