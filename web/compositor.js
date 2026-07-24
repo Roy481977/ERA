@@ -134,6 +134,10 @@ async function boot() {
     plate = await loadImg(window.__INLINE.plate);
     state.occluder = window.__INLINE.occluder ? await loadImg(window.__INLINE.occluder) : null;
     state.miloSheet = window.__INLINE.miloSheet ? await loadImg(window.__INLINE.miloSheet) : null;
+    const O = window.__INLINE.owl;
+    state.owl = O ? { perch: await loadImg(O.perch).catch(() => null), takeoff: await loadImg(O.takeoff).catch(() => null),
+      soar: await loadImg(O.soar).catch(() => null), land: await loadImg(O.land).catch(() => null) } : null;
+    if (state.owl && !state.owl.soar) state.owl = null;
   } else {                                      // served build
     [replay, map, plate] = await Promise.all([
       fetch('assets/replay.json').then(r => r.json()),
