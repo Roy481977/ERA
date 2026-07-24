@@ -23,6 +23,24 @@ const SPEED = {                               // real ground/air speeds, m/s
   owl_soar: 5.0, crow_fly: 9.0, heron_fly: 9.0,
 };
 const pxPerSec = v => v * PX_PER_M;                  // px/sec on the plate at v m/s
+// Ground movers (people, dog, fox, cats, hedgehog) are paced along their route at
+// their own real speed, measured in sim-time (state.t, which respects pause and is
+// deterministic). MOTION_TICK_S = how many seconds of motion one tick represents;
+// it sets how much of each leg's window is spent walking vs. waiting at the far end.
+// (Tunable — the RELATIVE speeds below stay correct regardless.)
+const MOTION_TICK_S = 20;
+function moverSpeed(e) {
+  const id = e.id, sig = e.sig;
+  if (id === 'ani_fox') return SPEED.fox_trot;
+  if (id === 'ani_tabby' || id === 'ani_blackcat') return SPEED.cat_walk;
+  if (id === 'ani_hedgehog') return SPEED.hedgehog;
+  if (id === 'the_old_dog') return SPEED.dog_amble;
+  if (id.startsWith('ani_')) return SPEED.walk;              // any other wildlife
+  let v = SPEED.walk;                                        // people
+  if (sig === 'skip') v = SPEED.hurry;                       // children bound along
+  else if (sig === 'cane' || sig === 'limp' || sig === 'load') v *= 0.72;  // stiff / laden / elderly
+  return v;
+}
 
 // ===== Owl flight (compositor sky atmosphere) ==============================
 // Owl launches from its perch, soars a slow wide loop over the town, and lands.
@@ -102,6 +120,7 @@ const PLATE_IMG = 'assets/plate-v2.jpeg';
 const state = {
   world: null, frames: [], map: null, anchors: [],
   t: 0, playing: true, M: 120, last: 0,   // M = game-seconds per real-second (1 = true real time)
+  legT: {},                               // per-entity leg start (for real-speed pacing)
   selected: null, lastFigs: [], story: [], storyAt: -1,
   showPins: false, showNames: false,
   plate: null,
@@ -837,7 +856,7 @@ function draw() {
     // tick its instantaneous speed reads ~0 (leg start) — so the legs never freeze
     // mid-journey. Otherwise fall back to the speed test / a network hop.
     const onLeg = e.moving && e.from && e.to;
-    const walking = (e.moving && ((e.spd || 0) > 0.03 || onLeg)) || (hop && hopRoute && hopRoute.len > 4);
+    let walking = (e.moving && ((e.spd || 0) > 0.03 || onLeg)) || (hop && hopRoute && hopRoute.len > 4);
     // Physical presence: instead of blinking out on arrival, a resident holds at the
     // doorway for a beat and fades under the building's occlusion (and reverses on exit).
     if ((meta.kind === 'resident' || meta.kind === 'dog') && !walking && state.indoor.has(e.place)) {
@@ -862,13 +881,20 @@ function draw() {
       // through walls and fences). Applies to the dog, every animal, and residents.
       const legRoute = (e.moving && e.from && e.to) ? getRoute(e.from, e.to) : null;
       if (legRoute) {
-        const sameLeg = eN.moving && eN.from === e.from && eN.to === e.to;
-        const etNow = clamp(sameLeg ? e.et + (eN.et - e.et) * frac : e.et + (1 - e.et) * frac, 0, 1);
+        // Real-speed pacing: walk the route at the mover's own m/s (sim-time), then
+        // hold at the destination until the schedule starts the next leg. Replaces
+        // the old "stretch et across the whole leg window" (which was too slow).
+        const key = e.from + '>' + e.to;
+        let lt = state.legT[e.id];
+        if (!lt || lt.key !== key) lt = state.legT[e.id] = { key, start: state.t };
+        const travelled = Math.max(0, (state.t - lt.start)) * MOTION_TICK_S * moverSpeed(e) * PX_PER_M;
+        const prog = clamp(travelled / Math.max(1, legRoute.len), 0, 1);
         const [jx, jy] = jitterPx(e.id, 2);
-        const [rx, ry] = pointAlong(legRoute, ease01(etNow));
+        const [rx, ry] = pointAlong(legRoute, prog);
         px = rx + jx; py = ry + jy;
-        const [ax, ay] = pointAlong(legRoute, ease01(Math.min(1, etNow + 0.02)));  // face along the route
+        const [ax, ay] = pointAlong(legRoute, Math.min(1, prog + 0.02));            // face along the route
         hd = (ax - rx) >= 0 ? 0 : Math.PI;
+        if (prog >= 1) walking = false;                        // arrived — stand and wait
       } else if (hopRoute && hopRoute.len > 4) {                // glide along the network (a place hop)
         [px, py] = pointAlong(hopRoute, frac);
         const [ax, ay] = pointAlong(hopRoute, Math.min(1, frac + 0.03));
