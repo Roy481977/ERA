@@ -97,3 +97,20 @@ Birds should "free-roam slowly in the sky on flight, then land where they should
 3. Bird flight: wing-bone ID, take-off/land clips, compositor sky traversal (above).
 4. Render sprite sheets (N frames/behaviour × headings) → asset manifest
    `id → {reference, glb, sheets, pivot, states, provenance}` → compositor sprite swap.
+
+## Owl FLIGHT rig (spread-wing mesh — the flight-atmosphere unlock)
+The perched owl's folded wings can't be spread by rigging (no geometry). So a
+SECOND design — a wings-fanned flight pose — was generated, run through Meshy
+(image→3D → texture RL-off → Smart Rig, 172K faces, remesh SKIPPED to preserve the
+thin splayed primaries), and authored with `author_owl_flight.py`. `map_bones.py`
+on the flight glb gave the real wing structure (the earlier owl "soar" flapped
+`Bone_005`/`Bone_009`, which are actually LEG bones — hence no wing motion):
+- ROOT `Bone_000` · neck `Bone_016`→`Bone_015`
+- L wing shoulder `Bone_020`→`Bone_019`→`Bone_018`→wrist `Bone_017` (X→−2.0 tip)
+- R wing shoulder `Bone_024`→`Bone_023`→`Bone_022`→`Bone_021` (X→+2.0 tip)
+Flap = rotate the SHOULDERS about local X, mirrored sign L vs R so both tips rise
+together. `author_owl_flight.py <glb> <soar|takeoff|land> <outdir>` renders:
+soar (shallow ±14° beat + slow bank), take-off (deep ±34° power beats, nose-up
+climb), land (wings thrown up & cupped, pitch back to brake). Proven 2026-07-24.
+Each bird needs TWO meshes: folded (perch/take-off-launch/land-settle) + this
+spread-wing flight mesh (soar/flap). Crow + heron follow the same route.
