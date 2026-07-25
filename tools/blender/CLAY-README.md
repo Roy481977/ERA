@@ -6,8 +6,17 @@ and no manual modelling step — the town is a program, and every pass is a diff
 
     python3 clay.py out.png [width] [height] [samples]
 
-At 1100 × 740 / 44 samples a full plate takes about 1m50s on the 2-core container
-at roughly 7,300 objects.
+At 1100 × 740 / 44 samples a full plate takes about 1m45s on the 2-core container
+at roughly 3,300 objects.
+
+A top-down plan check costs 20 seconds and is the fastest way to debug anything
+that is wrong at layout level rather than at object level:
+
+    CAM_EL=88 CAM_AZ=90 LENS=54 CAM_D=210 python3 clay.py /tmp/top.png 700 700 10
+
+When a plan render is inconclusive, copy `clay.py` to `/tmp/dbg.py`, string-replace
+one suspect material's RGB with magenta, and render that. Two 20-second frames
+found the buried-lane bug after two full 1m45s frames had failed to explain it.
 
     BUILD_ONLY=1 python3 clay.py /tmp/x.png
 
@@ -38,6 +47,26 @@ apply only `(0, 0, angle)`.
 jittered roof tiles with one hand-wound bmesh prism, and the market square's ~700
 cobble dots plus 220 moss scatters with five concentric discs, took the scene from
 10,780 objects to ~7,300 *and* made it look better.
+
+**`ribbon()` is a fill, not a stroke.** It fills the entire span between its two
+signed offsets. A kerb is therefore two narrow edge ribbons, `(-(HW+0.24), -HW)`
+and `(HW, HW+0.24)` — never one wide ribbon at a higher z, which lays a solid
+slab over the whole carriageway and buries it.
+
+**Offsetting a polyline round a sharp corner folds it over itself.** A 50° kink
+offset by 3.5 m self-intersects for 1.6 m either side of the corner, and the
+folded quads render as black bowties. Every lane goes through `_chaikin()` corner
+cutting before it is ribboned, so no segment turns more than a few degrees.
+
+**Public ground outranks private ground, and the z-stack says so.** A house lays
+a lawn panel topping out at 0.10 and a paved apron at 0.16. A lane laid at 0.07
+disappears under them even though the geometry is perfect. The lane stack now
+runs verge 0.170 → surface 0.218 → kerb 0.258, above anything a plot can lay.
+
+**Two independently-laid ranks of houses will walk into each other.** `_hfree()`
+keeps one shared occupancy list and tests separating axes between the two
+footprint rectangles. A circle claim is wrong here: it forbids terraces, which
+touch on purpose. Pad the depth (1.3 m) and not the width (0.02 m).
 
 **Ground is claimed before it is parcelled.** `built()` — paved or inside the
 stadium — covers about 60 % of the annulus r 17–31. Parcels and fields are tested

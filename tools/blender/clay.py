@@ -1095,8 +1095,19 @@ HIGH = [(-35.0, 10.4), (-27.0, 9.6), (-19.0, 8.0), (-11.0, 6.2), (-3.0, 4.8),
 MILL = [(1.4, 4.3), (0.4, -3.6), (-1.8, -11.0), (-3.6, -18.0), (-4.2, -24.5)]
 KIRK = [(-19.6, 8.2), (-21.4, 15.0), (-20.2, 22.0), (-22.6, 28.0), (-20.8, 33.0)]
 STREETS = [HIGH, MILL, KIRK]
+def _chaikin(pts, n=2):
+    """Corner-cutting. Endpoints are preserved so lanes stay welded to streets."""
+    for _ in range(n):
+        out = [pts[0]]
+        for i in range(len(pts)-1):
+            (ax, ay), (bx, by) = pts[i], pts[i+1]
+            out.append((ax + 0.25*(bx-ax), ay + 0.25*(by-ay)))
+            out.append((ax + 0.75*(bx-ax), ay + 0.75*(by-ay)))
+        out.append(pts[-1]); pts = out
+    return pts
+
 LANES = [[(-27.4, 9.6), (-29.2, 3.4), (-27.4, -2.6), (-30.0, -8.4), (-28.2, -13.6)],
-         [(14.5, 2.8), (17.0, -3.0), (14.8, -8.6), (17.6, -14.2)],
+         [(24.4, -9.2), (27.8, -13.8), (25.6, -19.2)],
          [(-11.0, 6.2), (-9.0, 12.4), (-12.4, 17.6), (-10.2, 22.4)],
          [(23.0, 1.0), (26.2, 7.0), (23.4, 12.6), (26.0, 18.4)],
          [(6.0, 4.0), (7.8, 10.2), (4.8, 15.4), (6.8, 21.0), (4.2, 26.4)],
@@ -1104,13 +1115,30 @@ LANES = [[(-27.4, 9.6), (-29.2, 3.4), (-27.4, -2.6), (-30.0, -8.4), (-28.2, -13.
          [(31.0, -1.6), (33.4, -7.4), (30.6, -12.8)],
          [(-21.4, 15.0), (-14.6, 16.4), (-8.8, 14.2)],
          [(-29.2, 3.4), (-22.6, 1.4), (-16.0, 2.6)],
-         [(0.4, -3.6), (7.0, -5.4), (12.6, -3.2)],
          [(-1.8, -11.0), (-8.6, -12.8), (-14.2, -10.4)]]
+LANES = [_chaikin(_p, 2) for _p in LANES]
 SQ_C, SQ_R = (-21.0, 19.4), 10.2
+
+# --- THE TOWN SQUARE. The church green above is a churchyard; this is the
+# market place: a rectangle, because a square is a *room*, and rooms have
+# straight walls. It hangs off the south side of the High Street where the
+# town actually gathers, and opens south onto the football ground.
+TSQ_C, TSQ_A = (15.5, -7.6), -0.26
+TSQ_HW, TSQ_HD = 11.0, 5.6
+def tsq_local(px, py):
+    _c, _s = math.cos(TSQ_A), math.sin(TSQ_A)
+    dx, dy = px-TSQ_C[0], py-TSQ_C[1]
+    return dx*_c + dy*_s, -dx*_s + dy*_c
+def in_tsq(px, py, pad=0.0):
+    lx, ly = tsq_local(px, py)
+    return abs(lx) < TSQ_HW+pad and abs(ly) < TSQ_HD+pad
+def tsq_w(lx, ly, z=0.0):
+    _c, _s = math.cos(TSQ_A), math.sin(TSQ_A)
+    return (TSQ_C[0] + lx*_c - ly*_s, TSQ_C[1] + lx*_s + ly*_c, z)
 STAD, STAD_A = (-2.6, -30.0), 0.14
 SEATA = clay('sta', ( 42,  78, 148), 0.62)     # club colours: it is a real club
 SEATB = clay('stb', (232, 228, 218), 0.60)
-ROAD_HW, PAVE_W, LANE_HW = 3.1, 1.9, 1.55
+ROAD_HW, PAVE_W, LANE_HW = 3.1, 1.9, 2.10
 
 def _segd(px, py, ax, ay, bx, by):
     vx, vy = bx-ax, by-ay; wx, wy = px-ax, py-ay
@@ -1133,8 +1161,9 @@ def in_stadium(px, py, pad=0.0):
 
 def paved(px, py):
     if in_square(px, py): return True
+    if in_tsq(px, py, 0.3): return True
     if any(polyd(px, py, _S) < ROAD_HW+PAVE_W+0.15 for _S in STREETS): return True
-    return any(polyd(px, py, L) < LANE_HW+0.5 for L in LANES)
+    return any(polyd(px, py, L) < LANE_HW+1.15 for L in LANES)
 
 def built(px, py):
     return paved(px, py) or in_stadium(px, py, 1.0)
@@ -1298,22 +1327,49 @@ for _pl, _sp in ((HIGH, 8.0), (MILL, 9.0), (KIRK, 9.5)):
             if in_square(_tx2, _ty2) or in_stadium(_tx2, _ty2, 2.0): continue
             street_tree(_tx2, _ty2, rr(0.76, 0.92))
 
-# --- the irregular back lanes: setts, no kerb, grass eating the edges
-for _L in LANES:
-    _smp = resample(_L, 0.30)
-    for (_px, _py, _tg) in _smp:
+# --- the back lanes. A lane made of 3,600 loose pebbles is gravel mush; a lane
+# made of one laid ribbon with a kerb strip and cross joints reads as a lane at
+# plate distance and costs 30 objects instead of 400. Law: precision, not jitter.
+LANESET = clay('lnst', (170, 158, 138), 0.86, 0.05)
+LANEDGE = clay('lned', (218, 213, 202), 0.84, 0.04)
+LANEVRG = clay('lnvg', ( 96, 158,  58), 0.92, 0.16, 0.03)
+LANEGW = clay('lngw', (150, 118,  80), 0.80, 0.12)
+for _li, _L in enumerate(LANES):
+    _ldz = _li * 0.003
+    # verge 0.024 -> surface 0.072 -> joints 0.112 -> kerb 0.128. Every step is
+    # at least 27 mm, because two surfaces within ~10 mm render pure black.
+    ribbon(_L, -(LANE_HW+1.05), (LANE_HW+1.05), 0.170+_ldz, LANEVRG, 'lnvg', 0.22, 0.5)
+    ribbon(_L, -LANE_HW, LANE_HW, 0.218+_ldz, LANESET, 'lnsf', 0.14, 0.4)
+    ribbon(_L, -(LANE_HW+0.24), -LANE_HW, 0.258+_ldz, LANEDGE, 'lnkl', 0.16, 0.4)
+    ribbon(_L,  LANE_HW, (LANE_HW+0.24), 0.258+_ldz, LANEDGE, 'lnkr', 0.16, 0.4)
+    _smp = resample(_L, 0.25)
+    # a lane has to STOP somewhere. A five-bar gate between two posts says the
+    # lane ends here on purpose, instead of the tarmac just running out.
+    for _ei in (0, -1):
+        _gx, _gy = _L[_ei]
+        if min(polyd(_gx, _gy, _S) for _S in STREETS) < ROAD_HW + PAVE_W + 2.0: continue
+        if not inplate(_gx, _gy, 1.2) or in_stadium(_gx, _gy, 1.0): continue
+        _oxp, _oyp = _L[1] if _ei == 0 else _L[-2]
+        _ga = math.atan2(_gy-_oyp, _gx-_oxp)
+        _gn = _ga + math.pi/2
+        _gnx, _gny = math.cos(_gn), math.sin(_gn)
+        for _gs in (-1, 1):
+            obj('gtp', mesh_from_bm(lump_box(0.22, 0.22, 1.36, 0.04, 2), 'gtp'), POST,
+                (_gx+_gnx*_gs*(LANE_HW+0.20), _gy+_gny*_gs*(LANE_HW+0.20), 0.82),
+                (0, 0, _ga))
+        for _gk in range(4):
+            obj('gtr', mesh_from_bm(lump_box(2*LANE_HW-0.06, 0.07, 0.12, 0.02, 2), 'gtr'),
+                LANEGW, (_gx, _gy, 0.46+_gk*0.30), (0, 0, _gn))
+    # a clipped hedge down the open flank: what actually tells the eye it is a lane
+    for _k in range(2, len(_smp)-3, 5):
+        _px, _py, _tg = _smp[_k]
         _nx, _ny = -math.sin(_tg), math.cos(_tg)
-        _q = -LANE_HW
-        while _q < LANE_HW:
-            _cx = _px + _nx*_q + rr(-0.05, 0.05)
-            _cy = _py + _ny*_q + rr(-0.05, 0.05)
-            if abs(_q) > LANE_HW*rr(0.55, 1.0):
-                _q += 0.46; continue
-            _sc = rr(0.80, 1.12)
-            linked('cb', COBBLE[int(R()*8)], (_cx, _cy, 0.048+rr(-0.012, 0.012)),
-                   (rr(-0.06, 0.06), rr(-0.06, 0.06), rr(0, 6.28)),
-                   (_sc, _sc*rr(0.9, 1.1), rr(0.7, 1.1)))
-            _q += 0.46
+        _hsd = -1 if _li % 2 == 0 else 1
+        _hgx, _hgy = _px + _nx*_hsd*(LANE_HW+1.35), _py + _ny*_hsd*(LANE_HW+1.35)
+        if not inplate(_hgx, _hgy, 1.4) or in_stadium(_hgx, _hgy, 1.0): continue
+        if in_square(_hgx, _hgy) or in_tsq(_hgx, _hgy, 0.6): continue
+        obj('lhg', mesh_from_bm(lump_box(1.28, 0.44, rr(0.86, 1.06), 0.17, 3), 'lhg'),
+            HEDGES[_k % 4], (_hgx, _hgy, 0.46), (0, 0, _tg))
 
 # ------------------------------------------------------- THE MARKET SQUARE
 # Law 4 and Law 8. A square is a *designed room*, not a patch of loose stones.
@@ -1449,8 +1505,205 @@ for _pl in STREETS:
         _nx, _ny = -math.sin(_tg), math.cos(_tg)
         lamp(_px+_nx*_sd*(ROAD_HW+1.1), _py+_ny*_sd*(ROAD_HW+1.1), _tg)
 
+
+# ---------------------------------------------- THE TOWN SQUARE (market place)
+# A square is a room. It gets a laid floor with real joints, a hard kerb edge,
+# one thing worth walking to (the fountain), one thing that says the town has
+# fun (the bandstand), a market, a cafe terrace under bright parasols, planted
+# colour, and shopfronts closing the east wall. It opens south onto the ground.
+TSQPAV = clay('tqpv', (238, 231, 216), 0.80, 0.06)
+TSQBND = clay('tqbd', (176, 166, 150), 0.78, 0.05)
+TSQMED = clay('tqmd', (196, 128,  96), 0.80, 0.05)
+GAY = [clay('gay%d' % i, c, 0.78, 0.08) for i, c in enumerate(
+    [(220,  74,  62), (240, 182,  66), ( 62, 134, 182), (240, 234, 222),
+     ( 86, 162,  98), (200,  94, 150)])]
+
+def _tslab(nm, w, d, h, mat, lx, ly, z):
+    _wx, _wy, _ = tsq_w(lx, ly)
+    obj(nm, mesh_from_bm(lump_box(w, d, h, 0.045, 2), nm), mat,
+        (_wx, _wy, z), (0, 0, TSQ_A))
+
+_tslab('tqk', 2*TSQ_HW+0.94, 2*TSQ_HD+0.94, 0.30, KERB,   0, 0, 0.020)
+_tslab('tqb', 2*TSQ_HW,      2*TSQ_HD,      0.28, TSQBND, 0, 0, 0.034)
+_tslab('tqp', 2*TSQ_HW-1.5,  2*TSQ_HD-1.5,  0.28, TSQPAV, 0, 0, 0.046)
+for _tqjx in (-7.8, -5.2, -2.6, 2.6, 5.2, 7.8):        # a 2.6 m paving grid,
+    _tslab('tqj', 0.34, 2*TSQ_HD-1.6, 0.30, TSQBND, _tqjx, 0, 0.058)
+for _tqjy in (-2.6, 0.0, 2.6):                          # banded courses standing
+    _tslab('tqj', 2*TSQ_HW-1.6, 0.34, 0.30, TSQBND, 0, _tqjy, 0.058)   # 20 mm proud
+_tslab('tqm', 5.2, 2.2, 0.30, TSQMED, 0, 0, 0.072)      # the inlay panel
+
+# --- keepout bookkeeping: claim in priority order and let the square arrange
+_TQOCC = []
+def _tq_take(lx, ly, rad):
+    if abs(lx) > TSQ_HW - 0.55 or abs(ly) > TSQ_HD - 0.55: return False
+    _wx, _wy, _ = tsq_w(lx, ly)
+    if polyd(_wx, _wy, HIGH) < ROAD_HW + PAVE_W + 0.4: return False
+    if polyd(_wx, _wy, MILL) < ROAD_HW + PAVE_W + 0.4: return False
+    for (_ox, _oy, _o2) in _TQOCC:
+        if (lx-_ox)**2 + (ly-_oy)**2 < (rad+_o2)**2: return False
+    _TQOCC.append((lx, ly, rad)); return True
+
+# The room is 22 x 11.2 m. It is zoned like a real market place: a fountain
+# holding the west end, a bandstand holding the east, a cafe terrace down the
+# whole north side, the market row down the whole south side, and a clear
+# middle you could walk a horse through. Claims run in priority order.
+
+# --- the fountain: the one thing in the square worth walking to
+_tq_take(-6.6, 0.0, 2.60)
+_fnx, _fny, _ = tsq_w(-6.6, 0.0)
+disc('fnb', 2.45, 0.60, KERB,       (_fnx, _fny, 0.22), 32)
+disc('fnw', 2.10, 0.56, M['water'], (_fnx, _fny, 0.20), 32)
+disc('fnp', 0.60, 1.10, TSQBND,     (_fnx, _fny, 1.03), 16)
+disc('fnc', 1.10, 0.26, TSQPAV,     (_fnx, _fny, 1.68), 20)
+disc('fnu', 0.92, 0.18, M['water'], (_fnx, _fny, 1.70), 20)
+disc('fnf', 0.20, 0.75, TSQBND,     (_fnx, _fny, 2.16), 12)
+
+# --- the bandstand. Nothing says a town enjoys itself like somewhere to play.
+_tq_take(6.6, 0.0, 2.65)
+_bsx, _bsy, _ = tsq_w(6.6, 0.0)
+disc('bsb', 2.40, 0.44, TSQBND, (_bsx, _bsy, 0.20), 8, math.pi/8)
+disc('bsd', 2.18, 0.30, BENCHW, (_bsx, _bsy, 0.52), 8, math.pi/8)
+for _bsk in range(8):
+    _bsa = _bsk/8.0*6.283 + math.pi/8
+    obj('bsp', mesh_from_bm(lump_box(0.13, 0.13, 2.30, 0.03, 2), 'bsp'), POST,
+        (_bsx+math.cos(_bsa)*1.88, _bsy+math.sin(_bsa)*1.88, 1.82), (0, 0, _bsa))
+disc('bsr', 2.54, 0.16, TSQMED, (_bsx, _bsy, 3.02), 8, math.pi/8)
+_bsm = bmesh.new()
+bmesh.ops.create_cone(_bsm, cap_ends=True, segments=8, radius1=2.42, radius2=0.06,
+                      depth=1.24, matrix=Matrix.Rotation(math.pi/8, 4, 'Z'))
+_bsme = mesh_from_bm(_bsm, 'bsrf'); _bsme.materials.append(M['roof_s'][2])
+for _bsp in _bsme.polygons: _bsp.use_smooth = False
+obj('bsrf', _bsme, None, (_bsx, _bsy, 3.72))
+obj('bsf', mesh_from_bm(lump_box(0.15, 0.15, 0.62, 0.05, 2), 'bsf'), POST,
+    (_bsx, _bsy, 4.59))
+
+# --- four benches around the open middle, facing in across the inlay panel
+for (_bnl, _bna) in ((-3.4, 1.7), (-3.4, -1.7), (3.4, 1.7), (3.4, -1.7)):
+    if not _tq_take(_bnl, _bna, 1.05): continue
+    _bwx, _bwy, _ = tsq_w(_bnl, _bna)
+    linked('bnc', BENCH, (_bwx, _bwy, 0.17),
+           (0, 0, TSQ_A + math.atan2(_bnl, _bna) + math.pi))
+
+# --- lamps standing in the four corners of the room
+for (_lmx, _lmy) in ((-9.9, 4.9), (9.9, 4.9), (-9.9, -4.9), (9.9, -4.9)):
+    if _tq_take(_lmx, _lmy, 0.70):
+        _lwx, _lwy, _ = tsq_w(_lmx, _lmy)
+        lamp(_lwx, _lwy, TSQ_A)
+
+# --- planted colour, in a container, on a defined edge (Law 4)
+def planter(lx, ly):
+    _plx, _ply, _ = tsq_w(lx, ly)
+    obj('plt', mesh_from_bm(lump_box(2.20, 0.92, 0.60, 0.07, 3), 'plt'), TSQBND,
+        (_plx, _ply, 0.34), (0, 0, TSQ_A))
+    obj('pls', mesh_from_bm(lump_box(1.96, 0.70, 0.16, 0.05, 2), 'pls'), SOIL,
+        (_plx, _ply, 0.68), (0, 0, TSQ_A))
+    for _plk in range(7):
+        _pfx, _pfy, _ = tsq_w(lx - 0.84 + _plk*0.28, ly + rr(-0.20, 0.20))
+        obj('plf', mesh_from_bm(lump_box(0.30, 0.34, 0.26, 0.11, 3), 'plf'),
+            M['flower'][(_plk*3) % 8], (_pfx, _pfy, 0.84))
+
+for (_ptx, _pty) in ((-9.9, 2.6), (-9.9, -2.6), (9.9, 2.6), (9.9, -2.6)):
+    if _tq_take(_ptx, _pty, 1.25): planter(_ptx, _pty)
+
+# --- the cafe terrace: the whole north side, under bright parasols.
+#     Parasols are the cheapest joy per object anywhere in the frame.
+def cafe_set(lx, ly, ci):
+    _cx, _cy, _ = tsq_w(lx, ly)
+    _ca0 = rr(0, 6.28)
+    obj('cfl', mesh_from_bm(lump_box(0.11, 0.11, 0.72, 0.03, 2), 'cfl'), POST,
+        (_cx, _cy, 0.42))
+    disc('cft', 0.46, 0.07, WHITE, (_cx, _cy, 0.81), 12)
+    for _ck in range(3):
+        _cha = _ca0 + _ck*2.094
+        obj('cfc', mesh_from_bm(lump_box(0.34, 0.34, 0.42, 0.05, 2), 'cfc'),
+            GAY[(ci+_ck) % 6],
+            (_cx+math.cos(_cha)*0.80, _cy+math.sin(_cha)*0.80, 0.27), (0, 0, _cha))
+    obj('cfp', mesh_from_bm(lump_box(0.09, 0.09, 2.30, 0.02, 2), 'cfp'), POST,
+        (_cx, _cy, 1.20))
+    _cum = bmesh.new()
+    bmesh.ops.create_cone(_cum, cap_ends=True, segments=8, radius1=1.26, radius2=0.05,
+                          depth=0.46, matrix=Matrix.Rotation(math.pi/8, 4, 'Z'))
+    _cume = mesh_from_bm(_cum, 'cfu'); _cume.materials.append(GAY[ci % 6])
+    for _cup in _cume.polygons: _cup.use_smooth = False
+    obj('cfu', _cume, None, (_cx, _cy, 2.42))
+
+_tqci = 0
+_tqcx = -6.6
+while _tqcx < 7.0:
+    if _tq_take(_tqcx, 3.95, 1.20):
+        cafe_set(_tqcx, 3.95, _tqci); _tqci += 1
+    _tqcx += 2.7
+
+# --- market day: one long row down the south side, all of it facing the square
+_tqsx = -6.6
+_tqsk = 0
+while _tqsx < 7.0:
+    if _tq_take(_tqsx, -4.05, 1.28):
+        _stx, _sty, _ = tsq_w(_tqsx, -4.05)
+        linked('stl', STALLS[_tqsk % 4], (_stx, _sty, 0.17), (0, 0, TSQ_A))
+        _tqsk += 1
+    _tqsx += 2.7
+
+# --- bollards holding the north edge crisp against the High Street pavement
+_TQBOL = mesh_from_bm(lump_box(0.19, 0.19, 0.68, 0.08, 3), 'tqbol')
+_TQBOL.materials.append(M['brick'][4])
+_tqbx = -9.90
+while _tqbx < 10.0:
+    _bwx2, _bwy2, _ = tsq_w(_tqbx, TSQ_HD - 0.30)
+    if polyd(_bwx2, _bwy2, HIGH) > ROAD_HW + PAVE_W + 0.15:
+        linked('bol', _TQBOL, (_bwx2, _bwy2, 0.50), (0, 0, TSQ_A))
+    _tqbx += 1.50
+
+# --- a low railing along the south edge, where the square looks over the ground
+for _rlk in range(18):
+    _rwx, _rwy, _ = tsq_w(-10.20 + _rlk*1.20, -(TSQ_HD - 0.10))
+    obj('rlp', mesh_from_bm(lump_box(0.10, 0.10, 0.88, 0.03, 2), 'rlp'), POST,
+        (_rwx, _rwy, 0.50), (0, 0, TSQ_A))
+for _rlk in range(17):
+    _rwx, _rwy, _ = tsq_w(-9.60 + _rlk*1.20, -(TSQ_HD - 0.10))
+    obj('rlb', mesh_from_bm(lump_box(1.22, 0.07, 0.09, 0.02, 2), 'rlb'), POST,
+        (_rwx, _rwy, 0.84), (0, 0, TSQ_A))
+
+# --- shopfronts closing the east wall of the square, facing in
+_tqsy = -5.00
+while _tqsy < 2.50:
+    _tqsw = rr(4.2, 5.8)
+    _tqsl = _tqsy + _tqsw/2
+    if _tqsl + _tqsw/2 > 2.80: break
+    _tqsd = rr(4.8, 6.0); _tqsh = rr(4.6, 7.0)
+    _shx2, _shy2, _ = tsq_w(TSQ_HW + 1.30 + _tqsd/2, _tqsl)
+    _shok = inplate(_shx2, _shy2, 1.0) and not in_stadium(_shx2, _shy2, 1.6)
+    if _shok and polyd(_shx2, _shy2, HIGH) < ROAD_HW + PAVE_W + _tqsd/2: _shok = False
+    if _shok and any(polyd(_shx2, _shy2, _SL) < LANE_HW + _tqsd/2 + 0.5 for _SL in LANES):
+        _shok = False
+    if _shok:
+        house(_shx2, _shy2, TSQ_A + math.pi/2, _tqsw, _tqsd, _tqsh, R() < 0.30)
+    _tqsy += _tqsw + rr(0.18, 0.55)
+
+
 # ------------------------------------------------------------ THE FRONTAGES
-def frontage(pts, side, s_from, s_to, avoid=None, terrace=0.30):
+_HOCC = []
+
+def _obb_hit(P, Q, m=0.05):
+    """True if two (x, y, w, d, ang) footprints overlap, allowing a terrace gap."""
+    for (A, B) in ((P, Q), (Q, P)):
+        _c, _s = math.cos(A[4]), math.sin(A[4])
+        _qc, _qs = math.cos(B[4]), math.sin(B[4])
+        _dx, _dy = B[0]-A[0], B[1]-A[1]
+        for (_ux, _uy, _he) in ((_c, _s, A[2]/2), (-_s, _c, A[3]/2)):
+            _d = _dx*_ux + _dy*_uy
+            _r = abs(_qc*_ux + _qs*_uy)*B[2]/2 + abs(-_qs*_ux + _qc*_uy)*B[3]/2
+            if abs(_d) > _he + _r + m: return False
+    return True
+
+def _hfree(hx, hy, w, d, ang):
+    """Claim ground for a house. False if a neighbour already owns it."""
+    _n = (hx, hy, w, d, ang)
+    for _o in _HOCC:
+        if _obb_hit(_n, _o): return False
+    _HOCC.append(_n); return True
+
+def frontage(pts, side, s_from, s_to, avoid=None, terrace=0.44, depth=0.0):
     smp = resample(pts, 0.25); total = (len(smp)-1)*0.25
     s = s_from
     while s < min(s_to, total-3.0):
@@ -1459,46 +1712,69 @@ def frontage(pts, side, s_from, s_to, avoid=None, terrace=0.30):
         if i >= len(smp): break
         px, py, tg = smp[i]
         nx, ny = -math.sin(tg), math.cos(tg)
-        off = ROAD_HW + PAVE_W + rr(0.5, 1.4) + d/2
+        off = ROAD_HW + PAVE_W + rr(0.5, 1.4) + d/2 + depth
         hx, hy = px + side*nx*off, py + side*ny*off
-        if math.hypot(hx, hy) > TOWN_R - 1.0 or (avoid and avoid(hx, hy)):
-            s += w + rr(0.3, 1.4); continue
         F = (-side*nx, -side*ny)
         ang = math.atan2(-F[0], F[1]) + rr(-0.035, 0.035)
+        if math.hypot(hx, hy) > TOWN_R - 1.0 or (avoid and avoid(hx, hy)) \
+           or not _hfree(hx, hy, w + 0.02, d + 1.30, ang):
+            s += w + rr(0.3, 1.4); continue
         house(hx, hy, ang, w, d, h, R() < 0.24, jetty=(R() < 0.10))
-        s += w + (rr(0.15, 0.55) if R() < terrace else rr(3.2, 6.4))
+        s += w + (rr(0.15, 0.55) if R() < terrace else rr(2.6, 6.2))
 
 def _avoid_civic(hx, hy):
-    return in_square(hx, hy) or in_stadium(hx, hy, 2.0) or \
-           math.hypot(hx-SQ_C[0], hy-SQ_C[1]) < SQ_R + 3.4
+    return in_square(hx, hy) or in_stadium(hx, hy, 1.2) or in_tsq(hx, hy, 2.0) or \
+           math.hypot(hx-SQ_C[0], hy-SQ_C[1]) < SQ_R + 1.2
 
-frontage(HIGH,  1, 1.0, 76.0, _avoid_civic)
-frontage(HIGH, -1, 2.4, 76.0, _avoid_civic)
-frontage(MILL,  1, 1.5, 24.0, _avoid_civic, terrace=0.18)
-frontage(KIRK,  1, 1.5, 26.0, _avoid_civic, terrace=0.26)
-frontage(MILL, -1, 2.0, 24.0, _avoid_civic, terrace=0.18)
-frontage(KIRK, -1, 2.6, 26.0, _avoid_civic, terrace=0.26)
+def _lane_core(pts, d=5.0):
+    """A lane minus its junction throat and its gate end."""
+    _sm = resample(pts, 0.5); _n = int(d/0.5)
+    _c = [(_q[0], _q[1]) for _q in _sm[_n:len(_sm)-_n]]
+    return _c if len(_c) >= 2 else [(_sm[len(_sm)//2][0], _sm[len(_sm)//2][1])]*2
 
-# --- cottages down the back lanes, set close and turned every which way
-for _L in LANES:
+LANECORE = [_lane_core(_p) for _p in LANES]
+
+def _avoid_lane(hx, hy, pad=4.2):
+    """Keep a house AND its plot off the back lanes. Half a plot is ~4.4 m."""
+    return any(polyd(hx, hy, _AL) < LANE_HW + pad for _AL in LANECORE)
+
+def _avoid_all(hx, hy):
+    return _avoid_civic(hx, hy) or _avoid_lane(hx, hy)
+
+frontage(HIGH,  1, 1.0, 76.0, _avoid_all)
+frontage(HIGH, -1, 2.4, 76.0, _avoid_all)
+frontage(MILL,  1, 1.5, 24.0, _avoid_all, terrace=0.34)
+frontage(KIRK,  1, 1.5, 26.0, _avoid_all, terrace=0.38)
+frontage(MILL, -1, 2.0, 24.0, _avoid_all, terrace=0.34)
+frontage(KIRK, -1, 2.6, 26.0, _avoid_all, terrace=0.38)
+frontage(HIGH,  1, 5.0, 72.0, _avoid_all, terrace=0.52, depth=11.4)
+frontage(HIGH, -1, 8.5, 72.0, _avoid_all, terrace=0.52, depth=12.0)
+
+# --- cottages down the back lanes. ONE flank per lane, set well back: a lane
+# with houses hard against both sides is a 3 m slot and cannot read as a lane.
+for _lni, _L in enumerate(LANES):
+    _LC = LANECORE[_lni]
     _smp = resample(_L, 0.25); _tot = (len(_smp)-1)*0.25
     for _side in (1, -1):
-        _s = rr(3.0, 5.5)
+        _s = rr(3.0, 5.5) + (0.0 if _side == 1 else 6.4)
         while _s < _tot - 3.0:
             _w = rr(4.6, 6.6); _d = rr(4.4, 5.6); _h = rr(3.4, 4.8)
             _i = int((_s + _w/2)/0.25)
             if _i >= len(_smp): break
             _px, _py, _tg = _smp[_i]
             _nx, _ny = -math.sin(_tg), math.cos(_tg)
-            _off = LANE_HW + rr(0.7, 1.8) + _d/2
+            _off = LANE_HW + rr(2.6, 4.2) + _d/2
             _hx, _hy = _px + _side*_nx*_off, _py + _side*_ny*_off
             if math.hypot(_hx, _hy) > TOWN_R - 1.0 or _avoid_civic(_hx, _hy) \
-               or paved(_hx, _hy):
-                _s += _w + rr(0.4, 2.0); continue
+               or paved(_hx, _hy) or any(polyd(_hx, _hy, _AL) < LANE_HW + 4.2
+                                         for _AL in LANECORE if _AL is not _LC):
+                _s += _w + rr(0.8, 2.4); continue
             _F = (-_side*_nx, -_side*_ny)
-            house(_hx, _hy, math.atan2(-_F[0], _F[1]) + rr(-0.10, 0.10),
-                  _w, _d, _h, R() < 0.7, jetty=(R() < 0.26))
-            _s += _w + rr(0.3, 2.6)
+            _ha = math.atan2(-_F[0], _F[1]) + rr(-0.10, 0.10)
+            if not _hfree(_hx, _hy, _w + 0.02, _d + 1.30, _ha):
+                _s += _w + rr(0.8, 2.4); continue
+            house(_hx, _hy, _ha, _w, _d, _h, R() < 0.7, jetty=(R() < 0.26))
+            _s += _w + rr(1.8, 5.0)
 
 # ------------------------------------------------- THE SQUARE: church + clock
 # ---------------------------------------------------- THE CIVIC BUILDINGS
@@ -1735,7 +2011,8 @@ def stadium(px, py, ang):
                        (0, 0, ang + (math.pi/2 if _row > 0 else -math.pi/2)))
     # floodlight pylons
     for (fx, fy) in [(-PL-4.4, -PW-4.0), (PL+4.4, -PW-4.0),
-                     (-PL-4.4, PW+6.6), (PL+4.4, PW+6.6)]:
+                     (-PL+2.0, PW+6.6), (PL-2.0, PW+6.6)]:   # north pair pulled
+        # in off the corners: the old NE mast stood inside the town square.
         for k in range(7):
             t = k/7.0
             obj('fpy', mesh_from_bm(lump_box(0.55*(1-t*0.5), 0.55*(1-t*0.5), 2.0,
