@@ -136,9 +136,9 @@ SOIL   = clay('soil', (156,122, 86), 0.95, 0.04)
 # parcels: mown, grazed, cut for hay, ploughed. That variation is what makes the
 # open ground read as land instead of a tablecloth.
 FIELD  = [clay('fd%d'%i, c, 0.94, 0.16, 0.02) for i, c in enumerate(
-    [(108,190, 56), ( 68,144, 42), (146,212, 82), ( 88,166, 48),
-     (168,202, 86), (226,212,116), (196,202, 88), (214,178, 84),
-     (158,120, 78), (126,184, 64), ( 58,130, 50), (232,220,134)])]
+    [( 96,178, 52), ( 48,110, 40), (162,214, 84), ( 74,150, 44),
+     (186,206, 92), (234,214,112), (204,198, 76), (206,166, 72),
+     (148,110, 70), (118,190, 58), ( 40, 96, 44), (238,224,140)])]
 M['water']   = clay('wt', (150,176,164), 0.14)
 
 # ---------------------------------------------------------------- geometry helpers
@@ -1319,9 +1319,9 @@ for _L in LANES:
 # Law 4 and Law 8. A square is a *designed room*, not a patch of loose stones.
 # It gets: a laid floor with concentric bands, a raised kerb that defines its
 # edge, a rhythm of trees round the rim, benches facing in, and market stalls.
-SQPAV = clay('sqpv', (224, 216, 200), 0.80, 0.06)
-SQBND = clay('sqbd', (194, 182, 164), 0.78, 0.05)
-SQRED = clay('sqrd', (196, 158, 132), 0.80, 0.05)
+SQPAV = clay('sqpv', (232, 224, 208), 0.80, 0.06)
+SQBND = clay('sqbd', (162, 150, 134), 0.78, 0.05)
+SQRED = clay('sqrd', (186, 116,  88), 0.80, 0.05)
 
 def disc(nm, r, h, mat, loc, seg=44, rot=0.0):
     _bd = bmesh.new()
@@ -1416,15 +1416,17 @@ for _k in range(10):
     if not _sq_clear(_bx, _by, 2.8): continue
     linked('bnc', BENCH, (_bx, _by, 0.17), (0, 0, _a + math.pi/2))
 
-# --- two rows of market stalls filling the open southern half of the square
-for _rr2, _n2, _a0 in ((SQ_R*0.84, 7, -3.00), (SQ_R*0.55, 4, -2.75)):
-    for _k in range(_n2):
-        _a = _a0 + _k*(2.45/max(1, _n2-1))
-        _sx2 = SQ_C[0] + math.cos(_a)*_rr2
-        _sy2 = SQ_C[1] + math.sin(_a)*_rr2
-        if not _sq_clear(_sx2, _sy2, 2.9): continue
-        linked('stl', STALLS[(_k + int(_rr2)) % 4], (_sx2, _sy2, 0.17),
-               (0, 0, _a + math.pi/2))
+# --- the stalls, laid out as straight rows either side of the carriageway and
+# facing it, the way a real market day works. An arc of stalls on a small radius
+# puts a 2.1 m canopy every 2.4 m and reads as one crumpled silver mass.
+for (_row_x, _fdir) in ((4.30, -1), (-6.10, 1)):
+    for _k in range(4):
+        _sy2 = SQ_C[1] - 5.20 + _k*2.65
+        _sx2 = SQ_C[0] + _row_x
+        if math.hypot(_sx2-SQ_C[0], _sy2-SQ_C[1]) > SQ_R - 1.9: continue
+        if not _sq_clear(_sx2, _sy2, 2.6): continue
+        linked('stl', STALLS[(_k + (0 if _fdir < 0 else 2)) % 4], (_sx2, _sy2, 0.17),
+               (0, 0, math.pi/2 if _fdir < 0 else -math.pi/2))
 
 # --- street lamps down both pavements (Law 6 at night, silhouette by day)
 def lamp(px, py, ang):
@@ -1855,7 +1857,7 @@ for _i in range(-9, 10):
                 if built(_cx, _cy): _ok = False
         if not _ok: continue
         _fields.append((_fx, _fy))
-        _fk = int(R()*12)
+        _fk = (_i*5 + _j*3) % 12
         _fdz = ((_i + 6) * 11 + (_j + 5)) % 7 * 0.004      # never coplanar
         obj('fld', mesh_from_bm(lump_box(_FW-0.5, _FD-0.5, 0.11, 0.030, 2), 'fld'),
             FIELD[_fk], (_fx, _fy, 0.055 + _fdz), (0, 0, _FA))
@@ -1883,13 +1885,13 @@ for _i in range(-9, 10):
                                 0.50 + _fdz), (0, 0, _FA + rr(-0.25, 0.25)))
         # HEDGEROWS. These are the drawn lines of the landscape; at plate scale a
         # 0.8m hedge is invisible. A real field boundary is chest-high and solid.
-        for (_hx, _hy, _hw, _hd) in ((0, _FD/2-0.25, _FW-0.5, 0.68),
-                                     (0, -(_FD/2-0.25), _FW-0.5, 0.68),
-                                     (_FW/2-0.25, 0, 0.68, _FD-0.5),
-                                     (-(_FW/2-0.25), 0, 0.68, _FD-0.5)):
+        for (_hx, _hy, _hw, _hd) in ((0, _FD/2-0.22, _FW-0.44, 0.42),
+                                     (0, -(_FD/2-0.22), _FW-0.44, 0.42),
+                                     (_FW/2-0.22, 0, 0.42, _FD-0.44),
+                                     (-(_FW/2-0.22), 0, 0.42, _FD-0.44)):
             if R() < 0.14: continue
-            _hgt = rr(1.35, 1.70)
-            obj('hrw', mesh_from_bm(lump_box(_hw, _hd, _hgt, 0.30, 3, 0.03), 'hr'),
+            _hgt = rr(0.95, 1.20)
+            obj('hrw', mesh_from_bm(lump_box(_hw, _hd, _hgt, 0.19, 3, 0.02), 'hr'),
                 HEDGES[int(R()*4)], (_fx + _hx*_fc - _hy*_fs, _fy + _hx*_fs + _hy*_fc,
                                      _hgt/2 + 0.09), (0, 0, _FA))
         for _nt in range(2):                 # standards left in the hedge line
@@ -1917,7 +1919,7 @@ for _i in range(-13, 14):
                 _cy = _py2 + (_tu/2.0-0.5)*(_GW-0.3)*_fs + (_tv/2.0-0.5)*(_GD-0.3)*_fc
                 if built(_cx, _cy) or not inplate(_cx, _cy, 2.0): _ok2 = False
         if not _ok2: continue
-        _gk = int(R()*12)
+        _gk = (_i*7 + _j*5) % 12
         _gdz = ((_i + 9)*13 + (_j + 8)) % 6 * 0.004
         obj('prc', mesh_from_bm(lump_box(_GW-0.4, _GD-0.4, 0.10, 0.028, 2), 'pr'),
             FIELD[_gk], (_px2, _py2, 0.05 + _gdz), (0, 0, _FA))
