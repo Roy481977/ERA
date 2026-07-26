@@ -68,6 +68,31 @@ keeps one shared occupancy list and tests separating axes between the two
 footprint rectangles. A circle claim is wrong here: it forbids terraces, which
 touch on purpose. Pad the depth (1.3 m) and not the width (0.02 m).
 
+**Texture ribbons from Object coordinates, never Generated.** `ribbon()` leaves
+its object at the world origin, so Object coordinates *are* world coordinates and
+a road, footway or lane tiles continuously across the whole plate. Generated
+coordinates normalise to each object's own bounding box, so every segment would
+restart its pattern at a different scale.
+
+**The carriageway has to outweigh the footway.** Widening the pavement to 2.75 m
+against a 3.1 m half-road made the town read as a paved yard with a stripe down
+it. At half-road 3.85 m and footway 2.35 m the street reads as a street. The
+same rule sets the hierarchy for everything else on the ground: high street,
+then square, then lane. A back lane in the same pale stone as the footway
+competes with the high street; in compacted sett it sits underneath it.
+
+**Terracotta is the town's colour.** Every reference with a pitched roof is
+terracotta and nothing else. Slate survives only on civic buildings and a
+handful of cottages, and it has to be a warm neutral grey — a blue-grey slate
+fights the terracotta and pulls the whole plate cold.
+
+**Tiles read in colour before they read in relief.** The pantile geometry rolls
+and steps correctly, but at plate distance what the eye picks up is the course
+line. `pantile()` puts a two-tone clay and a dark course joint in the material
+via a Brick node on Object coordinates, and that is what made the roofs read.
+Note that the Brick node's `Offset`, `Offset Frequency`, `Squash` and
+`Squash Frequency` are node *properties* (`br.offset`), not socket inputs.
+
 **Ground is claimed before it is parcelled.** `built()` — paved or inside the
 stadium — covers about 60 % of the annulus r 17–31. Parcels and fields are tested
 all-or-nothing against it, so an oversized cell does not shrink, it disappears.
