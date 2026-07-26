@@ -74,6 +74,100 @@ def brick(name, c1, c2, mortar, scale=1.0, rough=0.86, bump=0.55):
     if 'Specular IOR Level' in b.inputs: b.inputs['Specular IOR Level'].default_value = 0.22
     return m
 
+def pantile(name, c1, c2, joint, width=0.33, row=0.30, rough=0.80, bump=0.34,
+            offs=0.5, mortar=0.024):
+    """Roof tiles that read as tiles. The relief already rolls; what the eye
+    picks up at plate distance is the COURSE LINE and the tile-to-tile colour
+    break, and that has to live in the material."""
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    tc  = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    cmb = nt.nodes.new('ShaderNodeCombineXYZ')
+    ab  = nt.nodes.new('ShaderNodeMath'); ab.operation = 'ABSOLUTE'
+    br  = nt.nodes.new('ShaderNodeTexBrick')
+    br.inputs['Color1'].default_value = (*srgb(c1), 1)
+    br.inputs['Color2'].default_value = (*srgb(c2), 1)
+    br.inputs['Mortar'].default_value = (*srgb(joint), 1)
+    br.inputs['Scale'].default_value = 1.0
+    br.inputs['Mortar Size'].default_value = mortar
+    br.inputs['Mortar Smooth'].default_value = 0.08
+    br.inputs['Bias'].default_value = 0.0
+    br.inputs['Brick Width'].default_value = width
+    br.inputs['Row Height'].default_value = row
+    br.offset = offs; br.offset_frequency = 2
+    nt.links.new(tc.outputs['Object'], sep.inputs['Vector'])
+    nt.links.new(sep.outputs['X'], cmb.inputs['X'])
+    nt.links.new(sep.outputs['Y'], ab.inputs[0])
+    nt.links.new(ab.outputs[0], cmb.inputs['Y'])
+    nt.links.new(cmb.outputs['Vector'], br.inputs['Vector'])
+    nt.links.new(br.outputs['Color'], b.inputs['Base Color'])
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = bump
+    nt.links.new(br.outputs['Fac'], bp.inputs['Height'])
+    nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = rough
+    if 'Specular IOR Level' in b.inputs: b.inputs['Specular IOR Level'].default_value = 0.20
+    return m
+
+def asphalt(name, base, grit, scale=26.0, rough=0.94, bump=0.22):
+    """Laid asphalt. Every reference reads ROAD first, because the carriageway
+    is near-black against a pale footway — the markings are only legible
+    because of what they sit on. Object coords, so a road tiles across the
+    whole plate instead of per-segment."""
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    nz = nt.nodes.new('ShaderNodeTexNoise')
+    nz.inputs['Scale'].default_value = scale
+    nz.inputs['Detail'].default_value = 7.0
+    nz.inputs['Roughness'].default_value = 0.60
+    rp = nt.nodes.new('ShaderNodeValToRGB')
+    rp.color_ramp.elements[0].position = 0.34
+    rp.color_ramp.elements[0].color = (*srgb(base), 1)
+    rp.color_ramp.elements[1].position = 0.70
+    rp.color_ramp.elements[1].color = (*srgb(grit), 1)
+    gz = nt.nodes.new('ShaderNodeTexNoise')
+    gz.inputs['Scale'].default_value = scale * 7.0
+    gz.inputs['Detail'].default_value = 4.0
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = bump
+    bp.inputs['Distance'].default_value = 0.02
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    nt.links.new(tc.outputs['Object'], gz.inputs['Vector'])
+    nt.links.new(nz.outputs['Fac'], rp.inputs['Fac'])
+    nt.links.new(rp.outputs['Color'], b.inputs['Base Color'])
+    nt.links.new(gz.outputs['Fac'], bp.inputs['Height'])
+    nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = rough
+    if 'Specular IOR Level' in b.inputs: b.inputs['Specular IOR Level'].default_value = 0.30
+    return m
+
+def slabs(name, c1, c2, joint, width=0.90, row=0.62, rough=0.84, bump=0.26,
+          mortar=0.030, offs=0.5):
+    """Paving slabs, laid in world coords so the footway runs continuous.
+    A footway with joints is a surface; a footway without them is a smear."""
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    br = nt.nodes.new('ShaderNodeTexBrick')
+    br.inputs['Color1'].default_value = (*srgb(c1), 1)
+    br.inputs['Color2'].default_value = (*srgb(c2), 1)
+    br.inputs['Mortar'].default_value = (*srgb(joint), 1)
+    br.inputs['Scale'].default_value = 1.0
+    br.inputs['Mortar Size'].default_value = mortar
+    br.inputs['Mortar Smooth'].default_value = 0.12
+    br.inputs['Bias'].default_value = 0.0
+    br.inputs['Brick Width'].default_value = width
+    br.inputs['Row Height'].default_value = row
+    br.offset = offs; br.offset_frequency = 2
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = bump
+    nt.links.new(tc.outputs['Object'], br.inputs['Vector'])
+    nt.links.new(br.outputs['Color'], b.inputs['Base Color'])
+    nt.links.new(br.outputs['Fac'], bp.inputs['Height'])
+    nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = rough
+    if 'Specular IOR Level' in b.inputs: b.inputs['Specular IOR Level'].default_value = 0.22
+    return m
+
 # Law 5 — warm, muted, narrow
 M = {}
 M['plaster'] = [clay('pl%d'%i, c, 0.86, 0.22, 0.06) for i, c in enumerate(
@@ -98,10 +192,24 @@ M['brick'] = [
     brick('bk2', (196,136, 96), (176,118, 80), (236,230,216), 1.06),
     brick('bk3', (222,168,124), (200,146,102), (242,236,222), 0.90),
     brick('bk4', (210,152,108), (190,132, 92), (238,232,218), 1.02)]
-M['roof_t']  = [clay('rt%d'%i, c, 0.82, 0.10) for i, c in enumerate(
-    [(214, 98, 52), (196, 84, 46), (232,124, 70), (204,116, 82), (222,142, 86)])]
-M['roof_s']  = [clay('rs%d'%i, c, 0.74, 0.14) for i, c in enumerate(
-    [(108,120,132), ( 92,104,118), (124,136,148), ( 84, 96,110), (114,128,142)])]
+# Terracotta. Every reference with a pitched roof is terracotta and nothing
+# else — it is the single colour that makes a model read as a TOWN. Each stock
+# is two tones of the same clay with a darker course line between the courses.
+M['roof_t']  = [pantile('rt%d'%i, c1, c2, j) for i, (c1, c2, j) in enumerate(
+    [((226,104, 54), (206, 88, 46), (150, 58, 34)),
+     ((238,124, 62), (216,102, 50), (162, 66, 36)),
+     ((212, 92, 50), (192, 78, 42), (140, 52, 30)),
+     ((232,138, 78), (210,116, 62), (156, 74, 42)),
+     ((222,110, 58), (200, 94, 48), (146, 60, 34)),
+     ((242,150, 88), (220,128, 72), (164, 82, 46))])]
+# Slate survives only on the civic buildings and a handful of cottages.
+M['roof_s']  = [pantile('rs%d'%i, c1, c2, j, width=0.28, row=0.19, bump=0.26)
+                for i, (c1, c2, j) in enumerate(
+    [((124,120,116), (110,106,102), ( 76, 73, 70)),
+     ((110,107,104), ( 96, 93, 90), ( 66, 64, 62)),
+     ((136,131,126), (120,116,112), ( 84, 81, 78)),
+     ((102, 99, 96), ( 88, 86, 84), ( 60, 58, 56)),
+     ((130,126,121), (114,110,106), ( 80, 77, 74))])]
 M['timber']  = clay('tim', (172,132, 96), 0.84, 0.18)
 M['stone']   = [clay('st%d'%i, c, 0.86, 0.15) for i, c in enumerate(
     [(236,228,212), (226,216,198), (244,238,224), (218,208,190)])]
@@ -125,7 +233,7 @@ CANOPY = [clay('cn%d'%i, c, 0.90, 0.14, 0.03) for i, c in enumerate(
 CONIF  = [clay('pn%d'%i, c, 0.88, 0.22, 0.04) for i, c in enumerate(
     [( 46,104, 64), ( 34, 86, 54), ( 58,120, 72), ( 28, 72, 48)])]
 LAWN   = clay('lawn', (120,186, 70), 0.93, 0.18, 0.02)
-PAVEM  = clay('pavm', (232,225,208), 0.84, 0.08)
+PAVEM  = slabs('pavm', (234,228,212), (226,219,202), (198,190,174))
 HEDGE  = clay('hdg',  ( 62,124, 52), 0.92, 0.20, 0.04)
 # A hedge is a clipped *mass*, not a wall. Four tones and a heavy bevel is what
 # separates a hedgerow from a green fence at this scale.
@@ -1083,7 +1191,8 @@ GLOW  = [emit('gw%d' % i, c, p) for i, (c, p) in enumerate(
 LAMPG = emit('lampg', (255, 196, 120), 90.0)
 FLOOD = emit('flood', (232, 240, 255), 160.0)
 
-TARMAC = clay('tar', (142,144,148), 0.84)
+TARMAC = asphalt('tar', ( 62, 64, 70), ( 88, 90, 96))
+TARMAC2 = asphalt('tar2', ( 70, 72, 78), ( 96, 98,104), scale=34.0)
 FLAG   = clay('flg', (240,234,220), 0.86, 0.06)
 CONC   = clay('cnc', (244,238,226), 0.88, 0.06)
 POST   = clay('pst', (176,180,186), 0.46)
@@ -1138,7 +1247,7 @@ def tsq_w(lx, ly, z=0.0):
 STAD, STAD_A = (-2.6, -30.0), 0.14
 SEATA = clay('sta', ( 42,  78, 148), 0.62)     # club colours: it is a real club
 SEATB = clay('stb', (232, 228, 218), 0.60)
-ROAD_HW, PAVE_W, LANE_HW = 3.1, 1.9, 2.10
+ROAD_HW, PAVE_W, LANE_HW = 3.85, 2.35, 1.90
 
 def _segd(px, py, ax, ay, bx, by):
     vx, vy = bx-ax, by-ay; wx, wy = px-ax, py-ay
@@ -1216,7 +1325,8 @@ def cobble_patch(test, x0, x1, y0, y1, z=0.055, step=0.44):
 # ---------------------------------------------------------------- the car kit
 # Reference 2, 3 and 5 all read as *circulation* long before they read as
 # architecture. Cars parked along a kerb are what tell the eye a road is a road.
-KERB     = clay('krb', (214, 210, 200), 0.70, 0.04)
+KERB     = clay('krb', (218, 214, 204), 0.72, 0.04)
+PAINT    = clay('pnt', (250, 249, 243), 0.66, 0.02)   # road markings only
 CARPAINT = [clay('cp%d' % i, c, 0.26, 0.60) for i, c in enumerate(
     [(196, 62, 52), (238, 236, 230), ( 40, 72, 130), ( 46, 50, 56),
      (214, 168, 58), ( 70, 128, 96), (152, 156, 162), (186, 196, 206)])]
@@ -1262,12 +1372,12 @@ for _si, _pl in enumerate(STREETS):
     ribbon(_pl,  ROAD_HW-0.03, ROAD_HW+0.30, 0.186+_dz, KERB, 'kbl', thick=0.42)
     ribbon(_pl, -(ROAD_HW+0.30), -(ROAD_HW-0.03), 0.186+_dz, KERB, 'kbr', thick=0.42)
     ribbon(_pl, -ROAD_HW-0.06, ROAD_HW+0.06, 0.030+_dz, TARMAC, 'road')
-    ribbon(_pl,  ROAD_HW-0.46, ROAD_HW-0.32, 0.052+_dz, WHITE, 'edl')
-    ribbon(_pl, -(ROAD_HW-0.32), -(ROAD_HW-0.46), 0.052+_dz, WHITE, 'edr')
+    ribbon(_pl,  ROAD_HW-0.52, ROAD_HW-0.30, 0.052+_dz, PAINT, 'edl')
+    ribbon(_pl, -(ROAD_HW-0.30), -(ROAD_HW-0.52), 0.052+_dz, PAINT, 'edr')
 
 # --- centre line: painted, even, dead true (the model-maker standard)
-_LNM = mesh_from_bm(lump_box(1.6, 0.14, 0.014, 0.005, 2), 'lnm')
-_LNM.materials.append(WHITE)
+_LNM = mesh_from_bm(lump_box(2.0, 0.22, 0.016, 0.005, 2), 'lnm')
+_LNM.materials.append(PAINT)
 for _pl, _n in ((HIGH, 96), (MILL, 40), (KIRK, 32)):
     _smp = resample(_pl, 0.25)
     _stride = max(1, len(_smp)//_n)
@@ -1276,9 +1386,11 @@ for _pl, _n in ((HIGH, 96), (MILL, 40), (KIRK, 32)):
         linked('ln', _LNM, (_px, _py, 0.044), (0, 0, _tg))
 
 # --- zebra crossings: three on the high street, one on each of the others
-_ZBR = mesh_from_bm(lump_box(2.60, 0.52, 0.018, 0.006, 2), 'zbr')
-_ZBR.materials.append(WHITE)
-for _pl, _ts in ((HIGH, (0.26, 0.56, 0.84)), (MILL, (0.40,)), (KIRK, (0.52,))):
+_BELP = clay('blpm', (242, 240, 232), 0.62, 0.04)
+_BELG = clay('blgm', (252, 172,  46), 0.34, 0.42)
+_ZBR = mesh_from_bm(lump_box(3.55, 0.62, 0.020, 0.006, 2), 'zbr')
+_ZBR.materials.append(PAINT)
+for _pl, _ts in ((HIGH, (0.20, 0.52, 0.84)), (MILL, (0.42,)), (KIRK, (0.46,))):
     _smp = resample(_pl, 0.25)
     for _t in _ts:
         _k = int(_t * (len(_smp) - 3))
@@ -1287,7 +1399,16 @@ for _pl, _ts in ((HIGH, (0.26, 0.56, 0.84)), (MILL, (0.40,)), (KIRK, (0.52,))):
         _q = -ROAD_HW + 0.52
         while _q < ROAD_HW - 0.52:
             linked('zb', _ZBR, (_px + _nx*_q, _py + _ny*_q, 0.048), (0, 0, _tg))
-            _q += 0.94
+            _q += 1.06
+        # belisha beacons. Two amber globes on white poles say PEOPLE CROSS HERE
+        # louder than any amount of paint, and they mark the stage.
+        for _bs in (1, -1):
+            _bx, _by = _px + _nx*_bs*(ROAD_HW+0.95), _py + _ny*_bs*(ROAD_HW+0.95)
+            if not inplate(_bx, _by, 1.5): continue
+            obj('blp', mesh_from_bm(lump_box(0.13, 0.13, 2.05, 0.03, 2), 'blp'),
+                _BELP, (_bx, _by, 1.18), (0, 0, _tg))
+            obj('blg', mesh_from_bm(lump_box(0.40, 0.40, 0.44, 0.19, 3), 'blg'),
+                _BELG, (_bx, _by, 2.36), (0, 0, _tg))
 
 # --- PARKED CARS tight to the kerb, plus a few on the move down the lane
 for _pl, _sp in ((HIGH, 10.5), (MILL, 13.0), (KIRK, 14.0)):
@@ -1330,8 +1451,10 @@ for _pl, _sp in ((HIGH, 8.0), (MILL, 9.0), (KIRK, 9.5)):
 # --- the back lanes. A lane made of 3,600 loose pebbles is gravel mush; a lane
 # made of one laid ribbon with a kerb strip and cross joints reads as a lane at
 # plate distance and costs 30 objects instead of 400. Law: precision, not jitter.
-LANESET = clay('lnst', (170, 158, 138), 0.86, 0.05)
-LANEDGE = clay('lned', (218, 213, 202), 0.84, 0.04)
+LANESET = slabs('lnst', (140, 128, 108), (129, 117,  98), (106,  95,  79),
+                width=0.34, row=0.26, mortar=0.055, bump=0.40)
+LANEDGE = slabs('lned', (198, 192, 178), (190, 184, 170), (166, 160, 148),
+                width=0.55, row=0.30, mortar=0.040, bump=0.22)
 LANEVRG = clay('lnvg', ( 96, 158,  58), 0.92, 0.16, 0.03)
 LANEGW = clay('lngw', (150, 118,  80), 0.80, 0.12)
 for _li, _L in enumerate(LANES):
@@ -1719,7 +1842,7 @@ def frontage(pts, side, s_from, s_to, avoid=None, terrace=0.44, depth=0.0):
         if math.hypot(hx, hy) > TOWN_R - 1.0 or (avoid and avoid(hx, hy)) \
            or not _hfree(hx, hy, w + 0.02, d + 1.30, ang):
             s += w + rr(0.3, 1.4); continue
-        house(hx, hy, ang, w, d, h, R() < 0.24, jetty=(R() < 0.10))
+        house(hx, hy, ang, w, d, h, R() < 0.08, jetty=(R() < 0.10))
         s += w + (rr(0.15, 0.55) if R() < terrace else rr(2.6, 6.2))
 
 def _avoid_civic(hx, hy):
@@ -1773,7 +1896,7 @@ for _lni, _L in enumerate(LANES):
             _ha = math.atan2(-_F[0], _F[1]) + rr(-0.10, 0.10)
             if not _hfree(_hx, _hy, _w + 0.02, _d + 1.30, _ha):
                 _s += _w + rr(0.8, 2.4); continue
-            house(_hx, _hy, _ha, _w, _d, _h, R() < 0.7, jetty=(R() < 0.26))
+            house(_hx, _hy, _ha, _w, _d, _h, R() < 0.14, jetty=(R() < 0.26))
             _s += _w + rr(1.8, 5.0)
 
 # ------------------------------------------------- THE SQUARE: church + clock
