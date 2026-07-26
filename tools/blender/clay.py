@@ -19,7 +19,16 @@ S = bpy.context.scene
 COL = bpy.context.collection
 
 # ---------------------------------------------------------------- materials
+# --- the cartoon dial -------------------------------------------------------
+# Rounder and more playful is not a new model, it is three global numbers:
+# how far every colour sits off grey, how heavy every bevel is, and how steep
+# every roof is. Turning them at one point keeps the whole plate coherent.
+SAT     = 1.18     # colour saturation multiplier
+CARTOON = 1.95     # bevel multiplier on every lump_box
+
 def srgb(c):
+    g = 0.299*c[0] + 0.587*c[1] + 0.114*c[2]
+    c = tuple(min(255.0, max(0.0, g + (x - g)*SAT)) for x in c)
     return tuple(((x/255.0)**2.2) for x in c)
 
 def clay(name, rgb255, rough=0.82, sheen=0.0, sss=0.0):
@@ -205,11 +214,11 @@ M['roof_t']  = [pantile('rt%d'%i, c1, c2, j) for i, (c1, c2, j) in enumerate(
 # Slate survives only on the civic buildings and a handful of cottages.
 M['roof_s']  = [pantile('rs%d'%i, c1, c2, j, width=0.28, row=0.19, bump=0.26)
                 for i, (c1, c2, j) in enumerate(
-    [((124,120,116), (110,106,102), ( 76, 73, 70)),
-     ((110,107,104), ( 96, 93, 90), ( 66, 64, 62)),
-     ((136,131,126), (120,116,112), ( 84, 81, 78)),
-     ((102, 99, 96), ( 88, 86, 84), ( 60, 58, 56)),
-     ((130,126,121), (114,110,106), ( 80, 77, 74))])]
+    [((142,128,116), (126,113,102), ( 92, 80, 71)),
+     ((128,115,104), (112,100, 90), ( 82, 71, 63)),
+     ((154,140,126), (138,124,112), (100, 88, 78)),
+     ((118,106, 96), (104, 93, 84), ( 74, 64, 57)),
+     ((148,134,121), (132,118,107), ( 96, 84, 75))])]
 M['timber']  = clay('tim', (172,132, 96), 0.84, 0.18)
 M['stone']   = [clay('st%d'%i, c, 0.86, 0.15) for i, c in enumerate(
     [(236,228,212), (226,216,198), (244,238,224), (218,208,190)])]
@@ -261,8 +270,10 @@ def lump_box(w, d, h, bev=0.09, seg=4, wobble=0.0):
     bmesh.ops.create_cube(bm, size=1)
     for v in bm.verts:
         v.co.x *= w; v.co.y *= d; v.co.z *= h
+    _b = min(bev * CARTOON, 0.40 * min(abs(w), abs(d), abs(h)))
     bmesh.ops.bevel(bm, geom=list(bm.verts)+list(bm.edges)+list(bm.faces),
-                    offset=bev, segments=seg, profile=0.5, affect='EDGES')
+                    offset=_b, segments=min(8, seg + 2), profile=0.5,
+                    affect='EDGES', clamp_overlap=True)
     if wobble:
         bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True)
         for v in bm.verts:
@@ -451,7 +462,7 @@ def roof_slope(span, slen, mat, base, side, pitch, apex, ang, sag=0.05):
     for pg in me.polygons: pg.use_smooth = True
     return o
 
-def ridge_cap(span, mat, origin, ang, rad=0.185, cap=0.40):
+def ridge_cap(span, mat, origin, ang, rad=0.255, cap=0.40):
     """A rounded half-tube of ridge tiles, radius pulsing per cap."""
     bm = bmesh.new()
     nL = max(6, int(span / 0.075)); nA = 9
@@ -477,12 +488,12 @@ def ridge_cap(span, mat, origin, ang, rad=0.185, cap=0.40):
     for pg in me.polygons: pg.use_smooth = True
     return o
 
-def roof_v2(x, y, ang, w, d, h, slate=False, over=0.30):
+def roof_v2(x, y, ang, w, d, h, slate=False, over=0.46):
     """Returns ridge_h. Builds both slopes, fascias, verges and the ridge."""
     ca, sa = math.cos(ang), math.sin(ang)
     def W(lx, ly, lz):
         return (x + lx*ca - ly*sa, y + lx*sa + ly*ca, lz)
-    pitch   = rr(0.42, 0.54)
+    pitch   = rr(0.56, 0.70)
     ridge_h = (d/2) * math.tan(pitch)
     mats = M['roof_s'] if slate else M['roof_t']
     mat  = mats[int(R()*5)]
@@ -502,7 +513,7 @@ def roof_v2(x, y, ang, w, d, h, slate=False, over=0.30):
             obj('vrg', mesh_from_bm(lump_box(0.11, slen + 0.06, 0.19, 0.04, 3, 0.004), 'vg'),
                 _VRG, W(_sx*(span/2 - 0.045), side*_mid*_cp2, apex - _mid*_sp2 - 0.075),
                 (_th, 0, ang))
-    ridge_cap(span + 0.06, mat, W(0, 0, apex + 0.045), ang)
+    ridge_cap(span + 0.16, mat, W(0, 0, apex + 0.055), ang)
     return ridge_h + 0.10
 
 # ================================================================ the façade kit
@@ -1052,14 +1063,14 @@ def tree(x, y, scale=1.0, kind=None, ang=None):
     bm = bmesh.new()
     if kind == 'conifer':
         th = 0.9 * scale
-        _cone_into(bm, 0.15*scale, 0.11*scale, th, 0.0, 8)
+        _cone_into(bm, 0.19*scale, 0.14*scale, th, 0.0, 8)
         _mi(bm, 0, 0)
         n = len(bm.faces)
         tiers = 6
         H = 5.4 * scale
         for k in range(tiers):
             f = k / (tiers - 1.0)
-            r0 = (1.28 - 0.98*f) * scale
+            r0 = (1.46 - 1.10*f) * scale
             hh = (1.72 - 0.62*f) * scale
             z0 = th*0.45 + f * (H - th*0.45 - hh)
             _cone_into(bm, r0, r0*0.14, hh, z0, 9)
@@ -1067,16 +1078,16 @@ def tree(x, y, scale=1.0, kind=None, ang=None):
         mats = [M['bark'], CONIF[int(R()*4)]]
         nm = 'conifer'
     else:
-        th = 2.15 * scale
-        _cone_into(bm, 0.26*scale, 0.155*scale, th, 0.0, 10)
+        th = 2.05 * scale
+        _cone_into(bm, 0.33*scale, 0.20*scale, th, 0.0, 10)
         _mi(bm, 0, 0)
         n = len(bm.faces)
-        CR = 1.62 * scale
-        cz = th + CR * 0.66
-        _ico_into(bm, CR, (0, 0, cz), 0.86, 3)
+        CR = 1.82 * scale
+        cz = th + CR * 0.62
+        _ico_into(bm, CR, (0, 0, cz), 0.96, 3)
         for k in range(5):
             a = k/5.0*6.283 + rr(-0.28, 0.28)
-            rl = CR * rr(0.50, 0.70)
+            rl = CR * rr(0.58, 0.78)
             dd = CR * rr(0.58, 0.82)
             _ico_into(bm, rl, (math.cos(a)*dd, math.sin(a)*dd,
                                cz + rr(-0.34, 0.26)*CR), 0.92, 2)
@@ -1344,7 +1355,7 @@ def _make_car(paint, est=False):
     cube_into(bm, L, Wd, 0.74, (0, 0, 0.70))                 # body
     cube_into(bm, L*0.47, Wd*0.90, 0.16, (-L*0.06, 0, 1.62))  # roof cap
     bmesh.ops.bevel(bm, geom=list(bm.verts)+list(bm.edges)+list(bm.faces),
-                    offset=0.085, segments=2, profile=0.6, affect='EDGES',
+                    offset=0.175, segments=4, profile=0.62, affect='EDGES',
                     clamp_overlap=True)
     _mi(bm, 0, 0)
     n1 = len(bm.faces)
@@ -1842,7 +1853,7 @@ def frontage(pts, side, s_from, s_to, avoid=None, terrace=0.44, depth=0.0):
         if math.hypot(hx, hy) > TOWN_R - 1.0 or (avoid and avoid(hx, hy)) \
            or not _hfree(hx, hy, w + 0.02, d + 1.30, ang):
             s += w + rr(0.3, 1.4); continue
-        house(hx, hy, ang, w, d, h, R() < 0.08, jetty=(R() < 0.10))
+        house(hx, hy, ang, w, d, h, R() < 0.03, jetty=(R() < 0.10))
         s += w + (rr(0.15, 0.55) if R() < terrace else rr(2.6, 6.2))
 
 def _avoid_civic(hx, hy):
@@ -1896,7 +1907,7 @@ for _lni, _L in enumerate(LANES):
             _ha = math.atan2(-_F[0], _F[1]) + rr(-0.10, 0.10)
             if not _hfree(_hx, _hy, _w + 0.02, _d + 1.30, _ha):
                 _s += _w + rr(0.8, 2.4); continue
-            house(_hx, _hy, _ha, _w, _d, _h, R() < 0.14, jetty=(R() < 0.26))
+            house(_hx, _hy, _ha, _w, _d, _h, R() < 0.05, jetty=(R() < 0.26))
             _s += _w + rr(1.8, 5.0)
 
 # ------------------------------------------------- THE SQUARE: church + clock

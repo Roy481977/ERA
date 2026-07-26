@@ -93,6 +93,20 @@ via a Brick node on Object coordinates, and that is what made the roofs read.
 Note that the Brick node's `Offset`, `Offset Frequency`, `Squash` and
 `Squash Frequency` are node *properties* (`br.offset`), not socket inputs.
 
+**Cartoonish is three numbers, not a redesign.** "Rounder and more playful" is
+`SAT` (how far every colour sits off grey, applied inside `srgb()` so it is
+luminance-preserving and whites stay white), `CARTOON` (a multiplier on every
+`lump_box` bevel, clamped to `0.40 × min(w, d, h)` so thin members survive), and
+the roof pitch range in `roof_v2`. Turning them at one point keeps the whole
+plate coherent; chasing the same look object by object does not. Current values
+are `SAT = 1.18`, `CARTOON = 1.95`, pitch `rr(0.56, 0.70)`.
+
+**A steeper roof shows more roof, so every non-terracotta one counts double.**
+Raising the pitch made the surviving grey slates read as a cold rash across a
+newly saturated town. Slate probability dropped to 0.03 on frontage houses and
+0.05 on lane cottages, and the palette moved from neutral to warm brown-grey.
+Any future change to pitch has to be followed by a look at the slate count.
+
 **Ground is claimed before it is parcelled.** `built()` — paved or inside the
 stadium — covers about 60 % of the annulus r 17–31. Parcels and fields are tested
 all-or-nothing against it, so an oversized cell does not shrink, it disappears.
