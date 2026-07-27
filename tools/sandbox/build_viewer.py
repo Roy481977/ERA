@@ -193,6 +193,39 @@ for i in range(len(nodes)):
         dy = nodes[i][1] - nodes[j][1]
         if dx * dx + dy * dy < 49 and [i, j] not in edges and [j, i] not in edges:
             edges.append([i, j])
+# unify: every island joins the main network at its closest pair.
+# (Finding ADJ-6: North Lane and the Loop have no DESIGNED footpath link —
+#  these connectors are stand-ins until the layout answers properly.)
+def _comps():
+    adj = {i: set() for i in range(len(nodes))}
+    for a, b in edges:
+        adj[a].add(b); adj[b].add(a)
+    seen, comps = set(), []
+    for i in range(len(nodes)):
+        if i in seen:
+            continue
+        stack, comp = [i], []
+        while stack:
+            u = stack.pop()
+            if u in seen:
+                continue
+            seen.add(u); comp.append(u)
+            stack += list(adj[u])
+        comps.append(sorted(comp))
+    return sorted(comps, key=len, reverse=True)
+
+
+comps = _comps()
+while len(comps) > 1:
+    main, isle = set(comps[0]), comps[1]
+    best = None
+    for i in isle:
+        for j in main:
+            d = (nodes[i][0] - nodes[j][0]) ** 2 + (nodes[i][1] - nodes[j][1]) ** 2
+            if best is None or d < best[0]:
+                best = (d, i, j)
+    edges.append([best[1], best[2]])
+    comps = _comps()
 doors = {}
 for pid in place_ids:
     pl = W.places[pid]
@@ -232,3 +265,12 @@ out = tpl.replace("/*__DATA__*/null", payload)
 open("era-living-town.html", "w").write(out)
 print(f"era-living-town.html written: {len(out)//1024} KB "
       f"(data {len(payload)//1024} KB, {len(events)} events, {len(recog)} recognitions)")
+
+# the 3D blockout — same data, same living engine, a real stage
+import os
+if os.path.exists("viewer3d_template.html"):
+    tpl3 = open("viewer3d_template.html").read()
+    three = open("three.min.js").read()
+    out3 = tpl3.replace("/*__THREE__*/", three).replace("/*__DATA__*/null", payload)
+    open("era-town-3d.html", "w").write(out3)
+    print(f"era-town-3d.html written: {len(out3)//1024} KB")
