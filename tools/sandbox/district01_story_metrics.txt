@@ -1,0 +1,35 @@
+STORY METRICS — District 01 — the Heart, 52 weeks, seed 27
+================================================================
+
+RITUALS: 1617 chosen same-day-same-slot habits of 3+ consecutive
+  weeks, across 12 places: allotment, bakery, benchA, benchB, cafe, field, green, market, oak, post, pub, stores
+   Agnes    cafe       — 52 weeks running
+   Enid     cafe       — 52 weeks running
+   Gwen     bakery     — 52 weeks running
+   Gwen     pub        — 52 weeks running
+   June     bakery     — 52 weeks running
+   June     cafe       — 52 weeks running
+   Leo      bakery     — 52 weeks running
+   Lily     bakery     — 52 weeks running
+
+LOOMS (places weaving the same pairs together, 3+ different days):
+   allotment  820 recurring pairs
+   bakery     820 recurring pairs
+   cafe       820 recurring pairs
+   field      695 recurring pairs
+   stores     550 recurring pairs
+   ground     529 recurring pairs
+
+ADOPTION: 32/33 adults adopted at least one place (8 children did too)
+  deepest devotions:
+   Bill     -> pub (0.85)
+   Marge    -> bakery (0.85)
+   Priya    -> pub (0.85)
+   Rosa     -> pub (0.85)
+   Ted      -> pub (0.85)
+   Gwen     -> allotment (0.83)
+   Sal      -> pub (0.82)
+   Enid     -> field (0.80)
+
+FORGOTTEN:
+   square     abandoned: 17 early chosen visits, 2 late

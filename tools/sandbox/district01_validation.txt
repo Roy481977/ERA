@@ -1,0 +1,41 @@
+========================================================================
+ERA VALIDATION v2 — District 01 — the Heart
+========================================================================
+
+If a player returned to this town a year later, would it genuinely feel
+like another year had passed?
+
+EVIDENCE THE YEAR HAPPENED
+
+In the people:
+  79 pairs genuinely met for the first time this year; each
+  remembers where and when.
+  No once-frequent pair ever went five weeks apart: the cooling
+  mechanism exists, but a district this small never triggers it —
+  the familiar-stranger saturation, unchanged by the refactor.
+
+In the routines:
+  Median resident kept 72% of the autumn routine —
+  lives persisted AND changed: neither frozen nor amnesiac.
+
+In the institutions (new this phase — they outlive their people):
+  the allotment society: 6 residents became members this year, by their own habits.
+  the bakery: Bill retired after years as baker — and the business carried on without him.
+  the football club: 25W 9D 18L over 52 matches; finished 8 in the
+  autumn series and 3 in the spring; balance 3656 on real
+  gate receipts; 8 injuries. It played whether anyone watched or not.
+
+In the calendar:
+  the allotment breathed with the seasons (782 winter visits vs 2097 in spring);
+  the family day emptied the streets (89 vs 157 a week before); a
+  fixture every Saturday kept the fortnight heartbeat under it all.
+
+WHAT WOULD GIVE IT AWAY (honest limits)
+  Nobody was born, nobody died, nobody moved away. Children did not
+  grow. Buildings did not weather. The demographic clock is still
+  stopped even while the social, institutional and seasonal clocks run.
+
+VERDICT
+  YES for the social, institutional and seasonal year. NOT YET for the
+  demographic year — the next honest gap, unchanged by this refactor
+  (which was architectural by design: same town, generic engine).

@@ -1,0 +1,127 @@
+========================================================================
+FIVE LIVES — biographies generated from one simulated year
+========================================================================
+
+------------------------------------------------------------------------
+June, 61 — post2 — P09   [the constant]
+------------------------------------------------------------------------
+  the year, season by season (where the free hours went):
+    first quarter  bakery(72), pub(57), allotment(55)
+    second         pub(86), bakery(85), allotment(40)
+    third          bakery(82), pub(81), allotment(56)
+    fourth         bakery(84), pub(80), allotment(54)
+  a life accumulating:
+    • started using the benchB around Jul
+    • started using the stores around Sep
+    • did not miss a single home match — all 26
+    • a standing habit: the allotment, Mons around 17:00 (8 of the last 8 weeks)
+    • a standing habit: the bakery, Mons around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the benchA, Weds around 15:00 (8 of the last 8 weeks)
+    • joined the allotment society (Wed 7 Jun)
+  the people in it:
+    Claire: known since before the year; 2 matches together; most often meet at the bakery
+    Bill: known since before the year; most often meet at the bakery
+    Leo: known since before the year; 2 matches together; most often meet at the bakery
+    and Mabel — worn thin by crowds and small frictions: known since before the year; 3 matches together; most often meet at the bakery
+  from the year's log:
+    Sat 1 Oct   household problem: leaking gutter
+    Sat 22 Oct  household problem: broken pane
+    Sat 15 Apr  household problem: stuck gate
+    Wed 3 May   borrowed the hedge shears from Hana
+    Wed 3 May   returned the hedge shears to Hana
+    Wed 7 Jun   joined the allotment society
+    Sat 1 Jul   birthday
+
+------------------------------------------------------------------------
+Bill, 72 — retired since Mar — P06   [the year everything changed]
+------------------------------------------------------------------------
+  the year, season by season (where the free hours went):
+    first quarter  pub(140), allotment(40), oak(38)
+    second         pub(178), cafe(34), post(32)
+    third          pub(178), bakery(129), allotment(42)
+    fourth         pub(184), bakery(151), allotment(50)
+  a life accumulating:
+    • started using the bakery around Mar — around the time of: “retired — last shift as baker” (Mon 6 Mar)
+    • started using the stores around Mar — around the time of: “retired — last shift as baker” (Mon 6 Mar)
+    • a standing habit: the allotment, Thus around 09:00 (8 of the last 8 weeks)
+    • a standing habit: the bakery, Mons around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the cafe, Weds around 15:00 (8 of the last 8 weeks)
+  the people in it:
+    June: known since before the year; most often meet at the bakery
+    Rosa: known since before the year; most often meet at the bakery
+    Hana: known since before the year; most often meet at the bakery
+    and Owen — worn thin by crowds and small frictions: known since before the year; most often meet at the bakery
+  from the year's log:
+    Sat 6 Aug   words with Bram at the bakery
+    Wed 23 Nov  birthday
+    Fri 23 Dec  words with Beth at the bakery
+    Sun 1 Jan   made peace with Beth at the allotment
+    Mon 6 Mar   retired — last shift as baker
+
+------------------------------------------------------------------------
+Petra, 34 — commuter — P10   [newcomer, Sep]
+------------------------------------------------------------------------
+  arrived Mon 5 Sep, knowing nobody.
+  the year, season by season (where the free hours went):
+    first quarter  bakery(58), pub(51), allotment(34)
+    second         bakery(83), pub(75), cafe(41)
+    third          pub(85), bakery(75), allotment(47)
+    fourth         pub(92), bakery(74), allotment(54)
+  a life accumulating:
+    • started using the benchB around Mar
+    • started using the post around Oct
+    • hasn't missed a home match in 23 — 23 of 26 this year
+    • a standing habit: the allotment, Suns around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the bakery, Mons around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the cafe, Sats around 09:00 (8 of the last 8 weeks)
+  the people in it:
+    Leo: first crossed paths at the bakery on Mon 5 Sep; 6 matches together; most often meet at the bakery
+    Ted: first crossed paths at the bakery on Mon 5 Sep; most often meet at the bakery
+    Bill: first crossed paths at the bakery on Mon 5 Sep; most often meet at the bakery
+    and Sam — worn thin by crowds and small frictions: first crossed paths at the bakery on Mon 5 Sep; 8 matches together; most often meet at the bakery
+  from the year's log:
+    Mon 5 Sep   moved into P10 — knows nobody
+    Fri 31 Mar  birthday
+
+------------------------------------------------------------------------
+Jack, 58 — retired — P15   [newcomer, Feb]
+------------------------------------------------------------------------
+  arrived Tue 7 Feb, knowing nobody.
+  the year, season by season (where the free hours went):
+    second         pub(4), cafe(2), bakery(1)
+    third          pub(86), cafe(41), allotment(35)
+    fourth         pub(134), field(59), cafe(57)
+  a life accumulating:
+    • hasn't missed a home match in 12 — 12 of 26 this year
+    • a standing habit: the allotment, Suns around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the bakery, Mons around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the cafe, Tues around 09:00 (8 of the last 8 weeks)
+  the people in it:
+    Reg: first crossed paths at the pub on Tue 7 Feb; most often meet at the bakery
+    Marge: first crossed paths at the pub on Tue 7 Feb; most often meet at the bakery
+    Enid: first crossed paths at the bakery on Thu 9 Feb; most often meet at the bakery
+    and Bram — worn thin by crowds and small frictions: first crossed paths at the bakery on Thu 9 Feb; 3 matches together; most often meet at the bakery
+  from the year's log:
+    Tue 7 Feb   moved into P15 — knows nobody
+    Mon 24 Jul  birthday
+
+------------------------------------------------------------------------
+Luca, 8 — school — P05   [a childhood year]
+------------------------------------------------------------------------
+  the year, season by season (where the free hours went):
+    first quarter  stores(63), cafe(57), bakery(36)
+    second         stores(71), cafe(58), bakery(53)
+    third          stores(71), cafe(63), allotment(41)
+    fourth         stores(69), cafe(61), benchB(49)
+  a life accumulating:
+    • started using the green around Oct
+    • did not miss a single home match — all 26
+    • a standing habit: the allotment, Fris around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the bakery, Mons around 07:00 (8 of the last 8 weeks)
+    • a standing habit: the benchB, Weds around 17:00 (8 of the last 8 weeks)
+  the people in it:
+    Wyn: known since before the year; one match together; most often meet at the bakery
+    Stan: known since before the year; most often meet at the bakery
+    Agnes: known since before the year; most often meet at the bakery
+    and Iris — worn thin by crowds and small frictions: known since before the year; one match together; most often meet at the bakery
+

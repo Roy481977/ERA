@@ -1,0 +1,124 @@
+========================================================================
+DISTRICT 01 — THE HEART — CHRONICLE OF THE YEAR (seed 27)
+========================================================================
+
+population 41; 102893 lived moments; 182 events; intentions 769 kept, 6 forgotten
+football: 25W 9D 18L over 52 matches — positions: autumn series 8, spring series 3; balance 3656
+
+THE RECORD
+  busiest stores day ...... Tue 2 May — 43 visits (wind)
+  longest friendship formed . June & Petra — met at the bakery on Mon 5 Sep, close for 46 weeks by year's end
+  slowest reconciliation .... Bram & Bill — argued Sat 6 Aug, made peace Sun 25 Sep (50 days)
+  attachment grew most ...... the pub (4400 chosen visits in the first half → 6384 in the second)
+  quietly faded ............. no place lost more than 15% of its life — the district floor held
+  routine changed most ...... Beth (only 50% of the autumn week survived) — less: —; more: benchA, field
+  newcomer integration ...... Petra (Mon 5 Sep): woven in by week 3; Jack (Tue 7 Feb): woven in by week 3
+  biggest match ............. Sat 4 Mar (home v Marsh End, a loss 1–2) — 34 at the ground, 37 pub visits that evening
+
+WHAT THE PLACES BECAME
+  bakery     12281 visits — a morning place (91% of its life before 11:00); where tempers fray (7 arguments broke out here); the town's introduction bureau (192 pairs first met here)
+             regulars: Hana, Bill, Rosa
+  post        2481 visits
+             regulars: Tomas, Claire, June
+  stores      7457 visits — the town's introduction bureau (70 pairs first met here)
+             regulars: Gwen, Vera, Dev
+  cafe        9193 visits
+             regulars: Faye, Pat, Mo
+  pub        13406 visits — an evening place (71% of its life after 17:00)
+             regulars: Marge, Mo, Ted
+  market       590 visits — a morning place (57% of its life before 11:00)
+             regulars: Rosa, Enid, Reg
+  square        19 visits — a morning place (84% of its life before 11:00); mostly solitary (69% of moments alone); a fair-weather place (summer 17 visits vs winter 2)
+             regulars: Colin, Priya, Ted
+  oak         3186 visits
+             regulars: Bill, June, Claire
+  benchA      2359 visits — a fair-weather place (summer 764 visits vs winter 378)
+             regulars: Stan, Bram, Carl
+  benchB      1488 visits — an evening place (60% of its life after 17:00); a fair-weather place (summer 593 visits vs winter 149)
+             regulars: Luca, Agnes, Colin
+  allotment   6456 visits — a morning place (72% of its life before 11:00); where peace gets made (14 of the year's reconciliations); where tempers fray (7 arguments broke out here); the town's introduction bureau (435 pairs first met here); a fair-weather place (summer 2040 visits vs winter 782)
+             regulars: Nell, June, Gwen
+  field       6111 visits
+             regulars: Enid, Owen, Ken
+  green       7223 visits — busier in winter than summer
+             regulars: Stan, Dot, Luca
+  ground       883 visits
+             regulars: June, Agnes, Beth
+
+THE YEAR'S SHAPE (out-of-home visits by month)
+  Aug 4636  Sep 5517  Oct 6243  Nov 6464  Dec 6139  Jan 6481  Feb 5889  Mar 7177  Apr 6813  May 7232  Jun 7247  Jul 7264
+  the family day: 89 moments outside vs 157 a week before — the town stays home
+  children choosing the outdoors: 15.4/day in the school holidays vs 5.5/day in term
+
+========================================================================
+HISTORY AT FOUR LEVELS
+========================================================================
+
+TOWN
+  Mon 5 Sep   Petra moved into P10
+  Tue 7 Feb   Jack moved into P15
+  Mon 6 Mar   Bill retired (baker)
+  Sat 28 Jan  the club finished 8 of 14 in the autumn series
+  Sat 29 Jul  the club finished 3 of 14 in the spring series
+
+INSTITUTIONS
+  the football club (football_club) — staff 1, members 10
+     Mon 1 Aug   10 season-ticket holders at the start of the year
+     Sat 10 Sep  Sisay injured — out ~2 weeks
+     Sat 15 Oct  record gate: 33
+     Sat 22 Oct  Trent injured — out ~3 weeks
+     Sat 24 Dec  Batty injured — out ~4 weeks
+     Sat 31 Dec  Doyle injured — out ~3 weeks
+     Sat 28 Jan  finished 8 of 14 in the autumn series
+     Sat 11 Feb  O'Rourke injured — out ~2 weeks
+  the school (school) — staff 2, members 9
+  the bakery (business) — staff 2, members 0
+     Mon 6 Mar   Bill retired after years as baker
+  the post office (business) — staff 3, members 0
+  the stores (business) — staff 2, members 0
+  the café (business) — staff 2, members 0
+  the pub (business) — staff 2, members 0
+  the allotment society (association) — staff 0, members 6
+     Sat 3 Jun   Nell became a member
+     Wed 7 Jun   June became a member
+     Wed 21 Jun  Gwen became a member
+     Tue 11 Jul  Sam became a member
+     Sat 29 Jul  Ron became a member
+     Sun 30 Jul  Dot became a member
+
+HOUSEHOLDS (the five most eventful)
+  P02 — Marge, Bram, Stan (balance 4246)
+     Tue 9 Aug   Bram's birthday
+     Thu 22 Sep  borrowed the big pan from the Sam household
+     Wed 26 Oct  problem: wobbly shelf
+     Wed 26 Oct  fixed: wobbly shelf
+     Tue 29 Nov  problem: wobbly shelf
+     Tue 29 Nov  fixed: wobbly shelf
+  P03 — Claire, Leo (balance 6995)
+     Thu 4 Aug   problem: stuck gate
+     Thu 4 Aug   fixed: stuck gate
+     Sun 11 Dec  Leo's birthday
+     Wed 14 Dec  problem: wobbly shelf
+     Wed 14 Dec  fixed: wobbly shelf
+     Sat 25 Feb  problem: stuck gate
+  P08 — Nell, Sam, Iris (balance 10590)
+     Tue 13 Sep  problem: stuck gate
+     Tue 13 Sep  fixed: stuck gate
+     Wed 9 Nov   borrowed the ladder from the Claire household
+     Mon 5 Dec   borrowed the hedge shears from the Rosa household
+     Sat 28 Jan  Nell's birthday
+     Wed 22 Feb  Sam's birthday
+  P14 — Mabel, Joe, Wyn (balance 226)
+     Tue 4 Oct   problem: wobbly shelf
+     Tue 4 Oct   fixed: wobbly shelf
+     Mon 17 Oct  borrowed the ladder from the Pat household
+     Thu 3 Nov   problem: broken pane
+     Thu 3 Nov   fixed: broken pane
+     Wed 16 Nov  borrowed the big pan from the Priya household
+  P09 — June (balance 978)
+     Sat 1 Oct   problem: leaking gutter
+     Sat 1 Oct   fixed: leaking gutter
+     Sat 22 Oct  problem: broken pane
+     Sat 22 Oct  fixed: broken pane
+     Sat 15 Apr  problem: stuck gate
+     Sat 15 Apr  fixed: stuck gate

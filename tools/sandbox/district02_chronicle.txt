@@ -1,0 +1,76 @@
+========================================================================
+DISTRICT 02 — THE RIVERSIDE (DATA SKETCH) — CHRONICLE OF THE YEAR (seed 41)
+========================================================================
+
+population 16; 6272 lived moments; 21 events; intentions 54 kept, 0 forgotten
+
+THE RECORD
+  busiest chandlery day ...... Fri 16 Sep — 26 visits (rain)
+  longest friendship formed . no new friendship crossed the threshold this year
+  longest unresolved feud ... Iris & Pip — words at the boatyard on Fri 23 Sep, unhealed for 0 weeks and counting
+  slowest reconciliation .... Edie & Wren — argued Sat 3 Sep, made peace Fri 23 Sep (20 days)
+  attachment grew most ...... the ferry_inn (0 chosen visits in the first half → 466 in the second)
+  quietly faded ............. no place lost more than 15% of its life — the district floor held
+  routine changed most ...... Edie (only 35% of the autumn week survived) — less: —; more: chandlery, boatyard
+
+WHAT THE PLACES BECAME
+  chandlery    832 visits — a morning place (90% of its life before 11:00)
+             regulars: Sula, Bert, Wren
+  boatyard     667 visits — a morning place (70% of its life before 11:00); mostly solitary (52% of moments alone); where tempers fray (2 arguments broke out here); the town's introduction bureau (93 pairs first met here)
+             regulars: Frank, Olly, Fern
+  slipway      335 visits — mostly solitary (57% of moments alone)
+             regulars: Nora, Pip, Sula
+  ferry_inn   1282 visits
+             regulars: Meg, Iris, Bert
+  chapel_bench   420 visits
+             regulars: Wren, Pip, Olly
+
+THE YEAR'S SHAPE (out-of-home visits by month)
+  Aug 1900  Sep 1798  Oct 0  Nov 0  Dec 0  Jan 0  Feb 0  Mar 0  Apr 0  May 0  Jun 0  Jul 0
+  the family day: 0 moments outside vs 0 a week before — the town stays home
+  children choosing the outdoors: 1.3/day in the school holidays vs 0.8/day in term
+
+========================================================================
+HISTORY AT FOUR LEVELS
+========================================================================
+
+TOWN
+
+INSTITUTIONS
+  the chandlery (business) — staff 1, members 0
+  the Ferry Inn (business) — staff 2, members 0
+  the boat club (association) — staff 1, members 16
+     Sat 6 Aug   Frank became a member
+     Fri 2 Sep   Olly became a member
+     Fri 2 Sep   Hal became a member
+     Mon 5 Sep   Bert became a member
+     Mon 5 Sep   Wren became a member
+     Mon 5 Sep   Fern became a member
+     Tue 6 Sep   Sula became a member
+     Wed 7 Sep   Pip became a member
+
+HOUSEHOLDS (the five most eventful)
+  Q05 — Pip, Edie (balance 866)
+     Tue 2 Aug   Pip's birthday
+     Mon 8 Aug   problem: broken pane
+     Mon 8 Aug   fixed: broken pane
+     Thu 22 Sep  borrowed the tar bucket from the Hal household
+     Sat 24 Sep  Edie's birthday
+  Q02 — Meg, Tom (balance 1255)
+     Sat 13 Aug  Tom's birthday
+     Tue 16 Aug  problem: broken pane
+     Tue 16 Aug  fixed: broken pane
+     Fri 19 Aug  Meg's birthday
+  Q04 — Iris, Cal, Nora (balance 668)
+     Fri 26 Aug  problem: wobbly shelf
+     Fri 26 Aug  fixed: wobbly shelf
+     Fri 9 Sep   Iris's birthday
+     Fri 23 Sep  Cal's birthday
+  Q07 — Olly, Fern (balance 864)
+     Fri 26 Aug  borrowed the tar bucket from the Gus household
+     Fri 2 Sep   Fern's birthday
+     Fri 23 Sep  Olly's birthday
+  Q08 — Hal (balance 392)
+     Tue 30 Aug  problem: broken pane
+     Tue 30 Aug  fixed: broken pane
+     Fri 2 Sep   Hal's birthday
