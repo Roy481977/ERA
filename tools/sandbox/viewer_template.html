@@ -13,15 +13,14 @@
            border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
   #topbar { top:10px; left:50%; transform:translateX(-50%); padding:7px 14px;
             display:flex; gap:10px; align-items:center; white-space:nowrap; z-index:5; }
-  #clockbox { min-width:210px; font-weight:600; }
-  #wxbox { min-width:52px; text-align:center; }
+  #clockbox { min-width:230px; font-weight:600; }
   button { background:#fff; border:1px solid var(--line); border-radius:7px;
            padding:3px 9px; font:inherit; cursor:pointer; color:var(--ink); }
   button:hover { border-color:#9a9484; }
   button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   #scrubrow { top:56px; left:50%; transform:translateX(-50%); padding:5px 14px;
               display:flex; gap:8px; align-items:center; z-index:5; }
-  #scrub { width:340px; }
+  #scrub { width:320px; }
   #filters { left:10px; top:10px; padding:8px 10px; z-index:5; max-width:150px; }
   #filters .chip { display:block; width:100%; margin:2px 0; text-align:left; }
   #info { right:10px; top:10px; width:270px; max-height:70vh; overflow:auto;
@@ -30,12 +29,12 @@
   #info .sub { color:#6d675b; margin-bottom:6px; }
   #info .sec { margin-top:8px; font-weight:600; color:#4a4438; }
   #info ul { margin:2px 0 0; padding-left:16px; }
-  #info li { margin:1px 0; }
   #feed { left:10px; bottom:10px; width:335px; max-height:32vh; overflow:auto;
           padding:8px 12px; z-index:5; }
   #feed .it { padding:1.5px 0; border-bottom:1px dotted #e3ddcf; }
   #feed .tm { color:#8a8172; font-variant-numeric:tabular-nums; margin-right:6px; }
   #feed .goal { color:#7a2f22; font-weight:600; }
+  #feed .enc { color:#3d6b4f; }
   #hint { position:absolute; right:12px; bottom:10px; color:#f4f1ea;
           text-shadow:0 1px 2px rgba(0,0,0,.4); z-index:4; font-size:12px; }
   .close { float:right; border:none; background:none; font-size:15px; cursor:pointer; }
@@ -48,11 +47,10 @@
   <span id="clockbox">—</span><span id="wxbox">—</span>
   <button id="bPause">❚❚</button>
   <button id="b1" class="on">1×</button><button id="b2">2×</button>
-  <button id="b5">5×</button><button id="b20">20×</button>
+  <button id="b5">5×</button><button id="b20">20×</button><button id="b60">60×</button>
   <span style="color:#b7b0a0">|</span>
-  <button id="bMorn">tomorrow&nbsp;07:00</button>
-  <button id="bSat">next&nbsp;Saturday</button>
-  <button id="bWeek">+1&nbsp;week</button>
+  <button id="bMorn">07:00</button><button id="bSat">next&nbsp;Sat</button>
+  <button id="bWeek">+1wk</button>
 </div>
 <div class="panel" id="scrubrow">
   <button id="bBack1h">−1h</button><button id="bYest">yesterday</button>
@@ -77,58 +75,73 @@
 const D = /*__DATA__*/null;
 const SLOTS=[420,540,660,780,900,1020,1140], SLEN=120, DAYMIN=1440;
 const NDAYS=D.meta.weeks*7, DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const P=D.places, PIDS=D.placeIds, R=D.residents;
+const P=D.places, PIDS=D.placeIds, R=D.residents, G=D.graph;
 const codeLoc={}; PIDS.forEach((pid,i)=>codeLoc[String.fromCharCode(65+i)]=pid);
 function hash(s){let x=7;for(const c of s)x=(x*31+c.charCodeAt(0))>>>0;return x;}
+function h01(s){return (hash(s)%9973)/9973;}
 function dateStr(day){const ms=D.cal.mstart;let mi=0;
   for(let i=ms.length-1;i>=0;i--){if(day>=ms[i]){mi=i;break;}}
   return DOW[day%7]+" "+(day-ms[mi]+1)+" "+D.cal.mname[mi];}
 function hm(min){const h=Math.floor(min/60),m=Math.floor(min%60);
   return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
-function wxAt(day){return {r:"rain",w:"wind",d:"dry"}[D.wx[day]];}
 const isSchoolHol=day=>D.cal.breaks.some(b=>day>=b[0]&&day<=b[1]);
+function isMatchHome(day){const w=Math.floor(day/7),fx=D.fixtures[w];
+  return !!(fx&&fx.venue==="home"&&day%7===5);}
+function wxOf(day){return D.wx[day];}
 
-// ------------------------------------------------ resident geometry
-function locOf(code,r){
-  if(code==="~")return null;
-  if(code===".")return D.plotLoc[r.home];
-  const pid=codeLoc[code]; return [P[pid].x,P[pid].y];
-}
-function scatter(name,pid){const hx=hash(name+pid);
-  const a=(hx%360)*Math.PI/180, rr=0.8+((hx>>4)%20)/9;
-  return [Math.cos(a)*rr,Math.sin(a)*rr];}
-function slotOf(tod){ if(tod<SLOTS[0])return -1;
-  const s=Math.floor((tod-SLOTS[0])/SLEN); return s>6?7:s;}
-function codeAt(ri,day,s){
-  const r=R[ri]; if(day<r.arr)return "~";
-  if(s<0||s>6)return ".";
-  return D.pos[r.n][day][s];}
-function posAt(ri,minAbs){
-  const day=Math.floor(minAbs/DAYMIN), tod=minAbs%DAYMIN, r=R[ri];
-  if(day>=NDAYS)return null;
-  const s=slotOf(tod);
-  const cur=codeAt(ri,day,s), prev=codeAt(ri,day,s-1);
-  if(cur==="~")return null;
-  const cl=locOf(cur,r), pl=locOf(prev==="~"?".":prev,r);
-  const key=cur==="."?"h":codeLoc[cur];
-  const off=scatter(r.n,key), tgt=[cl[0]+off[0],cl[1]+off[1]];
-  if(s<0||s>6||cur===prev)return {x:tgt[0],y:tgt[1],walk:false,code:cur};
-  const into=tod-(SLOTS[Math.min(s,6)]||SLOTS[0]);
-  const d=Math.hypot(cl[0]-pl[0],cl[1]-pl[1]);
-  const dur=Math.max(8,Math.min(48,d*0.55));
-  if(into>=dur)return {x:tgt[0],y:tgt[1],walk:false,code:cur};
-  const t=into/dur, po=scatter(r.n,prev==="."?"h":codeLoc[prev]);
-  const sx=pl[0]+po[0], sy=pl[1]+po[1];
-  const mx=(sx+tgt[0])/2+Math.sin(hash(r.n)%7+t*3)*0.6;
-  return {x:sx+(tgt[0]-sx)*t, y:sy+(tgt[1]-sy)*t+Math.sin(t*Math.PI)*(mx-sx)*0.04,
-          walk:true, code:cur};
+// ================================================= behavioural signatures
+// invisible; they only make different people
+const SIG=R.map((r,i)=>{
+  const t=r.tr||{soc:.5,rout:.5,out:.5,temper:.3};
+  const u=s=>h01(r.n+s);
+  return {
+    speed:(r.child?1.55:1.05)*(0.82+u("sp")*0.5)*(r.age>64?0.78:1)*(r.age>74?0.86:1),
+    dawdle:(1-t.rout)*0.55+t.out*0.3+u("dw")*0.15,       // pauses, window-looking
+    punct:t.rout,                                        // when they leave
+    space:0.7+t.temper*0.9,                              // personal distance
+    talk:t.soc,                                          // stops to chat
+    curio:t.out,                                         // looks around, explores
+    wob:0.4+u("wb")*1.2,                                 // gait wobble
+  };
+});
+
+// ================================================= walk graph + routing
+const NODES=G.nodes, ADJ=NODES.map(()=>[]);
+G.edges.forEach(([a,b])=>{const d=Math.hypot(NODES[a][0]-NODES[b][0],NODES[a][1]-NODES[b][1]);
+  ADJ[a].push([b,d]);ADJ[b].push([a,d]);});
+function nearestNode(x,y){let bi=0,bd=1e9;
+  for(let i=0;i<NODES.length;i++){const d=(NODES[i][0]-x)**2+(NODES[i][1]-y)**2;
+    if(d<bd){bd=d;bi=i;}}return bi;}
+function route(a,b,who,day){
+  if(a===b)return [a];
+  const bias=e=>1+0.22*h01(who+"|e"+e+(h01(who+"x"+Math.floor(day/7))<0.06?day:""));
+  const dist=new Array(NODES.length).fill(1e9),prev={},Q=[[0,a]];
+  dist[a]=0;
+  while(Q.length){
+    Q.sort((p,q)=>p[0]-q[0]);const [dc,u]=Q.shift();
+    if(u===b)break;if(dc>dist[u])continue;
+    for(const [v,w] of ADJ[u]){const nd=dc+w*bias(u*97+v);
+      if(nd<dist[v]){dist[v]=nd;prev[v]=u;Q.push([nd,v]);}}}
+  const path=[b];let c=b;
+  while(c!==a&&prev[c]!=null){c=prev[c];path.push(c);}
+  return path.reverse();
 }
 
-// ------------------------------------------------ recognition (derived, replayable)
-let rec={}, recDay=-1;
+// ================================================= slot record access
+function codeAt(ri,day,s){const r=R[ri];if(day<r.arr)return "~";
+  if(s<0||s>6)return ".";return D.pos[r.n][day][s];}
+function anchorOf(ri,code){const r=R[ri];
+  if(code==="."||code==="~"){const pl=D.plotLoc[r.home];
+    const a=hash(r.n)%360*Math.PI/180;return [pl[0]+Math.cos(a)*1.2,pl[1]+Math.sin(a)*1.2];}
+  const pid=codeLoc[code],pp=P[pid];
+  const a=hash(r.n+pid)%360*Math.PI/180,rr=1+hash(r.n+pid+"r")%18/9;
+  return [pp.x+Math.cos(a)*rr,pp.y+Math.sin(a)*rr];}
+
+// ================================================= recognition (as before)
+let rec={},recDay=-1;
 function rebuildRec(uptoDay){
-  rec={}; R.forEach(r=>rec[r.n]={});
-  for(let day=0; day<=Math.min(uptoDay,NDAYS-1); day++){
+  rec={};R.forEach(r=>rec[r.n]={});
+  for(let day=0;day<=Math.min(uptoDay,NDAYS-1);day++){
     const met={};
     for(let s=0;s<7;s++){
       const g={};
@@ -139,43 +152,272 @@ function rebuildRec(uptoDay){
           const k=ns[a]+"|"+ns[b];
           if(!met[k]){met[k]=1;
             rec[ns[a]][ns[b]]=(rec[ns[a]][ns[b]]||0)+1;
-            rec[ns[b]][ns[a]]=(rec[ns[b]][ns[a]]||0)+1;}}}
-    }
-  }
+            rec[ns[b]][ns[a]]=(rec[ns[b]][ns[a]]||0)+1;}}}}}
   recDay=uptoDay;
 }
+const recOf=(a,b)=>(rec[a]&&rec[a][b])||0;
 
-// ------------------------------------------------ time engine
-let simMin=6*60+40, speed=1, paused=false;
-const SPEED_MIN_PER_SEC=12;                 // 1× — a slot in ~10s, a day in ~2min
+// ================================================= THE HUMAN LAYER
+// continuous agents; goals from the record, behaviour every two seconds
+const AG=R.map((r,i)=>({i,x:0,y:0,vx:0,vy:0,hd:0,mode:"home",trip:null,
+  chat:0,chatWith:-1,pauseT:0,seat:-1,qpos:-1,partner:-1,cool:{},ann:{}}));
+let curSlotKey=-1;
+function nextCode(i,day,s){          // where the record says they'll be next
+  if(s>=6)return ".";
+  return codeAt(i,day,s+1);
+}
+function initSlot(day,s){
+  curSlotKey=day*7+s;
+  // everyone stands at THIS slot's place; the walk toward the NEXT slot
+  // is planned around ARRIVAL — punctual people arrive early, dawdlers late
+  AG.forEach((a,i)=>{const cur=codeAt(i,day,s);
+    if(cur==="~"){a.mode="off";return;}
+    const [x,y]=anchorOf(i,cur);
+    if(a.mode==="off"||Math.hypot(a.x-x,a.y-y)>4){a.x=x;a.y=y;}
+    a.vx=a.vy=0;a.trip=null;a.chat=0;a.chatWith=-1;a.partner=-1;
+    a.mode=cur==="."?"home":"at";a.place=cur==="."?null:codeLoc[cur];a.qpos=-1;a.seat=-1;});
+  const t0=SLOTS[s],t1=s<6?SLOTS[s+1]:SLOTS[6]+SLEN;
+  const movers=[];
+  AG.forEach((a,i)=>{
+    const cur=codeAt(i,day,s),nxt=nextCode(i,day,s);
+    if(cur==="~"||nxt==="~"||nxt===cur)return;
+    const dst=anchorOf(i,nxt);
+    const sg=SIG[i];
+    const o=nearestNode(a.x,a.y),d2=nearestNode(dst[0],dst[1]);
+    const path=route(o,d2,R[i].n,day).map(n=>NODES[n]).concat([dst]);
+    let plen=Math.hypot(path[0][0]-a.x,path[0][1]-a.y);
+    for(let k=1;k<path.length;k++)
+      plen+=Math.hypot(path[k][0]-path[k-1][0],path[k][1]-path[k-1][1]);
+    const travel=plen/sg.speed;
+    const arrive=t1+(sg.punct>0.62?-3-h01(R[i].n+"er"+day+s)*8
+                                  :(1-sg.punct)*24*h01(R[i].n+"lt"+day+s));
+    const dep=Math.max(t0+12,arrive-travel);
+    a.trip={dep,dst,dstCode:nxt,path,wp:0,seed:hash(R[i].n+day+"s"+s)};
+    movers.push(i);
+  });
+  // walking together — recognition creates it, nobody is told to
+  for(let x=0;x<movers.length;x++)for(let y=x+1;y<movers.length;y++){
+    const i=movers[x],j=movers[y],ai=AG[i],aj=AG[j];
+    if(ai.partner>=0||aj.partner>=0)continue;
+    if(ai.trip.dstCode!==aj.trip.dstCode)continue;
+    if(Math.hypot(ai.x-aj.x,ai.y-aj.y)>26)continue;
+    const rc=recOf(R[i].n,R[j].n);
+    if(rc<14)continue;
+    if(h01(R[i].n+R[j].n+"pair"+day+s)>0.28+SIG[i].talk*0.35)continue;
+    const lead=SIG[i].punct>=SIG[j].punct?i:j,fol=lead===i?j:i;
+    AG[fol].partner=lead;AG[lead].partner=fol;
+    const dep=Math.max(AG[lead].trip.dep,AG[fol].trip.dep);
+    AG[lead].trip.dep=dep;
+    AG[fol].trip={...AG[lead].trip,dep:dep,follow:lead};
+  }
+}
+const covered=PIDS.filter(p=>P[p].cover&&P[p].x!=null);
+function stepAgents(day,s,tod,dt){        // dt in sim-minutes (fixed 1/30)
+  const wx=wxOf(day),lod=speed>=20;
+  for(let i=0;i<AG.length;i++){
+    const a=AG[i];if(a.mode==="off")continue;
+    const sg=SIG[i];
+    // departure
+    if(a.trip&&(a.mode==="home"||a.mode==="at")&&tod>=a.trip.dep){
+      a.mode="leaving";a.pauseT=lod?0:0.08+h01(R[i].n+"gate"+day+s)*0.1;} // the gate
+    if(a.mode==="leaving"){a.pauseT-=dt;if(a.pauseT<=0)a.mode="walk";}
+    if(a.mode==="chat"){
+      a.chat-=dt;
+      const o=AG[a.chatWith];
+      if(o){a.hd+=(Math.atan2(o.y-a.y,o.x-a.x)-a.hd)*0.2;
+        a.x+=Math.sin(tod*3+i)*0.004;a.y+=Math.cos(tod*2.6+i)*0.004;}
+      if(a.chat<=0){a.mode=a.trip?"walk":"at";a.chatWith=-1;}
+      continue;}
+    if(a.mode==="walk"&&a.trip){
+      // seeded micro pauses: look in a window, look around, shelter from rain
+      if(!lod&&a.pauseT>0){a.pauseT-=dt;a.hd+=Math.sin(tod*7+i)*0.05;continue;}
+      const t=a.trip,goal=t.follow!=null&&AG[t.follow].mode==="walk"
+        ?[AG[t.follow].x+Math.cos(AG[t.follow].hd+Math.PI/2)*1.15,
+          AG[t.follow].y+Math.sin(AG[t.follow].hd+Math.PI/2)*1.15]
+        :(t.wp<t.path.length?t.path[t.wp]:t.dst);
+      const dx=goal[0]-a.x,dy=goal[1]-a.y,dd=Math.hypot(dx,dy);
+      if(t.follow==null&&dd<1.6&&t.wp<t.path.length){t.wp++;
+        if(!lod&&h01(R[i].n+"ps"+day+s+t.wp)<sg.dawdle*0.33){
+          a.pauseT=0.05+h01(R[i].n+"pd"+t.wp)*0.14;
+          if(wx==="r"){const cv2=covered.find(p=>Math.hypot(P[p].x-a.x,P[p].y-a.y)<4);
+            if(cv2)a.pauseT*=2.2;}         // a moment under the awning
+        }
+        continue;}
+      if(dd<1.2&&(t.wp>=t.path.length||t.follow!=null&&Math.hypot(a.x-t.dst[0],a.y-t.dst[1])<2.5)){
+        // arrived
+        a.x=t.dst[0];a.y=t.dst[1];a.mode=t.dstCode==="."?"home":"at";
+        a.place=t.dstCode==="."?null:codeLoc[t.dstCode];a.trip=null;a.vx=a.vy=0;
+        continue;}
+      let sp=sg.speed*(wx==="r"?1.26:wx==="w"?0.92:1)*(t.follow!=null?0.97:1);
+      if(t.follow!=null&&dd>3)sp*=1.25;               // catching up
+      // separation + giving way
+      let px=0,py=0;
+      if(!lod)for(let j=0;j<AG.length;j++){if(j===i)continue;const b=AG[j];
+        if(b.mode==="off")continue;
+        const ex=a.x-b.x,ey=a.y-b.y,ed=ex*ex+ey*ey;
+        if(ed<sg.space*sg.space&&ed>0.001){const e=Math.sqrt(ed);
+          px+=ex/e*(sg.space-e)*0.5;py+=ey/e*(sg.space-e)*0.5;sp*=0.93;}}
+      const ux=dx/dd,uy=dy/dd;
+      const wob=lod?0:Math.sin(tod*6*sg.wob+i)*0.12;
+      a.vx+=((ux*sp+px)-a.vx)*0.25;a.vy+=((uy*sp+py)-a.vy)*0.25;
+      a.x+=(a.vx+(-uy)*wob*sp)*dt; a.y+=(a.vy+(ux)*wob*sp)*dt;
+      a.hd+=(Math.atan2(a.vy,a.vx)-a.hd)*0.25;
+      // encounters — most pass by; that is the point
+      if(!lod)for(let j=i+1;j<AG.length;j++){const b=AG[j];
+        if(b.mode!=="walk"||b.trip&&b.trip.follow===i||a.trip.follow===j)continue;
+        const ed=Math.hypot(a.x-b.x,a.y-b.y);
+        if(ed>2.1)continue;
+        const key=j,ck=a.cool[key]||0;
+        if(tod-ck<45)continue;
+        a.cool[key]=tod;b.cool[i]=tod;
+        const rc=recOf(R[i].n,R[j].n);if(rc<7)continue;
+        const roll=h01(R[i].n+R[j].n+"enc"+day+Math.floor(tod));
+        const warmth=(SIG[i].talk+SIG[j].talk)/2;
+        if(roll<0.38)continue;                                    // pass by
+        if(roll<0.66){a.hd=Math.atan2(b.y-a.y,b.x-a.x);          // a nod
+          b.hd=Math.atan2(a.y-b.y,a.x-b.x);
+          annFeed(day,tod,i,j,"nods to");continue;}
+        if(roll<0.62+warmth*0.35){                                // stop for a word
+          a.mode="chat";b.mode="chat";a.chatWith=j;b.chatWith=i;
+          a.chat=b.chat=0.25+h01(R[i].n+"cl"+tod)*0.5;
+          annFeed(day,tod,i,j,"stops for a word with");}
+      }
+      continue;}
+    // at a place / home / waiting: place life handles positions
+  }
+  if(!lod)placeLife(day,s,tod,dt);
+}
+function annFeed(day,tod,i,j,verb){
+  if(selRes!==i&&selRes!==j&&follow!==i&&follow!==j)return;
+  const a=R[i].n,b=R[j].n,k=a+b+Math.floor(tod/20);
+  if(AG[i].ann[k])return;AG[i].ann[k]=1;
+  pushFeed(tod,a+" "+verb+" "+b,"enc");
+}
+
+// ---- place life: queues, clusters, seats, stands, waiting
+function placeLife(day,s,tod,dt){
+  const byPlace={};
+  AG.forEach((a,i)=>{if(a.mode==="at"&&a.place)(byPlace[a.place]=byPlace[a.place]||[]).push(i);});
+  for(const pid in byPlace){
+    const list=byPlace[pid].sort((x,y)=>R[x].n<R[y].n?-1:1),pp=P[pid];
+    const open=pp.open.includes(s);
+    // bakery-type queue in the first minutes
+    const isShop=pp.caps.includes("bread")||pp.caps.includes("errand");
+    const qWindow=tod<SLOTS[s]+22;
+    let qn=0;
+    // benches: two sit, rest stand
+    const bench=pp.caps.includes("quiet")&&!pp.caps.includes("purpose");
+    // clusters of conversation
+    const clusters=[];
+    list.forEach(i=>{
+      let placed=false;
+      for(const c of clusters){
+        if(c.length<4&&c.some(j=>recOf(R[i].n,R[j].n)>=7)&&
+           h01(R[i].n+"cl"+pid+day+s)<0.85){c.push(i);placed=true;break;}}
+      if(!placed)clusters.push([i]);
+    });
+    let ci=0;
+    for(const c of clusters){
+      const ang0=(hash(pid)+ci*97)%360*Math.PI/180;
+      const cdist=1.6+ci*1.9;
+      let cx2=pp.x+Math.cos(ang0)*cdist,cy2=pp.y+Math.sin(ang0)*cdist;
+      cx2+=Math.sin(tod*0.7+ci)*0.25;cy2+=Math.cos(tod*0.6+ci)*0.25;  // slow drift
+      const speaker=Math.floor(tod*3)%c.length;
+      c.forEach((i,k)=>{
+        const a=AG[i];
+        let tx,ty;
+        if(isShop&&qWindow&&qn<6&&k===0&&c.length===1){       // the queue
+          const q=qn++;tx=pp.x+1.6+q*1.05;ty=pp.y-1.7;
+          a.hd+=((Math.PI)-a.hd)*0.1;
+        } else if(bench&&k<2&&c.length<=2){                    // sitting
+          tx=pp.x+(k?1.3:-1.3);ty=pp.y+0.5;
+        } else if(pid==="ground"&&R[i].child){                 // children run
+          tx=pp.x+Math.sin(tod*2.3+i)*5;ty=pp.y-3+Math.cos(tod*1.9+i)*2;
+        } else if(pid==="ground"){                             // the stand
+          const row=k%3,col=Math.floor(hash(R[i].n)%9);
+          tx=143+col*2.6;ty=51+row*1.5;
+        } else if(pid==="busstop"){                            // lived waiting
+          tx=pp.x-3+k*1.5+Math.sin(tod*1.7+i)*0.15;ty=pp.y+0.8;
+        } else {                                               // conversation circle
+          const th=ang0+(k/Math.max(c.length,2))*Math.PI*2;
+          const rr=c.length>1?1.15:0.4;
+          tx=cx2+Math.cos(th)*rr;ty=cy2+Math.sin(th)*rr;
+          const sp2=c[speaker];
+          if(c.length>1&&sp2!==i)a.hd+=(Math.atan2(AG[sp2].y-a.y,AG[sp2].x-a.x)-a.hd)*0.12;
+          else a.hd+=Math.sin(tod*2+i)*0.02;
+        }
+        a.x+=(tx-a.x)*0.12;a.y+=(ty-a.y)*0.12;
+      });
+      ci++;
+    }
+  }
+}
+
+// ================================================= time engine
+let simMin=6*60+40,speed=1,paused=false;
+const BASE=0.2;                 // 1×: a slot in ten minutes — walking pace
+let micro=0;
+const MDT=1/30;                 // behaviour thinks every two seconds
+function ensureSlot(){
+  const day=Math.floor(simMin/DAYMIN),tod=simMin%DAYMIN;
+  let s=tod<SLOTS[0]?0:Math.min(6,Math.floor((tod-SLOTS[0])/SLEN));
+  if(tod>=SLOTS[6]+SLEN)s=6;
+  const key=day*7+s;
+  if(key!==curSlotKey){initSlot(day,s);
+    // fast-forward the local layer from slot start to now (determinism)
+    const t0=Math.max(SLOTS[s],0);let t=t0;
+    const step=speed>=20?MDT*8:MDT*2;
+    while(t<tod-0.001){stepAgents(day,s,t,Math.min(step,tod-t));t+=step;}
+  }
+  return [day,s,tod];
+}
 function advance(dtSec){
   if(paused)return;
   let mult=speed;
   const tod=simMin%DAYMIN;
-  if(tod>21.7*60||tod<6.6*60)mult=Math.max(mult,40);   // the night passes quickly
-  simMin=Math.min(simMin+dtSec*SPEED_MIN_PER_SEC*mult, NDAYS*DAYMIN-1);
+  if(tod>21.7*60||tod<6.6*60)mult=Math.max(mult,120);
+  const dmin=dtSec*BASE*mult;
+  let left=dmin;
+  while(left>0){
+    const [day,s,tod2]=ensureSlot();
+    const step=Math.min(left,MDT*(speed>=20?8:1));
+    stepAgents(day,s,tod2,step);
+    simMin=Math.min(simMin+step,NDAYS*DAYMIN-1);
+    left-=step;
+    if(simMin>=NDAYS*DAYMIN-1)break;
+  }
 }
-function jumpTo(m){ simMin=Math.max(0,Math.min(m,NDAYS*DAYMIN-1));
-  feedDay=-1; const d=Math.floor(simMin/DAYMIN);
-  if(d!==recDay)rebuildRec(d); }
+function jumpTo(m){simMin=Math.max(0,Math.min(m,NDAYS*DAYMIN-1));
+  curSlotKey=-1;feedDay=-1;
+  const d=Math.floor(simMin/DAYMIN);
+  if(d!==recDay)rebuildRec(d);
+  ensureSlot();}
 
-// ------------------------------------------------ timeline feed
-let feedDay=-1, feedItems=[], feedShown=0;
+// ================================================= feed
+let feedDay=-1,feedItems=[],feedShown=0;
 function countAt(pid,day,s){
   const c=String.fromCharCode(65+PIDS.indexOf(pid));let n=0;
   for(const nm in D.pos){if(D.pos[nm][day][s]===c)n++;}return n;}
+function pushFeed(tod,tx,cls){
+  const box=document.getElementById("feeditems");
+  const div=document.createElement("div");
+  div.className="it"+(cls?" "+cls:"");
+  div.innerHTML="<span class='tm'>"+hm(tod)+"</span>"+tx;
+  box.appendChild(div);
+  box.parentElement.scrollTop=box.parentElement.scrollHeight;
+  if(box.children.length>90)box.removeChild(box.children[1]);
+}
 function buildFeed(day){
-  const f=[]; const wx=D.wx[day];
+  const f=[];const wx=D.wx[day];
   if(wx==="r")f.push([415,"rain sets in over the town"]);
   if(wx==="w")f.push([415,"a windy one"]);
-  if(day%7<5&&!isSchoolHol(day)&&day>=0)f.push([545,"children arrive at school"]);
-  // place-life lines, computed from the record itself
+  if(day%7<5&&!isSchoolHol(day))f.push([545,"children arrive at school"]);
   PIDS.forEach(pid=>{const pl=P[pid];if(!pl.pub_)return;
     if(pl.caps.includes("bread")&&countAt(pid,day,0)>=8)
       f.push([445,"the "+pid+" fills with the morning"]);
     if(pl.caps.includes("drink")&&countAt(pid,day,5)>=20)
       f.push([1025,"the "+pid+" fills"+(day%7===5?" after the match":"")]);});
-  const w=Math.floor(day/7), fx=D.fixtures[w];
+  const w=Math.floor(day/7),fx=D.fixtures[w];
   if(fx&&day%7===5){
     if(fx.venue==="home"){
       f.push([755,"supporters begin drifting toward the ground"]);
@@ -183,189 +425,155 @@ function buildFeed(day){
       fx.goals.forEach(g=>f.push([785+Math.round(g*0.93),
         "GOAL — "+D.meta.club+" score ("+g+"')","goal"]));
       f.push([875,"full time: "+D.meta.club+" "+fx.gf+"–"+fx.ga+" "+fx.opp,
-              fx.result==="win"?"goal":""]);
+        fx.result==="win"?"goal":""]);
       f.push([885,"the ground empties into the streets"]);
     } else {
       f.push([1000,"word comes back from "+fx.opp+": "+
-              (fx.result==="win"?"won":fx.result==="draw"?"drew":"lost")+
-              " "+fx.gf+"–"+fx.ga]);
-    }
-  }
+        (fx.result==="win"?"won":fx.result==="draw"?"drew":"lost")+" "+fx.gf+"–"+fx.ga]);
+    }}
   const KM={argue:675,peace:620,borrow:605,bday:510,ticket:860,arrive:580,retire:1050,join:730};
   D.events.forEach(e=>{if(e.d===day)f.push([KM[e.k]||700,e.t,e.k==="argue"?"goal":""]);});
   {const today=D.recog.filter(e=>e.d===day);
-   today.slice(0,3).forEach((e,i)=>
-     f.push([498+i*7,e.a+" starts greeting "+e.b+" by name"]));
-   if(today.length>3)
-     f.push([519,today[0].a+" is starting to know faces — "+(today.length-3)+" more this week"]);}
+   today.slice(0,3).forEach((e,i)=>f.push([498+i*7,e.a+" starts greeting "+e.b+" by name"]));
+   if(today.length>3)f.push([519,today[0].a+" is starting to know faces — "
+     +(today.length-3)+" more this week"]);}
   if(D.cal.holidays.includes(day))f.push([420,"public holiday — the shops stay shut"]);
   f.sort((a,b)=>a[0]-b[0]);
   return f;
 }
 function updateFeed(){
-  const day=Math.floor(simMin/DAYMIN), tod=simMin%DAYMIN;
+  const day=Math.floor(simMin/DAYMIN),tod=simMin%DAYMIN;
   if(day!==feedDay){feedDay=day;feedItems=buildFeed(day);feedShown=0;
     document.getElementById("feeditems").innerHTML=
       "<div class='it' style='color:#8a8172'>— "+dateStr(day)+" —</div>";}
-  const box=document.getElementById("feeditems");
   while(feedShown<feedItems.length&&feedItems[feedShown][0]<=tod){
-    const [tm,tx,cls]=feedItems[feedShown++];
-    const div=document.createElement("div");
-    div.className="it"+(cls?" "+cls:"");
-    div.innerHTML="<span class='tm'>"+hm(tm)+"</span>"+tx;
-    box.appendChild(div);
-    box.parentElement.scrollTop=box.parentElement.scrollHeight;
-    if(box.children.length>90)box.removeChild(box.children[1]);
-  }
+    const [tm,tx,cls]=feedItems[feedShown++];pushFeed(tm,tx,cls);}
 }
 
-// ------------------------------------------------ camera + canvas
-const cv=document.getElementById("cv"), cx=cv.getContext("2d");
-let cam={x:86,y:24,z:6};
+// ================================================= camera + canvas
+const cv=document.getElementById("cv"),cx=cv.getContext("2d");
+let cam={x:86,y:24,z:6},follow=-1;
 function resize(){cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;
   cam.z=Math.min(innerWidth/230,innerHeight/135)*devicePixelRatio;}
 addEventListener("resize",resize);resize();
-cam.z*=1; // fit
 function W2S(x,y){return [(x-cam.x)*cam.z+cv.width/2,(cam.y-y)*cam.z+cv.height/2];}
 function S2W(px,py){return [(px*devicePixelRatio-cv.width/2)/cam.z+cam.x,
-                            cam.y-(py*devicePixelRatio-cv.height/2)/cam.z];}
+  cam.y-(py*devicePixelRatio-cv.height/2)/cam.z];}
 let dragging=false,lastP=null;
 cv.addEventListener("mousedown",e=>{dragging=true;lastP=[e.clientX,e.clientY];cv.classList.add("drag");});
 addEventListener("mouseup",()=>{dragging=false;cv.classList.remove("drag");});
-addEventListener("mousemove",e=>{if(!dragging)return;
+addEventListener("mousemove",e=>{if(!dragging)return;follow=-1;
   cam.x-=(e.clientX-lastP[0])*devicePixelRatio/cam.z;
   cam.y+=(e.clientY-lastP[1])*devicePixelRatio/cam.z;
   lastP=[e.clientX,e.clientY];});
 cv.addEventListener("wheel",e=>{e.preventDefault();
   const f=Math.exp(-e.deltaY*0.0012);
   const [wx,wy]=S2W(e.clientX,e.clientY);
-  cam.z*=f; cam.x=wx-(wx-cam.x)/f; cam.y=wy-(wy-cam.y)/f;},{passive:false});
+  cam.z*=f;cam.x=wx-(wx-cam.x)/f;cam.y=wy-(wy-cam.y)/f;},{passive:false});
 
-// ------------------------------------------------ drawing
+// ================================================= drawing
+let occNow={};
 function rrect(x,y,w,h,r){cx.beginPath();cx.roundRect(x,y,w,h,r);}
 function drawMap(day,tod){
-  const L=D.level, z=cam.z;
-  // terrain
+  const L=D.level,z=cam.z;
   cx.fillStyle="#98a883";cx.fillRect(0,0,cv.width,cv.height);
   const ter=(rect,fill)=>{const[a,b,c,d]=rect;const[x0,y0]=W2S(a,d),[x1,y1]=W2S(c,b);
     cx.fillStyle=fill;cx.fillRect(x0,y0,x1-x0,y1-y0);};
   ter(L.terrain.playing_field,"#8fae72");
   ter(L.terrain.allotments,"#9a9469");
   ter(L.terrain.ground_apron,"#93a08a");
-  // allotment rows
   cx.strokeStyle="rgba(90,85,50,.35)";cx.lineWidth=Math.max(1,z*0.25);
   for(let yy=60;yy<80;yy+=3){const[ax,ay]=W2S(4,yy),[bx,by]=W2S(76,yy);
     cx.beginPath();cx.moveTo(ax,ay);cx.lineTo(bx,by);cx.stroke();}
-  // water
   cx.strokeStyle="#7d99a8";cx.lineWidth=L.water.w*z;cx.lineJoin="round";cx.beginPath();
   L.water.pts.forEach((p,i)=>{const[sx,sy]=W2S(p[0],p[1]);i?cx.lineTo(sx,sy):cx.moveTo(sx,sy);});
   cx.stroke();
-  // roads
   cx.fillStyle="#b8b2a4";
   L.roads.forEach(r=>{const[x0,y0]=W2S(r[0],r[3]),[x1,y1]=W2S(r[2],r[1]);
     cx.fillRect(x0,y0,x1-x0,y1-y0);});
-  // paths
   L.paths.forEach(p=>{
     const col=p.k==="worn"?"rgba(160,140,100,.55)":"rgba(205,198,180,.85)";
     if(p.r){const r=p.r;const[x0,y0]=W2S(r[0],r[3]),[x1,y1]=W2S(r[2],r[1]);
-      cx.fillStyle=col;
-      cx.fillRect(x0,y0,Math.max(x1-x0,z*0.6),Math.max(y1-y0,z*0.6));}
+      cx.fillStyle=col;cx.fillRect(x0,y0,Math.max(x1-x0,z*0.6),Math.max(y1-y0,z*0.6));}
     else{cx.strokeStyle=col;cx.lineWidth=z*0.8;cx.beginPath();
       p.pts.forEach((q,i)=>{const[sx,sy]=W2S(q[0],q[1]);
         i?cx.lineTo(sx,sy):cx.moveTo(sx,sy);});cx.stroke();}});
-  // bridge
   {const[bx,by]=W2S(L.bridge[0],L.bridge[1]);
    cx.fillStyle="#a9a294";cx.fillRect(bx-3*z,by-1.2*z,6*z,2.4*z);}
-  // pitch + stand + floodlights
   {const[gx,gy]=W2S(146,72),[gx2,gy2]=W2S(176,52);
    cx.fillStyle="#7fa864";cx.fillRect(gx,gy,gx2-gx,gy2-gy);
    cx.strokeStyle="rgba(255,255,255,.55)";cx.lineWidth=Math.max(1,z*.14);
    cx.strokeRect(gx,gy,gx2-gx,gy2-gy);
-   const s=L.stand;const[sx,sy]=W2S(s[0],s[1]);
-   cx.fillStyle="#6b6257";cx.fillRect(sx,sy-s[3]*z,s[2]*z,s[3]*z);
-   L.floodlights.forEach(f=>{const[fx2,fy2]=W2S(f[0],f[1]);
+   const st=L.stand;const[sx,sy]=W2S(st[0],st[1]);
+   cx.fillStyle="#6b6257";cx.fillRect(sx,sy-st[3]*z,st[2]*z,st[3]*z);
+   L.floodlights.forEach(fl=>{const[fx2,fy2]=W2S(fl[0],fl[1]);
      cx.strokeStyle="#5a544a";cx.lineWidth=Math.max(1,z*.2);
      cx.beginPath();cx.moveTo(fx2,fy2);cx.lineTo(fx2,fy2-3.5*z);cx.stroke();
-     cx.fillStyle=(tod>1020||wxAt(day)!=="dry")&&isMatchHome(day)?"#ffe9a8":"#8d867a";
+     cx.fillStyle=isMatchHome(day)&&tod>740&&tod<920?"#ffe9a8":"#8d867a";
      cx.fillRect(fx2-1.1*z,fy2-4.4*z,2.2*z,1.0*z);});}
-  // market stalls (Fridays, open hours)
   if(day%7===4&&tod>500&&tod<870){cx.fillStyle="#b06a4a";
     for(let i=0;i<5;i++){const[mx,my]=W2S(110+i*3.4,20);
       cx.fillRect(mx,my,2.4*z,1.6*z);}}
-  // plots (houses)
   L.plots.forEach(p=>{const[px,py]=W2S(p.x,p.y);
     cx.fillStyle="#c9beab";rrect(px-2.6*z,py-2.0*z,5.2*z,4.0*z,z*0.5);cx.fill();
     cx.fillStyle="#8d7f6d";cx.fillRect(px-2.6*z,py-2.0*z,5.2*z,1.1*z);});
-  // shops row: emphasize public buildings by their place dots
   PIDS.forEach(pid=>{const pl=P[pid];
     if(pl.x==null||!pl.pub_)return;const[sx,sy]=W2S(pl.x,pl.y);
-    // occupancy halo
     const n=occNow[pid]||0;
-    if(n>0){cx.fillStyle="rgba(240,220,140,"+Math.min(.5,.12+n*.04)+")";
-      cx.beginPath();cx.arc(sx,sy,(2.4+Math.sqrt(n)*1.5)*z,0,7);cx.fill();}
+    if(n>0){cx.fillStyle="rgba(240,220,140,"+Math.min(.4,.10+n*.03)+")";
+      const hr=Math.min((2.4+Math.sqrt(n)*1.5)*z,64*devicePixelRatio);
+      cx.beginPath();cx.arc(sx,sy,hr,0,7);cx.fill();}
     cx.fillStyle="#7a7264";cx.beginPath();cx.arc(sx,sy,z*.7,0,7);cx.fill();
     if(cam.z>7*devicePixelRatio){cx.fillStyle="#3d382f";
-      cx.font=(3.2*z/devicePixelRatio*devicePixelRatio*0.32|0)+"px sans-serif";
-      cx.textAlign="center";cx.fillText(pid,sx,sy-z*1.4);}});
-  // the oak
-  {const[ox,oy]=W2S(L.oak[0],L.oak[1]);
+      cx.font=(z*1.05|0)+"px sans-serif";cx.textAlign="center";
+      cx.fillText(pid,sx,sy-z*1.4);}});
+  {const[ox,oy]=W2S(D.level.oak[0],D.level.oak[1]);
    cx.fillStyle="#55703f";cx.beginPath();cx.arc(ox,oy,2.8*z,0,7);cx.fill();
    cx.fillStyle="#476034";cx.beginPath();cx.arc(ox-z,oy-z*.7,1.8*z,0,7);cx.fill();}
-  // trees
   L.veg.forEach(v=>{const[vx,vy]=W2S(v[0],v[1]);
     cx.fillStyle="#5d7847";cx.beginPath();cx.arc(vx,vy,(v[2]?1.4:0.8)*z,0,7);cx.fill();});
 }
-function isMatchHome(day){const w=Math.floor(day/7),fx=D.fixtures[w];
-  return !!(fx&&fx.venue==="home"&&day%7===5);}
-
-// filters
-let filter="all", selRes=null, selPlace=null;
+let filter="all",selRes=null,selPlace=null;
 document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
   b.classList.add("on");filter=b.dataset.f;});
-function passFilter(i,pos){
+function passFilter(i,a){
   const r=R[i];
   switch(filter){
     case "sup":return r.sup;
     case "child":return r.child;
     case "new":return r.arr>0;
-    case "move":return pos.walk;
-    case "friends":return selRes!=null&&(rec[R[selRes].n][r.n]||0)>=7;
+    case "move":return a.mode==="walk"||a.mode==="leaving";
+    case "friends":return selRes!=null&&recOf(R[selRes].n,r.n)>=7;
     default:return true;}
 }
 const hhColor={},resColor=[];
 R.forEach((r,i)=>{if(!hhColor[r.hh])hhColor[r.hh]="hsl("+(hash(r.hh)%360)+",42%,38%)";
   resColor[i]="hsl("+(hash(r.n)%360)+",35%,33%)";});
-
-let occNow={};
-function drawResidents(){
+function drawResidents(day){
   occNow={};
-  const day=Math.floor(simMin/DAYMIN);
-  resPos=[];
-  for(let i=0;i<R.length;i++){
-    const p=posAt(i,simMin);resPos.push(p);
-    if(!p)continue;
-    if(p.code!=="."&&p.code!=="~"&&!p.walk){const pid=codeLoc[p.code];
-      occNow[pid]=(occNow[pid]||0)+1;}
-  }
-  for(let i=0;i<R.length;i++){
-    const p=resPos[i];if(!p)continue;
-    const pass=passFilter(i,p);
-    const[sx,sy]=W2S(p.x,p.y);
-    const rr=(R[i].child?0.75:1.0)*Math.max(2.4,cam.z*0.55);
-    cx.globalAlpha=pass?1:0.16;
+  AG.forEach((a,i)=>{if(a.mode==="at"&&a.place)occNow[a.place]=(occNow[a.place]||0)+1;});
+  for(let i=0;i<AG.length;i++){
+    const a=AG[i];if(a.mode==="off")continue;
+    const pass=passFilter(i,a);
+    const[sx,sy]=W2S(a.x,a.y);
+    if(sx<-30||sy<-30||sx>cv.width+30||sy>cv.height+30)continue;
+    const rr=(R[i].child?0.72:1.0)*Math.max(2.4,cam.z*0.5);
+    cx.globalAlpha=(pass?1:0.14)*(a.mode==="home"?0.55:1);
     cx.fillStyle=filter==="hh"?hhColor[R[i].hh]:resColor[i];
     cx.beginPath();cx.arc(sx,sy,rr,0,7);cx.fill();
+    // heading notch — the body language of a circle
+    if(a.mode!=="home"){cx.strokeStyle="rgba(244,241,234,.85)";
+      cx.lineWidth=Math.max(1,devicePixelRatio);
+      cx.beginPath();cx.moveTo(sx,sy);
+      cx.lineTo(sx+Math.cos(a.hd)*rr*1.5,sy-Math.sin(a.hd)*rr*1.5);cx.stroke();}
     if(R[i].sup&&isMatchHome(day)){cx.strokeStyle="#e8e2d2";
-      cx.lineWidth=1.2*devicePixelRatio;cx.stroke();}
-    if(selRes===i){cx.strokeStyle="#fff";cx.lineWidth=2*devicePixelRatio;
+      cx.lineWidth=1.2*devicePixelRatio;cx.beginPath();cx.arc(sx,sy,rr,0,7);cx.stroke();}
+    if(selRes===i||follow===i){cx.strokeStyle="#fff";cx.lineWidth=2*devicePixelRatio;
       cx.beginPath();cx.arc(sx,sy,rr+3,0,7);cx.stroke();}
     cx.globalAlpha=1;
   }
 }
-let resPos=[];
-
-// day/night + weather wash
 function drawWash(day,tod){
   const wx=D.wx[day];
   if(wx==="r"){cx.fillStyle="rgba(70,90,120,.14)";cx.fillRect(0,0,cv.width,cv.height);}
@@ -375,12 +583,12 @@ function drawWash(day,tod){
   if(dark>0){cx.fillStyle="rgba(20,26,48,"+dark+")";cx.fillRect(0,0,cv.width,cv.height);}
 }
 
-// ------------------------------------------------ click + panels
+// ================================================= click + panels
 cv.addEventListener("click",e=>{
   const px=e.clientX*devicePixelRatio,py=e.clientY*devicePixelRatio;
   let best=-1,bd=12*devicePixelRatio;
-  for(let i=0;i<R.length;i++){const p=resPos[i];if(!p)continue;
-    const[sx,sy]=W2S(p.x,p.y);const d=Math.hypot(sx-px,sy-py);
+  for(let i=0;i<AG.length;i++){const a=AG[i];if(a.mode==="off")continue;
+    const[sx,sy]=W2S(a.x,a.y);const d=Math.hypot(sx-px,sy-py);
     if(d<bd){bd=d;best=i;}}
   if(best>=0){selRes=best;selPlace=null;renderInfo();return;}
   let bp=null,bpd=16*devicePixelRatio;
@@ -388,13 +596,23 @@ cv.addEventListener("click",e=>{
     const[sx,sy]=W2S(pl.x,pl.y);const d=Math.hypot(sx-px,sy-py);
     if(d<bpd){bpd=d;bp=pid;}});
   if(bp){selPlace=bp;selRes=null;renderInfo();return;}
-  selRes=null;selPlace=null;document.getElementById("info").style.display="none";
+  selRes=null;selPlace=null;follow=-1;
+  document.getElementById("info").style.display="none";
 });
-function locPhrase(p,r){
-  if(!p)return "not yet in town";
-  if(p.code===".")return "at home";
-  const pid=codeLoc[p.code];
-  return (p.walk?"walking to the ":"at the ")+pid;
+function locPhrase(i){
+  const a=AG[i];
+  switch(a.mode){
+    case "off":return "not yet in town";
+    case "home":return "at home";
+    case "leaving":return "just stepping out";
+    case "chat":return "stopped for a word with "+(a.chatWith>=0?R[a.chatWith].n:"someone");
+    case "walk":{const t=a.trip;
+      const dest=t?(t.dstCode==="."?"home":"the "+codeLoc[t.dstCode]):"somewhere";
+      const w=t&&t.follow!=null?" with "+R[t.follow].n:"";
+      return "walking to "+dest+w;}
+    case "at":return "at the "+a.place;
+  }
+  return "about";
 }
 function moodOf(i,day){
   const r=R[i];
@@ -410,7 +628,7 @@ function renderInfo(){
   const day=Math.floor(simMin/DAYMIN),tod=simMin%DAYMIN;
   if(recDay!==day)rebuildRec(day);
   if(selRes!=null){
-    const i=selRes,r=R[i],p=resPos[i];
+    const i=selRes,r=R[i];
     const rels=Object.entries(rec[r.n]||{}).filter(([o,c])=>c>=7)
       .sort((a,b)=>b[1]-a[1]).slice(0,5).map(([o])=>o);
     const open=D.intents.filter(t=>t.n===r.n&&t.b<=day&&t.e>day&&t.st!=="forgot");
@@ -424,7 +642,8 @@ function renderInfo(){
       if(codeLoc[c]==="ground")wk.m=1;if(codeLoc[c]==="allotment")wk.a++;}
     box.innerHTML="<button class='close' onclick=\"this.parentElement.style.display='none'\">×</button>"
       +"<h3>"+r.n+"</h3><div class='sub'>age "+r.age+(r.child?" · at school":" · "+r.occ)+"</div>"
-      +"<div class='sec'>now</div>"+locPhrase(p,r)
+      +"<button id='bFollow' "+(follow===i?"class='on'":"")+">"+(follow===i?"following":"follow")+"</button>"
+      +"<div class='sec'>now</div>"+locPhrase(i)
       +"<div class='sec'>mood</div>"+moodOf(i,day)
       +(open.length?"<div class='sec'>meaning to</div><ul>"+open.map(t=>"<li>"
         +t.kind+" — "+(t.note||t.tg)+"</li>").join("")+"</ul>":"")
@@ -434,14 +653,15 @@ function renderInfo(){
       +(wk.m?"<li>went to the match</li>":"")
       +(wk.a?"<li>allotment ×"+wk.a+"</li>":"")
       +((!wk.m&&!wk.a)?"<li>a quiet week</li>":"")+"</ul>";
+    const bf=document.getElementById("bFollow");
+    if(bf)bf.onclick=()=>{follow=follow===i?-1:i;renderInfo();};
   } else if(selPlace){
     const pid=selPlace,pl=P[pid],stt=D.pstats[pid]||{};
-    const openNow=(pl.days==null||pl.days.includes(day%7))
-      &&pl.open.includes(Math.max(0,Math.min(6,slotOf(tod))))
+    const s=Math.max(0,Math.min(6,Math.floor(((simMin%DAYMIN)-SLOTS[0])/SLEN)));
+    const openNow=(pl.days==null||pl.days.includes(day%7))&&pl.open.includes(s)
       &&!(pl.match_only&&!isMatchHome(day));
     const there=[];
-    R.forEach((r,i)=>{const p=resPos[i];
-      if(p&&!p.walk&&p.code!=="."&&codeLoc[p.code]===pid)there.push(r.n);});
+    AG.forEach((a,i)=>{if(a.mode==="at"&&a.place===pid)there.push(R[i].n);});
     box.innerHTML="<button class='close' onclick=\"this.parentElement.style.display='none'\">×</button>"
       +"<h3>the "+pid+"</h3><div class='sub'>"+(openNow?"open":"closed")+" · "
       +pl.caps.join(", ")+"</div>"
@@ -457,47 +677,49 @@ function renderInfo(){
   }
 }
 
-// ------------------------------------------------ controls
+// ================================================= controls
 const $=id=>document.getElementById(id);
 function setSpeed(s,btn){speed=s;paused=false;
-  ["b1","b2","b5","b20"].forEach(b=>$(b).classList.remove("on"));
+  ["b1","b2","b5","b20","b60"].forEach(b=>$(b).classList.remove("on"));
   $("bPause").classList.remove("on");if(btn)$(btn).classList.add("on");}
 $("bPause").onclick=()=>{paused=!paused;$("bPause").classList.toggle("on",paused);};
 $("b1").onclick=()=>setSpeed(1,"b1");$("b2").onclick=()=>setSpeed(2,"b2");
 $("b5").onclick=()=>setSpeed(5,"b5");$("b20").onclick=()=>setSpeed(20,"b20");
+$("b60").onclick=()=>setSpeed(60,"b60");
 $("bMorn").onclick=()=>jumpTo((Math.floor(simMin/DAYMIN)+1)*DAYMIN+7*60);
 $("bSat").onclick=()=>{let d=Math.floor(simMin/DAYMIN)+1;while(d%7!==5)d++;
-  jumpTo(d*DAYMIN+12.8*60);};
+  jumpTo(d*DAYMIN+12.4*60);};
 $("bWeek").onclick=()=>jumpTo(simMin+7*DAYMIN);
 $("bBack1h").onclick=()=>jumpTo(simMin-60);
 $("bYest").onclick=()=>jumpTo(simMin-DAYMIN);
 $("bLastSat").onclick=()=>{let d=Math.floor(simMin/DAYMIN)-1;while(d>=0&&d%7!==5)d--;
-  if(d>=0)jumpTo(d*DAYMIN+12.8*60);};
+  if(d>=0)jumpTo(d*DAYMIN+12.4*60);};
 const scrub=$("scrub");scrub.max=NDAYS*DAYMIN-1;
+let scrubHeld=false;
+scrub.addEventListener("pointerdown",()=>scrubHeld=true);
+addEventListener("pointerup",()=>scrubHeld=false);
 scrub.addEventListener("input",()=>jumpTo(+scrub.value));
 
-// ------------------------------------------------ main loop
-rebuildRec(0);
+// ================================================= main loop
+rebuildRec(0);jumpTo(simMin);
 let lastT=performance.now();
 function frame(t){
   const dt=Math.min(0.1,(t-lastT)/1000);lastT=t;
   advance(dt);
   const day=Math.floor(simMin/DAYMIN),tod=simMin%DAYMIN;
   if(day!==recDay)rebuildRec(day);
+  if(follow>=0&&AG[follow]){cam.x+=(AG[follow].x-cam.x)*0.08;
+    cam.y+=(AG[follow].y-cam.y)*0.08;}
   drawMap(day,tod);
-  drawResidents();
+  drawResidents(day);
   drawWash(day,tod);
   updateFeed();
   $("clockbox").textContent=dateStr(day)+"  ·  "+hm(tod)
     +(isMatchHome(day)?"  ⚽ home match":"");
   $("wxbox").textContent={r:"🌧",w:"🌬",d:"☀️"}[D.wx[day]];
   if(!scrubHeld)scrub.value=simMin;
-  if(selRes!=null||selPlace)if((t|0)%20<17)renderInfo();
   requestAnimationFrame(frame);
 }
-let scrubHeld=false;
-scrub.addEventListener("pointerdown",()=>scrubHeld=true);
-addEventListener("pointerup",()=>scrubHeld=false);
 requestAnimationFrame(frame);
 </script>
 </body>

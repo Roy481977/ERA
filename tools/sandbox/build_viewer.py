@@ -43,6 +43,8 @@ for r in W.residents:
         "child": bool(r.get("child")), "occ": r["occ"],
         "sup": ("season ticket" in r.get("poss", []) or r["tr"]["foot"] > 0.55),
         "arr": r.get("arrives", 0),
+        # behavioural seeds — never displayed; they only make different people
+        "tr": {k: round(r["tr"][k], 3) for k in ("soc", "rout", "out", "temper")},
     })
 
 # per-resident per-day slot strings ('.'=home, '~'=not arrived, A..=places)
@@ -147,6 +149,60 @@ level = {
 plot_loc = {k: list(v) for k, v in dd["plot_loc"].items()}
 plot_loc["P12"] = plot_loc.get("P12", [104.0, 30.0])
 
+# ------------------------------------------------------- walk graph
+# nodes on road/path centrelines; junctions auto-stitched; every place and
+# plot gets a door edge to its nearest network node. The Human Layer routes
+# along this instead of teleporting across the green.
+segs = []
+for r in LV["roads"]:
+    cy = (r["y0"] + r["y1"]) / 2
+    segs.append(((r["x0"], cy), (r["x1"], cy)))
+for p in LV["paths"]:
+    if "x0" in p:
+        segs.append((((p["x0"] + 0), (p["y0"] + p["y1"]) / 2 if abs(p["y1"] - p["y0"]) < 3 else p["y0"]),
+                     ((p["x1"]), (p["y0"] + p["y1"]) / 2 if abs(p["y1"] - p["y0"]) < 3 else p["y1"])))
+    else:
+        pts = p["pts"]
+        for a, b in zip(pts, pts[1:]):
+            segs.append((tuple(a), tuple(b)))
+# the road to the match: market -> bridge -> turnstiles
+segs += [((108.0, 18.2), (117.0, 20.0)), ((117.0, 20.0), (128.0, 24.0)),
+         ((128.0, 24.0), (137.4, 27.2)), ((137.4, 27.2), (146.0, 40.0)),
+         ((146.0, 40.0), (152.0, 47.6)),
+         ((-8.0, 15.0), (-8.0, 26.0)), ((20.0, 42.5), (20.0, 30.0))]
+nodes, edges = [], []
+
+
+def _nid(pt):
+    for i, q in enumerate(nodes):
+        if abs(q[0] - pt[0]) < 3.2 and abs(q[1] - pt[1]) < 3.2:
+            return i
+    nodes.append([round(pt[0], 1), round(pt[1], 1)])
+    return len(nodes) - 1
+
+
+for a, b in segs:
+    ia, ib = _nid(a), _nid(b)
+    if ia != ib:
+        edges.append([ia, ib])
+# stitch any two nodes that nearly touch
+for i in range(len(nodes)):
+    for j in range(i + 1, len(nodes)):
+        dx = nodes[i][0] - nodes[j][0]
+        dy = nodes[i][1] - nodes[j][1]
+        if dx * dx + dy * dy < 49 and [i, j] not in edges and [j, i] not in edges:
+            edges.append([i, j])
+doors = {}
+for pid in place_ids:
+    pl = W.places[pid]
+    if pl.loc:
+        doors[pid] = min(range(len(nodes)),
+                         key=lambda i: (nodes[i][0] - pl.loc[0]) ** 2 + (nodes[i][1] - pl.loc[1]) ** 2)
+for plot, loc in plot_loc.items():
+    doors["@" + plot] = min(range(len(nodes)),
+                            key=lambda i: (nodes[i][0] - loc[0]) ** 2 + (nodes[i][1] - loc[1]) ** 2)
+graph = {"nodes": nodes, "edges": edges, "doors": doors}
+
 DATA = {
     "meta": {"name": dd["name"], "seed": dd["seed"], "weeks": clock.weeks,
              "club": fb.name},
@@ -166,6 +222,7 @@ DATA = {
     "intents": intents,
     "level": level,
     "plotLoc": plot_loc,
+    "graph": graph,
 }
 
 payload = json.dumps(DATA, separators=(",", ":"))
