@@ -72,3 +72,8 @@ Each Creative Decision is its own file, `CD-###-slug.md`:
 | [CD-006](CD-006-simulate-intention-not-movement.md) | Simulate Intention, Not Movement (the Town Engine) | PROPOSED | IP-002 AR; living-world (README, interwoven-lives, places); tech companion `research/town-engine-technical-strategy.md` |
 | [CD-007](CD-007-core-language-rust.md) | The authoritative core is written in Rust | PROPOSED | IP-003; CD-006; Town Engine strategy; DS-001 |
 | [CD-008](CD-008-plate-world.md) | The Plate World — pre-rendered 2.5D fabric, live composited layer | **LOCKED (Roy)** | supersedes runtime-3D world fabric; design/asset-design-model.md; design/town-composition.md; research/visual-engine-and-design-strategy.md |
+| [CD-024](CD-024-modern-english-village-baseline.md) | The modern English village is ERA's architectural baseline | PROPOSED (Roy, 2026-07-26; held open — era found, voice in review) | Sheets 01–05 (`design/boards/`); supersedes the Museum as architectural baseline |
+| [CD-025](CD-025-evidence-of-life.md) | The town is continuously authored by the simulation | PROPOSED (Roy, 2026-07-26) | evidence-of-life design; CD-006/007/008/009; Oak scarves precedent |
+| [CD-026](CD-026-space-is-the-unit.md) | The primary design unit is space, not architecture | PROPOSED (Roy, 2026-07-27) | Sheet 06 the walk; two cameras (34/19, 34/6.5) |
+| [CD-027](CD-027-the-weave-composed-in-time.md) | The Weave is the canonical town composition, composed in space AND time | **RATIFIED (Roy, 2026-07-27)** | closes composition; T1–T8 archetypes only; District 01 built |
+| [CD-028](CD-028-simulation-is-lead-designer.md) | The simulation is the lead designer | PROPOSED (Roy, 2026-07-27) | Phase 4; sandbox + story metrics (`tools/sandbox/`); District 01 frozen |
