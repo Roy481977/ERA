@@ -395,8 +395,19 @@ for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.04);
 // ---- roads, kerbs, pavements
 D.level.roads.forEach(r=>{
   const w=r[2]-r[0],d=r[3]-r[1],cx2=(r[0]+r[2])/2,cy2=(r[1]+r[3])/2;
-  const k=box(w+0.7,0.09,d+0.7,PAL.CONC);k.position.copy(V(cx2,cy2,0.045));scene.add(k);
-  const a=box(w,0.11,d,PAL.ASPH);a.position.copy(V(cx2,cy2,0.06));scene.add(a);});
+  const market=(r[1]===15.0&&r[3]===21.5);
+  if(market){  // the urban street: kerbed, paved, full width
+    const k=box(w+0.7,0.09,d+0.7,PAL.CONC);k.position.copy(V(cx2,cy2,0.045));scene.add(k);
+    const a=box(w,0.11,d,PAL.ASPH);a.position.copy(V(cx2,cy2,0.06));scene.add(a);
+  }else{       // the lanes: narrower, warmer, grass-verged — roads stop dominating
+    const horiz=w>d;
+    const a=box(horiz?w:w-1.8,0.11,horiz?d-1.8:d,0x6e695f);
+    a.position.copy(V(cx2,cy2,0.06));scene.add(a);
+    if(horiz)[[cy2-d/2+0.45],[cy2+d/2-0.45]].forEach(o=>{
+      const v2=box(w,0.07,0.9,0x8fa273);v2.position.copy(V(cx2,o[0],0.035));scene.add(v2);});
+    else [[cx2-w/2+0.45],[cx2+w/2-0.45]].forEach(o=>{
+      const v2=box(0.9,0.07,d,0x8fa273);v2.position.copy(V(o[0],cy2,0.035));scene.add(v2);});
+  }});
 D.level.paths.forEach(p=>{
   if(p.r){const r=p.r,w=Math.max(r[2]-r[0],1.2),d=Math.max(r[3]-r[1],1.2);
     const m=box(w,0.08,d,p.k==="worn"?PAL.SOIL:0xcdc6b4);
@@ -782,6 +793,98 @@ const bunting=new THREE.Group();
  const crest=new THREE.Mesh(new THREE.PlaneGeometry(3,3),
    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv2)}));
  crest.position.copy(V(152.5,47.4,2.4));crest.rotation.y=Math.PI;scene.add(crest);}
+// ---- ITERATION 2 — the enclosed village: edges, rooms, rhythm, football
+const matchFlags=[];
+{
+ const cutGaps=(L,gaps)=>{let segs=[[0,L]];(gaps||[]).forEach(g2=>{const ns=[];
+   segs.forEach(s3=>{if(g2[1]<=s3[0]||g2[0]>=s3[1])ns.push(s3);
+     else{if(g2[0]>s3[0])ns.push([s3[0],g2[0]]);if(g2[1]<s3[1])ns.push([g2[1],s3[1]]);}});
+   segs=ns;});return segs;};
+ const hedgeRun=(x0,y0,x1,y1,hh,gaps)=>{const L=Math.hypot(x1-x0,y1-y0),
+   dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
+   cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<0.6)return;
+     const hb=new THREE.Mesh(new THREE.BoxGeometry(ln,hh,0.85),mat(0x55703f));
+     hb.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),hh/2));
+     hb.rotation.y=ang;hb.castShadow=true;scene.add(hb);});};
+ const fenceRun=(x0,y0,x1,y1,gaps)=>{const L=Math.hypot(x1-x0,y1-y0),
+   dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
+   cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<1)return;
+     [0.55,0.95].forEach(hh=>{const rl=box(ln,0.07,0.07,0x8a7a62);
+       rl.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),hh));
+       rl.rotation.y=ang;scene.add(rl);});
+     for(let u=s3[0]+0.2;u<=s3[1];u+=3.4){const ps=box(0.1,1.05,0.1,0x7a6a54);
+       ps.position.copy(V(x0+dx*u,y0+dy*u,0.52));scene.add(ps);}});};
+ // hedgerows and fences — the village gains edges
+ fenceRun(-16,-18.6,96,-18.6,[[54,58],[68,72]]);      // field edge, two gates
+ hedgeRun(2,57.6,78,57.6,1.0,[[26,30]]);              // allotments, one entrance
+ hedgeRun(-6,45.4,40,45.4,0.9,[[6.5,9.5],[19.5,22.5],[32,35]]); // North Lane, three gates
+ [[119.5,14.5],[123.5,12.2],[128.5,13.6],[131.5,18.5],[135.5,21.5]].forEach(sp=>{
+   const sh2=new THREE.Mesh(new THREE.SphereGeometry(0.75,8,6),mat(0x6d8852));
+   sh2.position.copy(V(sp[0],sp[1],0.5));sh2.castShadow=true;scene.add(sh2);});
+ // tree composition — an avenue, room corners, an orchard
+ [[-15.6,-8],[-6.4,-8],[-15.6,-1],[-6.4,-1],[-15.6,6],[-6.4,6]]
+   .forEach(t3=>tree(t3[0],t3[1],1.0));               // School Lane avenue
+ tree(38,23.3,0.85);tree(62,23.3,0.85);               // the green's south corners
+ for(let gx=0;gx<4;gx++)for(let gy=0;gy<2;gy++)
+   tree(8+gx*5.2,81.8+gy*3.4,0.62);                   // the orchard past the allotments
+ // garden integration — dividing hedges and back sheds
+ [["P08","P09"],["P09","P10"],["P11","P12"],["P14","P15"]].forEach(pr=>{
+   const a2=D.level.plots.find(p=>p.id===pr[0]),b2=D.level.plots.find(p=>p.id===pr[1]);
+   if(!a2||!b2||Math.abs(b2.x-a2.x)>18)return;
+   const hb=box(0.8,0.55,5.6,0x55703f);
+   hb.position.copy(V((a2.x+b2.x)/2,(a2.y+b2.y)/2,0.28));scene.add(hb);});
+ const backOf=rt=>{const bx=Math.abs(rt)<0.1?0:(Math.abs(Math.abs(rt)-Math.PI)<0.1?0:(rt<0?1:-1));
+   const by=Math.abs(rt)<0.1?1:(Math.abs(Math.abs(rt)-Math.PI)<0.1?-1:0);return [bx,by];};
+ D.level.plots.forEach(p=>{if(p.kit!=="home")return;
+   const sd3=hash("shed"+p.id);if(sd3%3!==1)return;
+   const [bx3,by3]=backOf(plotRot[p.id]||0);
+   const sx=p.x+bx3*4.2-by3*2.6,sy=p.y+by3*4.2+bx3*2.6;
+   const sh3=box(1.9,1.3,1.5,0x84583a);sh3.position.copy(V(sx,sy,0.65));scene.add(sh3);
+   const rf3=box(2.15,0.18,1.75,0x949aa0);rf3.position.copy(V(sx,sy,1.42));scene.add(rf3);});
+ // the green as a room — daisies, and a bin by the watching bench
+ [[42,26],[58,24.5],[50,28.3]].forEach((cl,ci)=>{
+   for(let k3=0;k3<10;k3++){const dz=new THREE.Mesh(
+     new THREE.SphereGeometry(0.055,5,4),mat(0xf6f2e4));
+     dz.scale.y=0.5;
+     dz.position.copy(V(cl[0]+(h01("dx"+ci+k3)-0.5)*5.5,
+                        cl[1]+(h01("dy"+ci+k3)-0.5)*3.2,0.045));scene.add(dz);}});
+ {const bin=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.24,0.62,8),mat(0x2f5540));
+  bin.position.copy(V(44.4,22.9,0.31));scene.add(bin);}
+ // football is geography — kickabout goals on the field, flags on matchdays
+ [[34,-23],[60,-23]].forEach(gl=>{
+   [[-1.7],[1.7]].forEach(o=>{const ps2=box(0.09,1.2,0.09,0xeeeae0);
+     ps2.position.copy(V(gl[0],gl[1]+o[0],0.6));scene.add(ps2);});
+   const cb=box(0.09,0.09,3.5,0xeeeae0);cb.position.copy(V(gl[0],gl[1],1.22));scene.add(cb);});
+ const supPlots=new Set();R.forEach(r3=>{if(r3.sup&&r3.home)supPlots.add(r3.home);});
+ D.level.plots.forEach(p=>{if(p.kit!=="home"||!supPlots.has(p.id))return;
+   const [bx3,by3]=backOf(plotRot[p.id]||0);
+   const fx=p.x-bx3*3.35+by3*1.6,fy=p.y-by3*3.35-bx3*1.6;
+   const fg=new THREE.Group();   // wall-mounted at eave height, matchday only
+   const pole=box(0.08,1.15,0.08,0x6a6258);pole.position.set(0,2.5,0);fg.add(pole);
+   const pn=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.48,3),mat(PAL.GRN));
+   pn.rotation.z=-Math.PI/2;pn.position.set(0.28,2.88,0);fg.add(pn);
+   fg.position.copy(V(fx,fy,0));scene.add(fg);matchFlags.push(fg);});
+ // Market Street gains its tree rhythm — front-garden trees along the south side
+ [[6,13.0,0.85],[26,13.0,0.85],[69.5,12.7,0.78],[84.5,12.7,0.78],[98.5,12.7,0.78]]
+   .forEach(t4=>tree(t4[0],t4[1],t4[2]));
+ // a flower moment by the watching bench
+ {const bed=box(1.6,0.28,0.7,0x7a6a54);bed.position.copy(V(43.0,22.9,0.14));scene.add(bed);
+  [[-0.5,0xda3a2c],[-0.15,0xf8bc3a],[0.2,0xe88a7c],[0.55,0xf6f2e4]].forEach(fw=>{
+    const bl4=new THREE.Mesh(new THREE.SphereGeometry(0.17,7,5),mat(fw[1]));
+    bl4.position.copy(V(43.0+fw[0],22.9,0.42));scene.add(bl4);});}
+ // the square dressed — flagpole, planters, the noticeboard
+ {const fp=box(0.12,6.2,0.12,0xe8e2d2);fp.position.copy(V(113.5,23.8,3.1));scene.add(fp);
+  const fl3=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.0),
+    new THREE.MeshLambertMaterial({color:PAL.GRN,side:THREE.DoubleSide}));
+  fl3.position.copy(V(114.45,23.8,5.55));scene.add(fl3);matchFlags.push(fl3);}
+ [[112.5,21.8,0xda3a2c],[121.5,21.8,0xf8bc3a]].forEach(pl=>{
+   const pot3=box(0.7,0.55,0.7,0x8d5a3f);pot3.position.copy(V(pl[0],pl[1],0.28));scene.add(pot3);
+   const bl3=new THREE.Mesh(new THREE.SphereGeometry(0.42,8,6),mat(pl[2]));
+   bl3.position.copy(V(pl[0],pl[1],0.85));scene.add(bl3);});
+ {[[110.1],[111.9]].forEach(o=>{const ps4=box(0.1,1.5,0.1,0x7c6a4e);
+    ps4.position.copy(V(o[0],24.0,0.75));scene.add(ps4);});
+  const bd=box(2.1,1.05,0.09,0xe8e0cc);bd.position.copy(V(111,24.0,1.45));scene.add(bd);}
+}
 // ---- lights
 const lampLights=[];
 [[66,14.2],[80,14.2],[94,14.2],[108,14.2],[122,16],[131,25],[141,33],[148,42]]
@@ -899,6 +1002,7 @@ function frame(t){const dt=Math.min(0.1,(t-lastT)/1000);lastT=t;
     m.rotation.x=walking?0.06:0;
     m.userData.scarf.visible=homeMatch&&R[i].sup;}
   bunting.visible=homeMatch;
+  matchFlags.forEach(f2=>f2.visible=homeMatch);
   laundry.forEach(L2=>{
     if(L2.g){const hangs=D.wx[day]!=="r"&&h01("wash"+day+L2.g.userData.plot)>0.42
       &&tod>440&&tod<1120;
