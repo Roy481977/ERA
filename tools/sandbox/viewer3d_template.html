@@ -404,7 +404,7 @@ D.level.roads.forEach(r=>{
   }});
 D.level.paths.forEach(p=>{
   if(p.r){const r=p.r,w=Math.max(r[2]-r[0],1.2),d=Math.max(r[3]-r[1],1.2);
-    const m=box(w,0.08,d,p.k==="worn"?PAL.SOIL:0xcdc6b4);
+    const m=box(w,0.08,d,p.k==="worn"?PAL.SOIL:(p.k==="brick"?0xc4ae92:0xcdc6b4));
     m.position.copy(V((r[0]+r[2])/2,(r[1]+r[3])/2,0.05));scene.add(m);}
   else{const pts=p.pts;
     for(let i=1;i<pts.length;i++){const ax=pts[i-1][0],ay=pts[i-1][1],
@@ -417,12 +417,16 @@ D.level.paths.forEach(p=>{
 for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
   st.position.copy(V(28.6+k*1.15,18.3,0.07));scene.add(st);}
 // ---- river + bridge
-{const pts=D.level.water.pts;
+{const pts=[[141.5,-10],[139.5,4],[142,30],[140,48],[143.5,62],
+   [150,73],[162,79],[176,81],[190,80]];   // SPRINT 015: the river's arm
  for(let i=1;i<pts.length;i++){const ax=pts[i-1][0],ay=pts[i-1][1],
    bx=pts[i][0],by=pts[i][1];const len=Math.hypot(bx-ax,by-ay)+2;
    const m=box(D.level.water.w+1.5,0.06,len,PAL.WATER);
    m.position.copy(V((ax+bx)/2,(ay+by)/2,0.015));
-   m.rotation.y=Math.atan2(bx-ax,-(by-ay));scene.add(m);}}
+   m.rotation.y=Math.atan2(bx-ax,-(by-ay));scene.add(m);}
+ // bank trees follow the bend
+ [[136.5,52,1.0],[138.5,66,0.9],[146,78,1.1],[158,85,0.95],[172,86.5,1.05],
+  [181,75,0.85]].forEach(bt=>tree(bt[0],bt[1],bt[2]));}
 {const b=D.level.bridge;
  // river x at the bridge line (the arch must straddle the water)
  let rvx=b[0];{const w2=D.level.water.pts;
@@ -468,8 +472,8 @@ function windowUnit(g,w,h,x,y,zf){          // thick white surround + sill (SL-2
   const sill=box(w+0.36,0.12,0.22,PAL.RND);sill.position.set(x,y-h/2-0.16,zf+0.06);g.add(sill);
   return gl.material;}
 function bodyCol(seed){const u=(seed%100)/100;
-  if(u<0.38)return PAL.BRK;if(u<0.52)return PAL.BRK2;if(u<0.60)return PAL.BRK3;
-  if(u<0.85)return [0xf0e6c8,0xf2d9a6,0xecc39a,0xe8c4b4,0xc9cfae,0xc3cdd6,0xcfc0c6,0xe0d6c2][seed%8];
+  if(u<0.20)return PAL.BRK;if(u<0.28)return PAL.BRK2;if(u<0.34)return PAL.BRK3;
+  if(u<0.90)return [0xf0e6c8,0xf2d9a6,0xecc39a,0xe8c4b4,0xf0dcb2,0xc9cfae,0xcfc0c6,0xe0d6c2][seed%8];
   return PAL.RND2;}
 const ACC={GRN:PAL.GRN,NVY:PAL.NVY,RED:PAL.RED,ORG:PAL.ORG,MUS:PAL.MUS,
   OLV:PAL.OLV,TEAL:PAL.TEAL,PNK:PAL.PNK};
@@ -497,17 +501,18 @@ D.level.plots.forEach(p=>{
     const qb=box(0.5,0.34,0.5,PAL.RND2);
     qb.position.set(sx*(w/2-0.02),0.55+q*0.95,dep/2-0.22);g.add(qb);}});}
   // roof: prism + ridge cap + verge boards + chimney with pots
-  const roofCol=(seed%3)?PAL.TILG:PAL.TILB;
+  const roofCol=(seed%10<5)?PAL.TILB:((seed%10<8)?0xbf6a4a:PAL.TILG);
   const roof=gableRoof(dep,w,roofCol);
   roof.rotation.y=Math.PI/2;roof.position.y=ht+0.05;g.add(roof);
-  const ridge=box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0xa96a4a);
+  const ridge=box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0x99543a);
   ridge.position.set(0,ht+dep*0.36+0.08,0);g.add(ridge);
   [-1,1].forEach(sx=>{const vg=box(0.16,0.34,dep+0.7,PAL.RND);
     vg.position.set(sx*(w/2+0.28),ht+0.28,0);g.add(vg);});
-  const ch=box(0.85,1.2,0.85,PAL.BRK2);ch.position.set(w*0.28,ht+0.95,0);g.add(ch);
-  [[-0.2,0],[0.2,0]].forEach(o=>{const pot=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11,0.14,0.3,8),mat(0xc8805a));
-    pot.position.set(w*0.28+o[0],ht+1.68,o[1]);g.add(pot);});
+  const ch=box(0.95,2.0,0.95,PAL.BRK2);ch.position.set(w*0.28,ht+1.3,0);g.add(ch);
+  const chc=box(1.15,0.18,1.15,0xb0a48e);chc.position.set(w*0.28,ht+2.36,0);g.add(chc);
+  [[-0.22,0],[0.22,0]].forEach(o=>{const pot=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12,0.15,0.42,8),mat(0xc8805a));
+    pot.position.set(w*0.28+o[0],ht+2.62,o[1]);g.add(pot);});
   // dormer kit
   if(kit===1){const dm=box(1.5,1.0,1.4,bcol);dm.position.set(-w*0.18,ht+0.6,dep*0.14);g.add(dm);
     const dr=gableRoof(1.4,1.5,roofCol);dr.rotation.y=Math.PI/2;
@@ -543,8 +548,20 @@ D.level.plots.forEach(p=>{
   } else {
     [[-w*0.28,1.55],[w*0.30,1.55]].forEach(o=>{
       winMats.push({m:windowUnit(g,0.95,1.3,o[0],o[1],dep/2+0.02),shop:false});});
-    // garden wall + flower strip + odd garden tree
-    const gw=box(w+2.6,0.55,0.3,0xb0a48e);gw.position.set(0,0.28,dep/2+2.5);g.add(gw);
+    // threshold: picket fence with a gate gap, or the garden wall
+    if(seed%9<5){const gx=-w*0.18,fw=w+2.6;
+      [[-fw/2,gx-0.7],[gx+0.7,fw/2]].forEach(sg=>{
+        const ln=sg[1]-sg[0];if(ln<0.5)return;
+        [[0.22],[0.46]].forEach(hh=>{const rl=box(ln,0.07,0.06,0xf2eee2);
+          rl.position.set((sg[0]+sg[1])/2,hh[0],dep/2+2.5);g.add(rl);});
+        for(let u=sg[0]+0.15;u<sg[1];u+=1.05){
+          const ps=box(0.1,0.6,0.08,0xf2eee2);
+          ps.position.set(u,0.3,dep/2+2.5);g.add(ps);}});
+    }else{
+      const gw=box(w+2.6,0.55,0.3,0xb0a48e);gw.position.set(0,0.28,dep/2+2.5);g.add(gw);}
+    const bush=new THREE.Mesh(new THREE.SphereGeometry(0.42,8,6),
+      mat([0xda3a2c,0xf2782c,0xe88a7c][seed%3]));
+    bush.position.set(w*0.34,0.42,dep/2+1.6);g.add(bush);
     for(let f2=0;f2<6;f2++){
       const fl=box(0.22,0.3,0.22,GARDEN[(seed+f2)%6]);
       fl.position.set(-w/2+0.6+f2*(w-1)/5,0.32,dep/2+2.1);g.add(fl);
@@ -674,6 +691,24 @@ const bikeProps={};
  const phg=new THREE.Mesh(new THREE.PlaneGeometry(0.5,1.1),
    new THREE.MeshLambertMaterial({color:PAL.GLSI}));
  phg.position.copy(V(63.5,22.19,1.15));scene.add(phg);}
+// the Bridge Road sweep — the one street that bends (square to the bridge)
+{const sw3=[[112,18.2],[117,20],[123,22.2],[130,24.8],[137.4,27.2]];
+ for(let i=1;i<sw3.length;i++){const ax=sw3[i-1][0],ay=sw3[i-1][1],
+   bx=sw3[i][0],by=sw3[i][1];const len=Math.hypot(bx-ax,by-ay)+1.2;
+   const rd=box(len,0.1,4.2,0x6e695f);
+   rd.position.copy(V((ax+bx)/2,(ay+by)/2,0.055));
+   rd.rotation.y=Math.atan2(by-ay,bx-ax);scene.add(rd);
+   [[-2.4],[2.4]].forEach(o=>{const vg2=box(len,0.07,0.8,0x8fa273);
+     vg2.position.copy(V((ax+bx)/2-Math.sin(Math.atan2(by-ay,bx-ax))*o[0],
+       (ay+by)/2+Math.cos(Math.atan2(by-ay,bx-ax))*o[0],0.035));
+     vg2.rotation.y=Math.atan2(by-ay,bx-ax);scene.add(vg2);});}
+ // and on to the turnstiles as a gravel path
+ const gv=[[137.4,27.2],[144.8,27.8],[146,40],[152,47.6]];
+ for(let i=1;i<gv.length;i++){const ax=gv[i-1][0],ay=gv[i-1][1],
+   bx=gv[i][0],by=gv[i][1];const len=Math.hypot(bx-ax,by-ay)+1;
+   const gp2=box(len,0.07,2.6,0xb3a68c);
+   gp2.position.copy(V((ax+bx)/2,(ay+by)/2,0.04));
+   gp2.rotation.y=Math.atan2(by-ay,bx-ax);scene.add(gp2);}}
 // street lights
 const lamps=[];
 [[66,22.3],[80,22.3],[94,22.3],[108,22.3],[122,16],[131,25],[141,33],[148,42]]
@@ -803,6 +838,39 @@ const bunting=new THREE.Group();
  const crest=new THREE.Mesh(new THREE.PlaneGeometry(3,3),
    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv2)}));
  crest.position.copy(V(152.5,47.4,2.4));crest.rotation.y=Math.PI;scene.add(crest);}
+// ---- SPRINT 015 — the landscape: the village sits in a world now
+{const HILL=[[ -30,150,95,20],[ 60,165,120,26],[150,150,90,18],[230,120,80,15],
+             [255,55,70,13],[262,-10,85,15],[240,-70,70,12],[-90,80,70,14],
+             [-100,-20,80,15],[120,190,140,24]];
+ HILL.forEach((h4,i)=>{const far=Math.abs(h4[1])>120||Math.abs(h4[0])>200;
+   const m=new THREE.Mesh(new THREE.SphereGeometry(h4[2],24,16),
+     mat(far?0xa8bd8c:0x94b075));
+   m.scale.set(1,h4[3]/h4[2],0.8);
+   m.position.copy(V(h4[0],h4[1],-h4[2]*0.16));m.receiveShadow=true;scene.add(m);});
+ // hedgerow lines on the near slopes
+ [[-60,96,60,0.12],[20,116,80,-0.06],[120,120,70,0.1],[190,86,50,0.18]]
+  .forEach(hr=>{const hb=new THREE.Mesh(new THREE.BoxGeometry(hr[2],1.6,1.2),
+    mat(0x5e7a48));
+   hb.position.copy(V(hr[0]+hr[2]/2,hr[1],3.2));hb.rotation.z=hr[3];
+   hb.rotation.y=0.12;scene.add(hb);});
+ // three distant roofs on the slopes
+ [[-40,104],[176,96],[214,70]].forEach(dr2=>{
+   const hw2=box(3.2,2.2,2.6,0xece2d0);hw2.position.copy(V(dr2[0],dr2[1],4.6));scene.add(hw2);
+   const hr2=gableRoof(2.8,3.6,PAL.TILB);hr2.rotation.y=Math.PI/2;
+   hr2.position.copy(V(dr2[0],dr2[1],5.8));scene.add(hr2);});
+ // the railway on the northern ridge — the Book's arrivals, finally visible
+ const emb=box(240,2.2,7,0x8f9a74);emb.position.copy(V(80,98,1.1));scene.add(emb);
+ [[-1.1],[1.1]].forEach(o=>{const rail=box(238,0.12,0.22,0x4c4844);
+   rail.position.copy(V(80,98+o[0],2.32));scene.add(rail);});
+ for(let px=-30;px<=190;px+=22){const cp=box(0.16,3.4,0.16,0x5a544a);
+   cp.position.copy(V(px,101.8,3.9));scene.add(cp);
+   const ca=box(2.2,0.12,0.12,0x5a544a);ca.position.copy(V(px,100.8,5.4));scene.add(ca);}
+ // the stopped train: engine + four carriages, red with a cream band
+ for(let c6=0;c6<5;c6++){const tx=52+c6*11.6;
+   const car=box(10.6,2.3,2.7,c6===0?0x8a3a32:0xa8433a);
+   car.position.copy(V(tx,98,3.5));scene.add(car);
+   const band=box(10.6,0.5,2.76,0xe8dcc2);band.position.copy(V(tx,98,4.05));scene.add(band);
+   const rf4=box(10.9,0.22,2.5,0x5c5450);rf4.position.copy(V(tx,98,4.78));scene.add(rf4);}}
 // ---- ITERATION 2 — the enclosed village: edges, rooms, rhythm, football
 const matchFlags=[];
 {
@@ -875,6 +943,24 @@ const matchFlags=[];
    const pn=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.48,3),mat(PAL.GRN));
    pn.rotation.z=-Math.PI/2;pn.position.set(0.28,2.88,0);fg.add(pn);
    fg.position.copy(V(fx,fy,0));scene.add(fg);matchFlags.push(fg);});
+// the rows join — link sections make terraces of the street and North Lane
+ [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]],
+  [["P08","P09"],["P09","P10"]]].forEach(row=>{row.forEach(pr2=>{
+   const a5=D.level.plots.find(q=>q.id===pr2[0]),b5=D.level.plots.find(q=>q.id===pr2[1]);
+   if(!a5||!b5)return;const gap=Math.abs(b5.x-a5.x);if(gap>16)return;
+   const lw=gap-6.6;if(lw<1.2)return;
+   const lx=(a5.x+b5.x)/2,ly=(a5.y+b5.y)/2;
+   const sd6=hash("lk"+pr2[0]);
+   const lk=box(lw+0.6,2.55,5.6,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
+   lk.position.copy(V(lx,ly,1.275));lk.castShadow=true;scene.add(lk);
+   const lr=box(lw+1.0,0.34,6.1,(sd6%3)?PAL.TILB:0xbf6a4a);
+   lr.position.copy(V(lx,ly,2.72));scene.add(lr);
+   const lc=box(0.85,1.7,0.85,PAL.BRK2);lc.position.copy(V(lx,ly,3.4));scene.add(lc);
+   const lp2=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.14,0.36,8),mat(0xc8805a));
+   lp2.position.copy(V(lx,ly,4.4));scene.add(lp2);
+   [[-2.05],[2.05]].forEach(o=>{const wf=box(0.9,0.9,0.1,PAL.RND);
+     wf.position.copy(V(lx,ly+o[0],1.45));scene.add(wf);
+     const wg=box(0.7,0.7,0.12,PAL.GLS);wg.position.copy(V(lx,ly+o[0],1.45));scene.add(wg);});});});
  // Market Street gains its tree rhythm — front-garden trees along the south side
  [[6,13.0,0.85],[26,13.0,0.85],[78,23.6,0.78],[90,23.6,0.78],[102,23.4,0.78]]
    .forEach(t4=>tree(t4[0],t4[1],t4[2]));
@@ -883,6 +969,25 @@ const matchFlags=[];
   [[-0.5,0xda3a2c],[-0.15,0xf8bc3a],[0.2,0xe88a7c],[0.55,0xf6f2e4]].forEach(fw=>{
     const bl4=new THREE.Mesh(new THREE.SphereGeometry(0.17,7,5),mat(fw[1]));
     bl4.position.copy(V(44.2+fw[0],25.6,0.42));scene.add(bl4);});}
+ // the square furnished — stalls under striped canvas, umbrellas at the pub
+ const stripeTex=(c1,c2)=>{const cv7=document.createElement("canvas");
+   cv7.width=64;cv7.height=16;const c7=cv7.getContext("2d");
+   for(let k7=0;k7<8;k7++){c7.fillStyle=k7%2?c1:c2;c7.fillRect(k7*8,0,8,16);}
+   const t7=new THREE.CanvasTexture(cv7);t7.encoding=THREE.sRGBEncoding;return t7;};
+ [[113.5,17.2,"#da3a2c"],[119.5,17.2,"#22949a"]].forEach((st5,si)=>{
+   [[-1.15,-0.75],[1.15,-0.75],[-1.15,0.75],[1.15,0.75]].forEach(o=>{
+     const ps5=box(0.09,1.9,0.09,0x8a7a62);
+     ps5.position.copy(V(st5[0]+o[0],st5[1]+o[1],0.95));scene.add(ps5);});
+   const ctr=box(2.5,0.75,1.4,0x9a8a72);ctr.position.copy(V(st5[0],st5[1],0.55));scene.add(ctr);
+   const cnv=new THREE.Mesh(new THREE.BoxGeometry(2.9,0.1,2.0),
+     new THREE.MeshLambertMaterial({map:stripeTex(st5[2],"#f2eee2")}));
+   cnv.position.copy(V(st5[0],st5[1],2.05));cnv.rotation.z=0.09;scene.add(cnv);});
+ [[111.5,23.8,0x22949a],[114.8,22.6,0xece2d0],[118,23.4,0x22949a]].forEach(um=>{
+   const up=box(0.07,2.0,0.07,0xd8d2c4);up.position.copy(V(um[0],um[1],1.0));scene.add(up);
+   const uc=new THREE.Mesh(new THREE.ConeGeometry(1.15,0.55,8),mat(um[2]));
+   uc.position.copy(V(um[0],um[1],2.15));scene.add(uc);});
+ {const tb=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.08,0.08,10),mat(0xece2d0));
+  tb.position.copy(V(114.8,22.6,0.75));scene.add(tb);}
  // the square dressed — flagpole, planters, the noticeboard
  {const fp=box(0.12,6.2,0.12,0xe8e2d2);fp.position.copy(V(113.5,23.8,3.1));scene.add(fp);
   const fl3=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.0),
