@@ -328,6 +328,11 @@ const camera=new THREE.PerspectiveCamera(35,innerWidth/innerHeight,0.5,900);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 function V(x,y,h){return new THREE.Vector3(x,h||0,-y);}
+// SPRINT 017 — the ground has tiers: green plateau, north terrace, else mid
+function gH(x,y){
+  if(x>=34&&x<=62&&y>=22&&y<=42)return 0.35;      // the green plateau
+  if(y>=47.2&&x<=118)return 0.63;                 // the north terrace
+  return 0;}
 const mat=c=>new THREE.MeshLambertMaterial({color:c});
 function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   const s=new THREE.Shape();const hw=w/2,hd=d/2;
@@ -371,22 +376,63 @@ function noiseTex(base,spot,n){const cv2=document.createElement("canvas");
   t2.wrapS=t2.wrapT=THREE.RepeatWrapping;return t2;}
 const grassTex=noiseTex("#98a883","#7e9468",240);grassTex.repeat.set(26,20);
 // ---- terrain
-{const g=new THREE.Mesh(new THREE.PlaneGeometry(500,400),
-  new THREE.MeshLambertMaterial({map:grassTex,color:0xdfe6cc}));
- g.rotation.x=-Math.PI/2;g.position.set(86,-0.05,-24);g.receiveShadow=true;scene.add(g);}
+// the deep bed (visible only inside the river pits)
+{const g=new THREE.Mesh(new THREE.PlaneGeometry(500,400),mat(0x55604a));
+ g.rotation.x=-Math.PI/2;g.position.set(86,-1.15,-24);g.receiveShadow=true;scene.add(g);}
+function texPatch(x0,y0,x1,y1,h){
+  const t2=grassTex.clone();t2.needsUpdate=true;
+  t2.repeat.set(Math.max(1,(x1-x0)/20),Math.max(1,(y1-y0)/20));
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,y1-y0),
+    new THREE.MeshLambertMaterial({map:t2,color:0xdfe6cc}));
+  m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,h,-(y0+y1)/2);
+  m.receiveShadow=true;scene.add(m);}
+// river pits: P1 (134,-16,144.6,66) P2 (147,62,156,79.5) -> merged set below
+// mid tiles (-0.02) around the pits, terrace tiles (0.63) north of y47.2 x<118
+texPatch(-164,-224,134,47.2,-0.02);            // west + south-west
+texPatch(-164,47.2,118,176,0.63);              // THE NORTH TERRACE
+texPatch(118,47.2,134,176,-0.02);              // east of terrace, west of river
+texPatch(134,-224,336,-16,-0.02);              // south
+texPatch(144.6,-16,336,62,-0.02);              // east of the channel
+texPatch(134,66,147,176,-0.02);
+texPatch(144.6,62,147,66,-0.02);
+texPatch(147,79.5,156,176,-0.02);
+texPatch(156,62,168,73,-0.02);
+texPatch(156,84.5,168,176,-0.02);
+texPatch(168,62,336,76.5,-0.02);
+texPatch(168,85,336,176,-0.02);
+texPatch(196,76.5,336,85,-0.02);
+// pit skirts — cut earth faces so the tiers read carved, never hollow
+{const PITS=[[134,-16,144.6,66],[147,62,156,79.5],[156,73,168,84.5],[168,76.5,196,85]];
+ PITS.forEach(P5=>{const [x0,y0,x1,y1]=P5;
+  [[x0,y0,x1,y0],[x0,y1,x1,y1],[x0,y0,x0,y1],[x1,y0,x1,y1]].forEach(e5=>{
+    const len=Math.hypot(e5[2]-e5[0],e5[3]-e5[1]);
+    const sk=box(len,1.25,0.35,0x6a5a48);
+    sk.position.copy(V((e5[0]+e5[2])/2,(e5[1]+e5[3])/2,-0.62));
+    sk.rotation.y=Math.atan2(e5[3]-e5[1],e5[2]-e5[0]);scene.add(sk);});});}
+// terrace skirt + retaining wall + gate steps
+{const sk2=box(282,0.72,0.4,0x77885e);sk2.position.copy(V(-23,47.2,0.27));scene.add(sk2);
+ const sk3=box(0.4,0.72,129,0x77885e);sk3.position.copy(V(118,111.6,0.27));scene.add(sk3);
+ const rw=box(46,0.78,0.5,0xb0a48e);rw.position.copy(V(48,47.15,0.39));scene.add(rw);
+ const rc=box(46.4,0.14,0.66,0xc4bcac);rc.position.copy(V(48,47.15,0.82));scene.add(rc);
+ [[38],[48],[58]].forEach(g5=>{
+   [[0.16,46.4],[0.4,46.8]].forEach(st6=>{
+     const sp=box(2.0,0.17,0.8,0xc4bcac);
+     sp.position.copy(V(g5[0],st6[1],st6[0]));scene.add(sp);});
+   const gap=box(2.2,0.9,0.6,0x77885e);
+   gap.position.copy(V(g5[0],47.15,0.3));gap.visible=false;scene.add(gap);});}
 function patch(x0,y0,x1,y1,c,h){const m=new THREE.Mesh(
   new THREE.PlaneGeometry(x1-x0,y1-y0),mat(c));
   m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,h||0.02,-(y0+y1)/2);
   m.receiveShadow=true;scene.add(m);return m;}
 patch(-16,-32,96,-14,0x84a468);              // playing field
-patch(2,58,78,80,0x9a9469);                  // allotments
-patch(142,48,180,78,0x84a066);               // the precinct surround, tight
-patch(143,43.5,163,50.2,0xb3a68c,0.035);     // turnstile forecourt, gravel
+patch(2,58,78,80,0x9a9469,0.65);             // allotments (on the terrace)
+patch(146,50,179,72.5,0x84a066);             // the precinct surround, tight
+patch(146,43.5,163,50.2,0xb3a68c,0.035);     // turnstile forecourt, gravel
 // allotment rows + sheds
-for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.04);
+for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.69);
 [[8,62],[24,66],[46,63],[64,70]].forEach(s2=>{
-  const sh=box(2.4,1.4,1.8,0x84583a);sh.position.copy(V(s2[0],s2[1],0.7));scene.add(sh);
-  const rf=box(2.7,0.22,2.1,0x949aa0);rf.position.copy(V(s2[0],s2[1],1.5));scene.add(rf);});
+  const sh=box(2.4,1.4,1.8,0x84583a);sh.position.copy(V(s2[0],s2[1],1.35));scene.add(sh);
+  const rf=box(2.7,0.22,2.1,0x949aa0);rf.position.copy(V(s2[0],s2[1],2.15));scene.add(rf);});
 // ---- roads, kerbs, pavements
 // SPRINT 016 — the precinct joins the fabric: Ground Lane and the
 // supporter cottages are drawn from synthetic plots (viewer layer only)
@@ -418,7 +464,7 @@ D.level.paths.forEach(p=>{
       bx=pts[i][0],by=pts[i][1];
       const len=Math.hypot(bx-ax,by-ay);
       const m=box(len,0.08,1.1,PAL.SOIL);
-      m.position.copy(V((ax+bx)/2,(ay+by)/2,0.05));
+      m.position.copy(V((ax+bx)/2,(ay+by)/2,gH((ax+bx)/2,(ay+by)/2)+0.06));
       m.rotation.y=Math.atan2(by-ay,bx-ax);scene.add(m);}}});
 // zebra
 for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
@@ -429,8 +475,14 @@ for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
  for(let i=1;i<pts.length;i++){const ax=pts[i-1][0],ay=pts[i-1][1],
    bx=pts[i][0],by=pts[i][1];const len=Math.hypot(bx-ax,by-ay)+2;
    const m=box(D.level.water.w+1.5,0.06,len,PAL.WATER);
-   m.position.copy(V((ax+bx)/2,(ay+by)/2,0.015));
-   m.rotation.y=Math.atan2(bx-ax,-(by-ay));scene.add(m);}
+   m.position.copy(V((ax+bx)/2,(ay+by)/2,-0.98));
+   m.rotation.y=Math.atan2(bx-ax,-(by-ay));scene.add(m);
+   const ang7=Math.atan2(bx-ax,-(by-ay));
+   [[-3.2],[3.2]].forEach(o7=>{   // grass ledges half-way down the cut
+     const lg=box(1.6,0.5,len,0x7e9468);
+     lg.position.copy(V((ax+bx)/2+Math.cos(ang7)*o7[0],
+       (ay+by)/2+Math.sin(ang7)*o7[0]*-1,-0.55));
+     lg.rotation.y=ang7;scene.add(lg);});}
  // bank trees follow the bend
  [[136.5,52,1.0],[138.5,66,0.9],[146,78,1.1],[158,85,0.95],[172,86.5,1.05],
   [181,75,0.85]].forEach(bt=>tree(bt[0],bt[1],bt[2]));}
@@ -444,9 +496,10 @@ for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
  window.BR={cx,hw,by:b[1]};
  // stone barrel: humped top, true arch opening where the water runs
  {const sh=new THREE.Shape();
-  sh.moveTo(-hw,0);sh.lineTo(nx-1.15,0);sh.absarc(nx,0,1.15,Math.PI,0,true);
-  sh.lineTo(hw,0);sh.lineTo(hw,1.0);sh.quadraticCurveTo(0,1.9,-hw,1.0);
-  sh.lineTo(-hw,0);
+  sh.moveTo(-hw,-1.1);sh.lineTo(nx-1.15,-1.1);sh.lineTo(nx-1.15,0);
+  sh.absarc(nx,0,1.15,Math.PI,0,true);
+  sh.lineTo(nx+1.15,-1.1);sh.lineTo(hw,-1.1);sh.lineTo(hw,1.0);
+  sh.quadraticCurveTo(0,1.9,-hw,1.0);sh.lineTo(-hw,-1.1);
   const gm=new THREE.ExtrudeGeometry(sh,{depth:5.4,bevelEnabled:false});
   const barrel=new THREE.Mesh(gm,mat(0x8d8578));
   barrel.position.copy(V(cx,b[1]+2.7,0));scene.add(barrel);}
@@ -596,7 +649,7 @@ D.level.plots.forEach(p=>{
       const cf=new THREE.Mesh(new THREE.CircleGeometry(0.52,20),
         new THREE.MeshLambertMaterial({map:ctex}));
       cf.rotation.y=o2[0];cf.position.set(w/2-1.6+o2[1],ht+1.45,0);g.add(cf);});}
-  g.position.copy(V(p.x,p.y,0));
+  g.position.copy(V(p.x,p.y,gH(p.x,p.y)));
   let best=null;
   D.level.roads.forEach(r=>{const cy=(r[1]+r[3])/2,cxr=(r[0]+r[2])/2;
     const horiz=(r[2]-r[0])>(r[3]-r[1]);
@@ -620,7 +673,7 @@ function tree(x,y,s){const gp=new THREE.Group();
    [0.15,2.75,0.15,0.8,g1],[-0.3,1.6,-0.6,0.7,g1]].forEach(o=>{
     const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3]*s,9,7),mat(o[4]));
     cr.position.set(o[0]*s,o[1]*s,o[2]*s);cr.castShadow=true;gp.add(cr);});
-  gp.position.copy(V(x,y,0));scene.add(gp);return gp;}
+  gp.position.copy(V(x,y,gH(x,y)));scene.add(gp);return gp;}
 // THE OAK — the town's cathedral: nine lobes, root flare, and the swing
 {const gp=new THREE.Group();
  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.6,1.05,3.6,10),mat(0x6e4a30));
@@ -640,23 +693,32 @@ function tree(x,y,s){const gp=new THREE.Group();
    new THREE.CylinderGeometry(0.025,0.025,2.5,5),mat(0xcdc0a8));
    rope.position.set(3.15+o[0],2.15,0.75);gp.add(rope);});
  const seat=box(0.85,0.09,0.32,0x8a6a48);seat.position.set(3.15,0.9,0.75);gp.add(seat);
- gp.position.copy(V(D.level.oak[0],D.level.oak[1],0));scene.add(gp);}
+ gp.position.copy(V(D.level.oak[0],D.level.oak[1],gH(D.level.oak[0],D.level.oak[1])));scene.add(gp);}
 const SWING=[D.level.oak[0]+3.15,D.level.oak[1]-0.75];
 D.level.veg.forEach(v=>{if(v[2])tree(v[0],v[1],1.0);
   else{const sh=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,6),mat(0x6d8852));
     sh.position.copy(V(v[0],v[1],0.5));scene.add(sh);}});
-[[42,24.6],[50.5,33.8]].forEach(b2=>{
-  const bn=box(1.9,0.35,0.6,0x7c6a4e);bn.position.copy(V(b2[0],b2[1],0.45));scene.add(bn);
-  const bk=box(1.9,0.5,0.12,0x7c6a4e);bk.position.copy(V(b2[0],b2[1]-0.28,0.85));scene.add(bk);});
+[[42,24.6],[50.5,33.8]].forEach(b2=>{const bz=gH(b2[0],b2[1]);
+  const bn=box(1.9,0.35,0.6,0x7c6a4e);bn.position.copy(V(b2[0],b2[1],bz+0.45));scene.add(bn);
+  const bk=box(1.9,0.5,0.12,0x7c6a4e);bk.position.copy(V(b2[0],b2[1]-0.28,bz+0.85));scene.add(bk);});
 // ---- Phase 12 micro-places: the green edged, walls, railings, hedges,
 // framing trees (Bridge Road conceals the pylons until the bend), riverside
 {const GR=D.micro.green_rect;
  const m=new THREE.Mesh(new THREE.PlaneGeometry(GR[2]-GR[0],GR[3]-GR[1]),mat(0x9cb281));
- m.rotation.x=-Math.PI/2;m.position.set((GR[0]+GR[2])/2,0.015,-(GR[1]+GR[3])/2);
+ m.rotation.x=-Math.PI/2;m.position.set((GR[0]+GR[2])/2,0.37,-(GR[1]+GR[3])/2);
  m.receiveShadow=true;scene.add(m);
  const GW=D.micro.green_wall;
  const w2=box(GW[2]-GW[0],0.5,0.35,0xb0a48e);
- w2.position.copy(V((GW[0]+GW[2])/2,GW[1],0.25));scene.add(w2);}
+ w2.position.copy(V((GW[0]+GW[2])/2,GW[1],0.55));scene.add(w2);
+ // the plateau's carved edges: retaining faces + two steps at the mouth
+ [[34,22,40,22],[34,22,34,42],[62,22,62,42],[34,42,62,42]].forEach(ed=>{
+   const ln2=Math.hypot(ed[2]-ed[0],ed[3]-ed[1]);
+   const rf5=box(ln2+0.4,0.4,0.45,0xb0a48e);
+   rf5.position.copy(V((ed[0]+ed[2])/2,(ed[1]+ed[3])/2,0.18));
+   rf5.rotation.y=Math.atan2(ed[3]-ed[1],ed[2]-ed[0]);scene.add(rf5);});
+ [[0.1,21.7],[0.24,22.0]].forEach(st7=>{
+   const sp2=box(12,0.16,0.9,0xc4bcac);
+   sp2.position.copy(V(46,st7[1],st7[0]));scene.add(sp2);});}
 {const WL=D.micro.pubwall;
  const w3=box(WL[2]-WL[0],0.75,0.4,0xb0a48e);
  w3.position.copy(V((WL[0]+WL[2])/2,WL[1],0.38));scene.add(w3);}
@@ -859,7 +921,7 @@ D.level.plots.forEach(p=>{if(p.kit!=="home")return;
   const rt=plotRot[p.id]||0;
   const bx2=Math.abs(rt)<0.1?0:(Math.abs(Math.abs(rt)-Math.PI)<0.1?0:(rt<0?1:-1));
   const by2=Math.abs(rt)<0.1?1:(Math.abs(Math.abs(rt)-Math.PI)<0.1?-1:0);
-  g6.position.copy(V(p.x+bx2*3.6+by2*1.6,p.y+by2*3.6+bx2*1.6,0));
+  g6.position.copy(V(p.x+bx2*3.6+by2*1.6,p.y+by2*3.6+bx2*1.6,gH(p.x+bx2*3.6+by2*1.6,p.y+by2*3.6+bx2*1.6)));
   if(bx2!==0)g6.rotation.y=Math.PI/2;
   g6.userData.plot=p.id;scene.add(g6);laundry.push({g:g6,plot:p.id});});
 // ---- steam from morning bread (while the bakers are in)
@@ -938,16 +1000,16 @@ const matchFlags=[];
    dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
    cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<0.6)return;
      const hb=new THREE.Mesh(new THREE.BoxGeometry(ln,hh,0.85),mat(0x55703f));
-     hb.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),hh/2));
+     hb.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),gH(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2))+hh/2));
      hb.rotation.y=ang;hb.castShadow=true;scene.add(hb);});};
  const fenceRun=(x0,y0,x1,y1,gaps)=>{const L=Math.hypot(x1-x0,y1-y0),
    dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
    cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<1)return;
      [0.55,0.95].forEach(hh=>{const rl=box(ln,0.07,0.07,0x8a7a62);
-       rl.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),hh));
+       rl.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),gH(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2))+hh));
        rl.rotation.y=ang;scene.add(rl);});
      for(let u=s3[0]+0.2;u<=s3[1];u+=3.4){const ps=box(0.1,1.05,0.1,0x7a6a54);
-       ps.position.copy(V(x0+dx*u,y0+dy*u,0.52));scene.add(ps);}});};
+       ps.position.copy(V(x0+dx*u,y0+dy*u,gH(x0+dx*u,y0+dy*u)+0.52));scene.add(ps);}});};
  // hedgerows and fences — the village gains edges
  fenceRun(-16,-18.6,96,-18.6,[[54,58],[68,72]]);      // field edge, two gates
  hedgeRun(2,57.6,78,57.6,1.0,[[26,30]]);              // allotments, one entrance
@@ -967,24 +1029,25 @@ const matchFlags=[];
    const a2=D.level.plots.find(p=>p.id===pr[0]),b2=D.level.plots.find(p=>p.id===pr[1]);
    if(!a2||!b2||Math.abs(b2.x-a2.x)>18)return;
    const hb=box(0.8,0.55,5.6,0x55703f);
-   hb.position.copy(V((a2.x+b2.x)/2,(a2.y+b2.y)/2,0.28));scene.add(hb);});
+   hb.position.copy(V((a2.x+b2.x)/2,(a2.y+b2.y)/2,gH((a2.x+b2.x)/2,(a2.y+b2.y)/2)+0.28));scene.add(hb);});
  const backOf=rt=>{const bx=Math.abs(rt)<0.1?0:(Math.abs(Math.abs(rt)-Math.PI)<0.1?0:(rt<0?1:-1));
    const by=Math.abs(rt)<0.1?1:(Math.abs(Math.abs(rt)-Math.PI)<0.1?-1:0);return [bx,by];};
  D.level.plots.forEach(p=>{if(p.kit!=="home")return;
    const sd3=hash("shed"+p.id);if(sd3%3!==1)return;
    const [bx3,by3]=backOf(plotRot[p.id]||0);
    const sx=p.x+bx3*4.2-by3*2.6,sy=p.y+by3*4.2+bx3*2.6;
-   const sh3=box(1.9,1.3,1.5,0x84583a);sh3.position.copy(V(sx,sy,0.65));scene.add(sh3);
-   const rf3=box(2.15,0.18,1.75,0x949aa0);rf3.position.copy(V(sx,sy,1.42));scene.add(rf3);});
+   const sz=gH(sx,sy);
+   const sh3=box(1.9,1.3,1.5,0x84583a);sh3.position.copy(V(sx,sy,sz+0.65));scene.add(sh3);
+   const rf3=box(2.15,0.18,1.75,0x949aa0);rf3.position.copy(V(sx,sy,sz+1.42));scene.add(rf3);});
  // the green as a room — daisies, and a bin by the watching bench
  [[42,29],[55,27],[48,37.5]].forEach((cl,ci)=>{
    for(let k3=0;k3<10;k3++){const dz=new THREE.Mesh(
      new THREE.SphereGeometry(0.055,5,4),mat(0xf6f2e4));
      dz.scale.y=0.5;
      dz.position.copy(V(cl[0]+(h01("dx"+ci+k3)-0.5)*5.5,
-                        cl[1]+(h01("dy"+ci+k3)-0.5)*3.2,0.045));scene.add(dz);}});
+                        cl[1]+(h01("dy"+ci+k3)-0.5)*3.2,0.395));scene.add(dz);}});
  {const bin=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.24,0.62,8),mat(0x2f5540));
-  bin.position.copy(V(40.4,24.0,0.31));scene.add(bin);}
+  bin.position.copy(V(40.4,24.0,0.66));scene.add(bin);}
  // football is geography — kickabout goals on the field, flags on matchdays
  [[34,-23],[60,-23]].forEach(gl=>{
    [[-1.7],[1.7]].forEach(o=>{const ps2=box(0.09,1.2,0.09,0xeeeae0);
@@ -998,7 +1061,7 @@ const matchFlags=[];
    const pole=box(0.08,1.15,0.08,0x6a6258);pole.position.set(0,2.5,0);fg.add(pole);
    const pn=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.48,3),mat(PAL.GRN));
    pn.rotation.z=-Math.PI/2;pn.position.set(0.28,2.88,0);fg.add(pn);
-   fg.position.copy(V(fx,fy,0));scene.add(fg);matchFlags.push(fg);});
+   fg.position.copy(V(fx,fy,gH(fx,fy)));scene.add(fg);matchFlags.push(fg);});
 // the rows join — link sections make terraces of the street and North Lane
  [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]],
   [["P08","P09"],["P09","P10"]]].forEach(row=>{row.forEach(pr2=>{
@@ -1021,10 +1084,10 @@ const matchFlags=[];
  [[6,13.0,0.85],[26,13.0,0.85],[78,23.6,0.78],[90,23.6,0.78],[102,23.4,0.78]]
    .forEach(t4=>tree(t4[0],t4[1],t4[2]));
  // a flower moment by the watching bench
- {const bed=box(1.6,0.28,0.7,0x7a6a54);bed.position.copy(V(44.2,25.6,0.14));scene.add(bed);
+ {const bed=box(1.6,0.28,0.7,0x7a6a54);bed.position.copy(V(44.2,25.6,0.49));scene.add(bed);
   [[-0.5,0xda3a2c],[-0.15,0xf8bc3a],[0.2,0xe88a7c],[0.55,0xf6f2e4]].forEach(fw=>{
     const bl4=new THREE.Mesh(new THREE.SphereGeometry(0.17,7,5),mat(fw[1]));
-    bl4.position.copy(V(44.2+fw[0],25.6,0.42));scene.add(bl4);});}
+    bl4.position.copy(V(44.2+fw[0],25.6,0.77));scene.add(bl4);});}
  // the square furnished — stalls under striped canvas, umbrellas at the pub
  const stripeTex=(c1,c2)=>{const cv7=document.createElement("canvas");
    cv7.width=64;cv7.height=16;const c7=cv7.getContext("2d");
@@ -1168,7 +1231,7 @@ function frame(t){const dt=Math.min(0.1,(t-lastT)/1000);lastT=t;
     m.visible=true;
     const walking=a.mode==="walk";
     const bob=walking?Math.abs(Math.sin(tod*22+i))*0.05:0;
-    m.position.set(a.x,bob+bridgeH(a.x,a.y),-a.y);
+    m.position.set(a.x,bob+bridgeH(a.x,a.y)+gH(a.x,a.y),-a.y);
     m.rotation.y=a.hd;
     m.rotation.z=walking?Math.sin(tod*22+i)*0.035:0;
     m.rotation.x=walking?0.06:0;
