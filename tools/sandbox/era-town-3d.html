@@ -107,15 +107,27 @@ function rebuildRec(uptoDay){rec={};R.forEach(r=>rec[r.n]={});
 const recOf=(a,b)=>(rec[a]&&rec[a][b])||0;
 const AG=R.map((r,i)=>({i,x:0,y:0,vx:0,vy:0,hd:0,mode:"home",trip:null,
   chat:0,chatWith:-1,pauseT:0,partner:-1,cool:{},place:null}));
-let curSlotKey=-1;
+let curSlotKey=-1,forceSnap=false;
 function nextCode(i,day,s){if(s>=6)return ".";return codeAt(i,day,s+1);}
 function initSlot(day,s){curSlotKey=day*8+(s+1);
   AG.forEach((a,i)=>{const cur=s<0?(codeAt(i,day,0)==="~"?"~":"."):codeAt(i,day,s);
     if(cur==="~"){a.mode="off";return;}
+    // journey toward where the record says they belong (walking or not yet
+    // departed)? keep it — arrivals happen on foot, never by teleport.
+    // a stale destination re-routes on foot from wherever they are.
+    if(a.trip&&a.trip.dstCode===cur)return;
+    if(a.trip&&a.mode==="walk"){
+      const nd=anchorOf(i,cur);
+      const o2=nearestNode(a.x,a.y),dd2=nearestNode(nd[0],nd[1]);
+      a.trip={dep:0,dst:nd,dstCode:cur,
+        path:route(o2,dd2,R[i].n,day).map(n=>NODES[n]).concat([nd]),wp:0};
+      return;}
     const [x,y]=anchorOf(i,cur);
-    if(a.mode==="off"||Math.hypot(a.x-x,a.y-y)>4){a.x=x;a.y=y;}
-    a.vx=a.vy=0;a.trip=null;a.chat=0;a.chatWith=-1;a.partner=-1;
+    const samePlace=(cur==="."&&a.mode==="home")||(cur!=="."&&a.place===codeLoc[cur]);
+    if(forceSnap||a.mode==="off"||(!samePlace&&Math.hypot(a.x-x,a.y-y)>4)){a.x=x;a.y=y;}
+    a.vx=a.vy=0;a.trip=null;a.nextTrip=null;a.chat=0;a.chatWith=-1;a.partner=-1;
     a.mode=cur==="."?"home":"at";a.place=cur==="."?null:codeLoc[cur];});
+  forceSnap=false;
   const t0=s<0?382:SLOTS[s],t1=s<0?SLOTS[0]:(s<6?SLOTS[s+1]:SLOTS[6]+SLEN);
   const movers=[];
   AG.forEach((a,i)=>{
@@ -123,16 +135,20 @@ function initSlot(day,s){curSlotKey=day*8+(s+1);
     const nxt=s<0?codeAt(i,day,0):nextCode(i,day,s);
     if(cur==="~"||nxt==="~"||nxt===cur)return;
     const dst=anchorOf(i,nxt),sg=SIG[i];
-    const o=nearestNode(a.x,a.y),d2=nearestNode(dst[0],dst[1]);
+    const mid=!!a.trip;                    // still finishing last journey
+    const org=mid?a.trip.dst:[a.x,a.y];
+    const o=nearestNode(org[0],org[1]),d2=nearestNode(dst[0],dst[1]);
     const path=route(o,d2,R[i].n,day).map(n=>NODES[n]).concat([dst]);
-    let plen=Math.hypot(path[0][0]-a.x,path[0][1]-a.y);
+    let plen=Math.hypot(path[0][0]-org[0],path[0][1]-org[1]);
     for(let k=1;k<path.length;k++)
       plen+=Math.hypot(path[k][0]-path[k-1][0],path[k][1]-path[k-1][1]);
     const travel=plen/sg.speed;
     const arrive=t1+(sg.punct>0.62?-3-h01(R[i].n+"er"+day+s)*8
                                   :(1-sg.punct)*24*h01(R[i].n+"lt"+day+s));
     const dep=Math.max(t0+12,arrive-travel);
-    a.trip={dep,dst,dstCode:nxt,path,wp:0};movers.push(i);});
+    const trip={dep,dst,dstCode:nxt,path,wp:0};
+    if(mid)a.nextTrip=trip;               // installs itself on arrival
+    else{a.trip=trip;movers.push(i);}});
   for(let x=0;x<movers.length;x++)for(let y=x+1;y<movers.length;y++){
     const i=movers[x],j=movers[y],ai=AG[i],aj=AG[j];
     if(ai.partner>=0||aj.partner>=0)continue;
@@ -170,7 +186,10 @@ function stepAgents(day,s,tod,dt){
           &&Math.hypot(a.x-t.dst[0],a.y-t.dst[1])<2.5)){
         a.x=t.dst[0];a.y=t.dst[1];
         a.mode=t.dstCode==="."?"home":"at";
-        a.place=t.dstCode==="."?null:codeLoc[t.dstCode];a.trip=null;continue;}
+        a.place=t.dstCode==="."?null:codeLoc[t.dstCode];
+        a.trip=a.nextTrip||null;a.nextTrip=null;
+        if(a.trip&&a.trip.dep<tod+3)a.trip.dep=tod+3+h01(R[i].n+"bre"+day)*6;
+        continue;}
       let sp=sg.speed*(wx==="r"?1.26:wx==="w"?0.92:1);
       if(t.follow!=null&&dd>3)sp*=1.25;
       let px=0,py=0;
@@ -217,7 +236,13 @@ function placeLife(day,s,tod,dt){
     let ci=0,qn=0;
     for(const c of clusters){
       const ang0=(hash(pid)+ci*97)%360*Math.PI/180,cdist=1.6+ci*1.9;
-      let cx2=pp.x+Math.cos(ang0)*cdist,cy2=pp.y+Math.sin(ang0)*cdist;
+      const seg=Math.floor(tod/15),f=(tod%15)/15,sm=f*f*(3-2*f);
+      const dr=(g)=>{const hh2=hash("s"+g+"|"+pid+"g"+ci)*2654435761>>>0;
+        return [Math.cos(hh2%360*Math.PI/180)*(1+hh2%20/9),
+                Math.sin((hh2>>3)%360*Math.PI/180)*(1+(hh2>>2)%20/9)];};
+      const d0=dr(seg),d1=dr(seg+1);
+      let cx2=pp.x+Math.cos(ang0)*cdist+d0[0]+(d1[0]-d0[0])*sm,
+          cy2=pp.y+Math.sin(ang0)*cdist+d0[1]+(d1[1]-d0[1])*sm;
       const speaker=Math.floor(tod*3)%c.length;
       c.forEach((i,k)=>{const a=AG[i];let tx,ty;
         if(isShop&&qWindow&&qn<6&&k===0&&c.length===1){
@@ -233,7 +258,18 @@ function placeLife(day,s,tod,dt){
           tx=cx2+Math.cos(th)*rr;ty=cy2+Math.sin(th)*rr;
           const sp2=c[speaker];
           if(c.length>1&&sp2!==i)a.hd+=(Math.atan2(AG[sp2].y-a.y,AG[sp2].x-a.x)-a.hd)*0.12;}
-        a.x+=(tx-a.x)*0.12;a.y+=(ty-a.y)*0.12;});
+        // solos take a slow turn about the place instead of standing for hours
+        if(c.length===1&&!(isShop&&qWindow)&&pid!=="busstop"&&!(bench&&k<2)){
+          const ws=Math.floor(tod/12),wf=(tod%12)/12,wsm=wf*wf*(3-2*wf);
+          const wp=(g)=>{const hz=hash("w"+g+"|"+R[i].n+pid)*2654435761>>>0;
+            const a2=(hz%3600)/3600*2*Math.PI, rr2=1.2+((hz>>8)%1000)/1000*2.6;
+            return [pp.x+Math.cos(a2)*rr2,pp.y+Math.sin(a2)*rr2];};
+          const w0=wp(ws),w1=wp(ws+1);
+          tx=w0[0]+(w1[0]-w0[0])*wsm;ty=w0[1]+(w1[1]-w0[1])*wsm;}
+        const ddx=tx-a.x,ddy=ty-a.y,ddd=Math.hypot(ddx,ddy);
+        const stp=Math.min(ddd,SIG[i].speed*dt*0.7);
+        if(ddd>0.03){a.x+=ddx/ddd*stp;a.y+=ddy/ddd*stp;
+          if(ddd>0.7)a.hd+=(Math.atan2(ddy,ddx)-a.hd)*0.2;}});
       ci++;}}}
 let simMin=5*60+40,speed=1,paused=false;
 const BASE=0.2,MDT=1/30;
@@ -256,7 +292,7 @@ function advance(dtSec){if(paused)return;
     stepAgents(day,s,tod2,step);
     simMin=Math.min(simMin+step,NDAYS*DAYMIN-1);left-=step;
     if(simMin>=NDAYS*DAYMIN-1)break;}}
-function jumpTo(m){simMin=Math.max(0,Math.min(m,NDAYS*DAYMIN-1));
+function jumpTo(m){forceSnap=true;simMin=Math.max(0,Math.min(m,NDAYS*DAYMIN-1));
   curSlotKey=-1;const d=Math.floor(simMin/DAYMIN);
   if(d!==recDay)rebuildRec(d);ensureSlot();}
 
