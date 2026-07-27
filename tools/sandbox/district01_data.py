@@ -189,3 +189,18 @@ DISTRICT = {
     "ambience": {"baseline": "modern English village, 1970s–80s",
                  "canon": ["CD-024", "CD-025", "CD-026", "CD-027"]},
 }
+
+# ------------------------------------------------------------------
+# PHASE 12 — SPATIAL REVISION (ADJ-6..12, PROPOSED, pending Roy).
+# Meaning is canon; coordinates are not. Two south-row households move
+# to face Market Street as a short terrace (ADJ-7) — the street gains
+# its second side, the Loop keeps three outer homes. BenchB moves under
+# the oak (the quiet seat; benchA keeps watching the street).
+REV = {
+    "plots": {"P14": (72.0, 9.0), "P15": (88.0, 9.0)},
+    "benchB": (56.5, 27.6),
+}
+for _pid, _xy in REV["plots"].items():
+    DISTRICT["plot_loc"][_pid] = list(_xy)
+DISTRICT["places"]["benchB"]["loc"] = tuple(REV["benchB"])
+DISTRICT["rev"] = REV

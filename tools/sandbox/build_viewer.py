@@ -42,6 +42,7 @@ for r in W.residents:
         "n": r["n"], "age": r["age"], "home": r["home"], "hh": str(r["hh"]),
         "child": bool(r.get("child")), "occ": r["occ"],
         "sup": ("season ticket" in r.get("poss", []) or r["tr"]["foot"] > 0.55),
+        "bike": "bike" in r.get("poss", []),
         "arr": r.get("arrives", 0),
         # behavioural seeds — never displayed; they only make different people
         "tr": {k: round(r["tr"][k], 3) for k in ("soc", "rout", "out", "temper")},
@@ -137,7 +138,9 @@ level = {
                if "x0" in p else
                {"k": p["kind"], "pts": [list(q) for q in p["pts"]]})
               for p in LV["paths"]],
-    "plots": [{"id": p["id"], "x": p["x"], "y": p["y"],
+    "plots": [{"id": p["id"],
+               "x": dd["plot_loc"].get(p["id"], [p["x"], p["y"]])[0],
+               "y": dd["plot_loc"].get(p["id"], [p["x"], p["y"]])[1],
                "kit": p["kit"], "acc": p["accent"]} for p in LV["plots"]],
     "oak": [LV["landmarks"]["oak"]["x"], LV["landmarks"]["oak"]["y"]],
     "bridge": [LV["landmarks"]["bridge"]["x"], LV["landmarks"]["bridge"]["y"], LV["landmarks"]["bridge"]["w"]],
@@ -167,6 +170,13 @@ for p in LV["paths"]:
         for a, b in zip(pts, pts[1:]):
             segs.append((tuple(a), tuple(b)))
 # the road to the match: market -> bridge -> turnstiles
+# ADJ-6: the Market Street front-door spine + Loop link;
+# ADJ-11: the riverside path from the square to the bridge
+segs += [((64.0, 26.5), (86.0, 26.5)), ((86.0, 26.5), (108.0, 26.5)),
+         ((64.0, 26.5), (64.0, 21.5)), ((108.0, 26.5), (108.0, 18.2)),
+         ((52.0, 15.0), (52.0, -1.5)),
+         ((117.0, 16.0), (126.0, 10.5)), ((126.0, 10.5), (134.0, 17.0)),
+         ((134.0, 17.0), (137.4, 24.0))]
 segs += [((108.0, 18.2), (117.0, 20.0)), ((117.0, 20.0), (128.0, 24.0)),
          ((128.0, 24.0), (137.4, 27.2)), ((137.4, 27.2), (146.0, 40.0)),
          ((146.0, 40.0), (152.0, 47.6)),
@@ -237,7 +247,44 @@ for plot, loc in plot_loc.items():
                             key=lambda i: (nodes[i][0] - loc[0]) ** 2 + (nodes[i][1] - loc[1]) ** 2)
 graph = {"nodes": nodes, "edges": edges, "doors": doors}
 
+# ---- ADJ-12: desire lines from the year's actual movement -------------
+from collections import Counter as _C
+_offroad = {"oak", "benchA", "benchB", "green", "field", "allotment"}
+_trans = _C()
+_locof = {pid: W.places[pid].loc for pid in place_ids if W.places[pid].loc}
+_last = {}
+for (dy_, s_, n_, p_, w_, iu_, wx_) in st["visits"]:
+    prev = _last.get(n_)
+    if prev and prev != p_ and (prev in _offroad or p_ in _offroad) \
+            and prev != "home" and p_ != "home":
+        _trans[tuple(sorted((prev, p_)))] += 1
+    _last[n_] = p_
+worn_rec = []
+for (a_, b_), c_ in _trans.most_common(12):
+    la, lb = _locof.get(a_), _locof.get(b_)
+    if not la or not lb:
+        continue
+    d_ = ((la[0]-lb[0])**2 + (la[1]-lb[1])**2) ** 0.5
+    if 7 < d_ < 55 and c_ > 120:
+        worn_rec.append({"k": "worn", "pts": [list(la), list(lb)], "n": c_})
+level["paths"] = level["paths"] + [{"k": p["k"], "pts": p["pts"]} for p in worn_rec[:5]]
+
+# ---- PHASE 12 micro-places (each justified by the record) --------------
+level["terrain"]["ground_apron"] = [136.0, 44.0, 182.0, 78.0]      # ADJ-9
+MICRO = {
+    "pubwall":  [110.0, 26.2, 122.0, 26.2],   # the wall pub lingerers lean on
+    "rail_turn": [146.0, 46.2, 160.0, 46.2],  # the railing before football
+    "rail_bridge": [132.5, 25.0, 136.5, 25.6],
+    "teens":    [54.0, -13.5],                # the corner the teenagers claim
+    "green_rect": [36.0, 21.8, 64.0, 30.0],   # the green, mown distinct
+    "green_wall": [36.0, 22.0, 64.0, 22.0],   # its low road-edge wall
+    "hedges":   [[2.0, -5.4, 46.0, -4.6], [56.0, -5.4, 110.0, -4.6]],
+    "frame_trees": [[121.0, 23.0], [125.0, 26.8], [129.0, 29.6],
+                    [36.5, 29.0], [63.5, 29.2]],
+    "riverside": [[117.0, 16.0], [126.0, 10.5], [134.0, 17.0], [137.4, 24.0]],
+}
 DATA = {
+    "micro": MICRO,
     "meta": {"name": dd["name"], "seed": dd["seed"], "weeks": clock.weeks,
              "club": fb.name},
     "cal": {"mname": clock.mname, "mstart": clock.mstart,
