@@ -137,7 +137,8 @@ level = {
                if "x0" in p else
                {"k": p["kind"], "pts": [list(q) for q in p["pts"]]})
               for p in LV["paths"]],
-    "plots": [{"id": p["id"], "x": p["x"], "y": p["y"]} for p in LV["plots"]],
+    "plots": [{"id": p["id"], "x": p["x"], "y": p["y"],
+               "kit": p["kit"], "acc": p["accent"]} for p in LV["plots"]],
     "oak": [LV["landmarks"]["oak"]["x"], LV["landmarks"]["oak"]["y"]],
     "bridge": [LV["landmarks"]["bridge"]["x"], LV["landmarks"]["bridge"]["y"], LV["landmarks"]["bridge"]["w"]],
     "stand": [LV["landmarks"]["stand"]["x0"], LV["landmarks"]["stand"]["y"],
