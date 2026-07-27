@@ -380,13 +380,20 @@ function patch(x0,y0,x1,y1,c,h){const m=new THREE.Mesh(
   m.receiveShadow=true;scene.add(m);return m;}
 patch(-16,-32,96,-14,0x84a468);              // playing field
 patch(2,58,78,80,0x9a9469);                  // allotments
-patch(132,42,192,84,0x8a9a80);               // ground apron
+patch(142,48,180,78,0x84a066);               // the precinct surround, tight
+patch(143,43.5,163,50.2,0xb3a68c,0.035);     // turnstile forecourt, gravel
 // allotment rows + sheds
 for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.04);
 [[8,62],[24,66],[46,63],[64,70]].forEach(s2=>{
   const sh=box(2.4,1.4,1.8,0x84583a);sh.position.copy(V(s2[0],s2[1],0.7));scene.add(sh);
   const rf=box(2.7,0.22,2.1,0x949aa0);rf.position.copy(V(s2[0],s2[1],1.5));scene.add(rf);});
 // ---- roads, kerbs, pavements
+// SPRINT 016 — the precinct joins the fabric: Ground Lane and the
+// supporter cottages are drawn from synthetic plots (viewer layer only)
+D.level.roads.push([177.0,48.0,180.6,76.0]);          // Ground Lane
+[["G1",184.0,54.0,"GRN"],["G2",184.0,61.5,"RED"],
+ ["G3",184.0,69.0,"NVY"],["G4",184.0,76.5,"OLV"]].forEach(gp=>{
+  D.level.plots.push({id:gp[0],x:gp[1],y:gp[2],kit:"home",acc:gp[3]});});
 D.level.roads.forEach(r=>{
   const w=r[2]-r[0],d=r[3]-r[1],cx2=(r[0]+r[2])/2,cy2=(r[1]+r[3])/2;
   const market=(r[1]===15.0&&r[3]===21.5);
@@ -737,6 +744,8 @@ const lamps=[];
   const bb=new THREE.Mesh(new THREE.PlaneGeometry(st[2]*0.9,2.0),
     new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv5),side:THREE.DoubleSide}));
   bb.position.copy(V(st[0]+st[2]/2,st[1]-0.35,4.35));scene.add(bb);
+  const bbk=box(st[2]*0.9+0.2,2.1,0.14,0x8a7a62);
+  bbk.position.copy(V(st[0]+st[2]/2,st[1]-0.24,4.35));scene.add(bbk);
   [[st[0]+3,],[st[0]+st[2]-3]].forEach(o=>{const ps=box(0.12,1.4,0.12,0x5a544a);
     ps.position.copy(V(o[0],st[1]-0.35,3.6));scene.add(ps);});}
  [[146.4,52.4],[175.6,52.4],[146.4,71.6],[175.6,71.6]].forEach(cf=>{
@@ -753,6 +762,53 @@ const lamps=[];
      new THREE.MeshBasicMaterial({color:0x8d867a}));
    head.position.copy(V(fl[0],fl[1],7.8));scene.add(head);lamps.push(head);
    head.userData.flood=true;});}
+// SPRINT 016 — the precinct's own edges: wall, clubhouse, gatehouse
+{ // low brick perimeter wall on the east, gate gap at the lane's middle
+ [[179.2,50.5,179.2,60.0],[179.2,64.0,179.2,76.0],[168.5,50.2,176.5,50.2]]
+  .forEach(wl=>{const len=Math.hypot(wl[2]-wl[0],wl[3]-wl[1]);
+   const wb=box(len,0.85,0.4,PAL.BRK2);
+   wb.position.copy(V((wl[0]+wl[2])/2,(wl[1]+wl[3])/2,0.43));
+   wb.rotation.y=Math.atan2(wl[3]-wl[1],wl[2]-wl[0]);scene.add(wb);
+   const wc=box(len+0.2,0.14,0.5,0xb0a48e);
+   wc.position.copy(V((wl[0]+wl[2])/2,(wl[1]+wl[3])/2,0.92));
+   wc.rotation.y=Math.atan2(wl[3]-wl[1],wl[2]-wl[0]);scene.add(wc);});
+ // the clubhouse on the turnstile street
+ const chx=169.5,chy=45.6;
+ const chb=roundedBox(7.2,2.9,4.6,0.24,0xf0e6c8);
+ chb.position.copy(V(chx,chy,0));scene.add(chb);
+ const chr=gableRoof(4.6,7.6,PAL.TILB);chr.rotation.y=Math.PI/2;
+ chr.position.copy(V(chx,chy,2.95));scene.add(chr);
+ const chd=box(1.7,2.0,0.16,PAL.GRN);chd.position.copy(V(chx,chy-2.3,1.0));scene.add(chd);
+ [[-2.4],[2.4]].forEach(o=>{const chw=box(1.1,1.0,0.12,PAL.RND);
+   chw.position.copy(V(chx+o[0],chy-2.3,1.5));scene.add(chw);
+   const chg=box(0.85,0.8,0.14,PAL.GLS);chg.position.copy(V(chx+o[0],chy-2.3,1.5));scene.add(chg);});
+ {const cv9=document.createElement("canvas");cv9.width=128;cv9.height=32;
+  const c9=cv9.getContext("2d");c9.fillStyle="#1e6c4c";c9.fillRect(0,0,128,32);
+  c9.fillStyle="#f8f4eb";c9.font="bold 17px Georgia";c9.textAlign="center";
+  c9.fillText("CLUBHOUSE",64,22);
+  const cb9=new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.85),
+    new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv9)}));
+  cb9.position.copy(V(chx,chy-2.36,2.62));scene.add(cb9);}
+ // the tea hut — small, trimmed, hatch open to the street
+ const th=box(2.3,1.75,1.8,PAL.GRN);th.position.copy(V(162.5,45.9,0.88));scene.add(th);
+ const thr=gableRoof(1.9,2.7,0xece2d0);thr.rotation.y=Math.PI/2;
+ thr.position.copy(V(162.5,45.9,1.78));thr.scale.set(1,0.55,1);scene.add(thr);
+ const thv=box(2.4,0.16,0.1,0xf2eee2);thv.position.copy(V(162.5,44.96,1.62));scene.add(thv);
+ const thh=box(1.5,0.62,0.12,0xf0dcb2);thh.position.copy(V(162.5,44.98,1.15));scene.add(thh);
+ const ths=box(1.5,0.1,0.34,0xf2eee2);ths.position.copy(V(162.5,44.8,0.82));scene.add(ths);
+ // the groundsman's gatehouse at the lane's mouth
+ const gx2=181.5,gy2=47.0;
+ const gh=roundedBox(4.6,2.7,3.8,0.24,PAL.BRK3);
+ gh.position.copy(V(gx2,gy2,0));scene.add(gh);
+ const ghr=gableRoof(3.8,5.0,0xbf6a4a);ghr.rotation.y=Math.PI/2;
+ ghr.position.copy(V(gx2,gy2,2.75));scene.add(ghr);
+ const ghc=box(0.75,1.5,0.75,PAL.BRK2);ghc.position.copy(V(gx2+1.4,gy2,3.6));scene.add(ghc);
+ const ghd=box(1.15,1.85,0.14,PAL.OLV);ghd.position.copy(V(gx2-2.34,gy2,0.95));
+ ghd.rotation.y=Math.PI/2;scene.add(ghd);
+ const ghw=box(1.0,0.9,0.12,PAL.RND);ghw.position.copy(V(gx2,gy2-1.95,1.5));scene.add(ghw);
+ const ghg=box(0.8,0.7,0.14,PAL.GLS);ghg.position.copy(V(gx2,gy2-1.95,1.5));scene.add(ghg);
+ // precinct corner trees
+ tree(177.6,52.3,0.8);tree(177.6,74.2,0.85);tree(165.5,44.0,0.7);}
 // ---- residents — warm figures, seeded wardrobes, matchday scarves
 const COATS=[0xa9553c,0x6f7d4e,0x3f5e7a,0xc9973c,0x7a4a63,0xb3927a,0x4e6e66,0x8a5a3f];
 const SKIN=[0xe8c39e,0xd9a878,0xc78f62,0xb87a52];
