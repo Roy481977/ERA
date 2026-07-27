@@ -1,0 +1,88 @@
+WEATHER: Mon:dry, Tue:dry, Wed:wind, Thu:wind, Fri:dry, Sat:dry, Sun:rain
+
+
+=== Mon — weather: dry ===
+  [Mon 11:00] STORES    | route: north lane → green (the worn cut past the Oak) | why: the list: tea, stamps she pretends the post office doesn't sell cheaper | met: Vera
+  [Mon 15:00] CROSSING  | route: the lane | why: collect Leo from school
+  [Mon 19:00] OAK       | route: the lane | why: the evening loop, green and back by the north path | met: Stan+dog | plan: stays 20 min longer than planned (the dog insists)
+
+=== Tue — weather: dry ===
+  [Tue 07:00] BAKERY    | route: north lane → green (the worn cut past the Oak) | why: the small loaf before shift | met: Hana
+  [Tue 09:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Tue 11:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Tue 17:00] ALLOTMENT | route: the north path behind the lane | why: an hour before tea | weather: yes — dry
+  [Tue 19:00] OAK       | route: the lane | why: the evening loop, green and back by the north path | met: Stan+dog | plan: stays 20 min longer than planned (the dog insists)
+
+=== Wed — weather: wind ===
+  [Wed 11:00] ALLOTMENT | route: the north path behind the lane | why: watering and a look at the Kellys' beans | plan: ties the netting first; beans before conversation | weather: yes — wind
+  [Wed 15:00] CROSSING  | route: the lane | why: collect Leo from school
+
+=== Thu — weather: wind ===
+  [Thu 09:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Thu 11:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Thu 13:00] POST      | route: north lane → green (the worn cut past the Oak) | why: her own pension, after the shift ends
+  [Thu 17:00] ALLOTMENT | route: the north path behind the lane | why: an hour before tea | plan: ties the netting first; beans before conversation | weather: yes — wind
+
+=== Fri — weather: dry ===
+  [Fri 09:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Fri 11:00] POST      | route: north lane → green (the worn cut past the Oak) | why: counter shift
+  [Fri 19:00] OAK       | route: the lane | why: the evening loop, green and back by the north path | met: Stan+dog | plan: stays 20 min longer than planned (the dog insists)
+
+=== Sat — weather: dry ===
+  [Sat 09:00] BAKERY    | route: north lane → green (the worn cut past the Oak) | why: the small loaf | met: Hana | plan: queue out the door — takes the step outside, hears the street | football: yes — matchday structure
+  [Sat 11:00] ALLOTMENT | route: the north path behind the lane | why: watering and a look at the Kellys' beans | weather: yes — dry
+  [Sat 13:00] GROUND    | route: green → market → Stadium Road → the bridge | why: the match — Gordon's seats | football: yes — matchday structure
+  [Sat 15:00] GROUND    | route: green → market → Stadium Road → the bridge | why: second half | football: yes — matchday structure
+  [Sat 19:00] HOME      | route: the lane | why: match night: radio on, pub avoided | football: yes — matchday structure
+
+=== Sun — weather: rain ===
+  [Sun 11:00] BENCHA    | route: the lane | why: sits with Vera after the quiet morning | met: Vera
+  [Sun 13:00] DAUGHTER  | route: crossing → the field path (never the loop road; longer but softer) | why: Sunday lunch at Claire's
+
+--- TRACE LEDGER (left + / removed -) ---
+  Mon 07:00  + washing out (dry morning)
+  Mon 07:30  - paper taken in from the step
+  Mon 17:30  - washing in before dusk
+  Tue 07:00  + washing out (dry morning)
+  Tue 07:00  + bin to kerb (collection)
+  Tue 07:30  - paper taken in from the step
+  Tue 17:30  - washing in before dusk
+  Tue 07:00  + crumbs on the step bench (the birds know her)
+  Tue 17:00  + tools out / watered rows
+  Tue 17:00  - tools locked away by dusk
+  Wed 07:00  + washing out (dry morning)
+  Wed 08:00  - bin returned (a day late — she was at the allotment)
+  Wed 07:30  - paper taken in from the step
+  Wed 17:30  - washing in before dusk
+  Wed 11:00  + tools out / watered rows
+  Wed 11:00  - tools locked away by dusk
+  Thu 07:00  + washing out (dry morning)
+  Thu 07:30  - paper taken in from the step
+  Thu 17:30  - washing in before dusk
+  Thu 17:00  + tools out / watered rows
+  Thu 17:00  - tools locked away by dusk
+  Fri 07:00  + washing out (dry morning)
+  Fri 07:30  - paper taken in from the step
+  Fri 17:30  - washing in before dusk
+  Sat 07:00  + washing out (dry morning)
+  Sat 07:30  - paper taken in from the step
+  Sat 17:30  - washing in before dusk
+  Sat 09:00  + crumbs on the step bench (the birds know her)
+  Sat 11:00  + tools out / watered rows
+  Sat 11:00  - tools locked away by dusk
+  Sat 13:00  + scarf tied to the rail, Gordon's end
+  Sun 07:30  - paper taken in from the step
+
+--- EVIDENCE COUNTERS ---
+  • nodes never visited in 7 days: benchB, board, bridge, busstop, cafe, field, market, northlane, pub
+  • oak visited 3x (evening loop + Sunday) — pulls even a non-idler
+  • benchA used 1x; benchB used 0x (avoided by grief, empty by default — one bench serves)
+  • market visited 0x by June (she crossed it; she never STOPPED in it — nothing for her outside Friday)
+  • bridge crossings: 4x, all Saturday (co-present with 'half the town' + away fans in the same slot — the funnel is real)
+  • busstop: 0x — a resident who walks has no relationship with it at all
+  • pub: 0x — for June it is a place other people go; its Friday/Saturday life never touched her week
+  • stores vs post office: stamps bought at STORES on Monday, pension at POST on Thursday — two places partially serving one errand
+  • rain days: 1; every rain day rerouted her along the awnings — the green cut dies in rain and the Oak sees nobody
+
+--- VISITS ---
+  post:7, allotment:4, oak:3, bakery:2, crossing:2, ground:2, home:1, daughter:1, stores:1, benchA:1

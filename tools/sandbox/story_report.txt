@@ -1,0 +1,225 @@
+SANDBOX — District 01, 4 weeks, 14 residents, seed 27
+weather: d, d, d, w, d, d, r, d, d, d, d, w, d, d, d, r, d, d, d, r, d, d, d, d, d, d, d, d
+
+1 ROUTINE EMERGENCE (share of slots repeating previous week):
+   wk1: 69%  wk2: 72%  wk3: 75%
+
+2 PLACE PULSE (visits per slot over the month; nothing was scheduled):
+   bakery     154  51  34   0   0   0   0   total 239
+   cafe         0  96  58  40  44   0   0   total 238
+   pub          0   0   0  60  67  93  74   total 294
+   market       0  17   3   4   0   0   0   total 24
+   oak         31  12  16  17   0   3  10   total 89
+   allotment  117  32  13   0   0  28   0   total 190
+   field        0   0  43   0  43  12   4   total 102
+   square       6   1   4   0   0   0   0   total 11
+   benchA       5   5   6   9  14   2   6   total 47
+   benchB       5   2   2   6   4   2   2   total 23
+   ground       0   0   0  47   4   0   0   total 51
+   stores       0   8  10   3  13  16   0   total 50
+   post         0  40  49  28   0   0   0   total 117
+   green        1  40  20  20  20   0   0   total 101
+   slots:      07  09  11  13  15  17  19
+
+3 RECOGNITION (pairs by familiarity; must be long-tailed):
+   seen (1-2)      0
+   nodding (3-6)   1
+   chatting (7-14) 21
+   friends (15+)   69
+   new pairs met per week: [91, 0, 0, 0]  (should decelerate)
+   closest pairs: Claire&Leo:28, Dev&June:27, Dev&Tomas:27, Bram&Tomas:26, Dev&Luca:25, Hana&Vera:24
+
+4 EMPTY TUESDAY TEST (week 2): |Tue|=33 |Sat|=37 |Sun|=20, Tue^Sat differ by 32 items
+
+5 EVIDENCE FOR THE ENVIRONMENT TEAM:
+   dead places: none
+   market Fridays: 24 visits; square other days: 11 — the pairing works
+   pub peak at 17:00 with 93 visits over month (evening emerged: True)
+   bakery peak at 07:00 (morning emerged: True)
+   benches: A 47 vs B 23 — with no grief rule, do both live?
+   ground: 51 matchday visits across 4 Saturdays
+   traces logged: 428
+STORY METRICS — District 01, 4 weeks, seed 27
+================================================================
+
+RITUALS (chosen, same day+slot, 3+ consecutive weeks):
+   Agnes      allotment  Mon 09:00  (3 weeks running)
+   Claire     allotment  Mon 17:00  (4 weeks running)
+   Claire     allotment  Fri 07:00  (3 weeks running)
+   Dev        allotment  Tue 07:00  (4 weeks running)
+   Dev        allotment  Thu 07:00  (4 weeks running)
+   Hana       allotment  Thu 17:00  (4 weeks running)
+   June       allotment  Mon 09:00  (4 weeks running)
+   June       allotment  Thu 17:00  (4 weeks running)
+   June       allotment  Sun 07:00  (3 weeks running)
+   Luca       allotment  Thu 07:00  (4 weeks running)
+   Mo Kelly   allotment  Wed 07:00  (4 weeks running)
+   Mo Kelly   allotment  Fri 07:00  (4 weeks running)
+   Mo Kelly   allotment  Sun 07:00  (3 weeks running)
+   Pat Kelly  allotment  Wed 07:00  (4 weeks running)
+   Pat Kelly  allotment  Fri 07:00  (3 weeks running)
+   Stan       allotment  Wed 07:00  (4 weeks running)
+   Stan       allotment  Sun 07:00  (3 weeks running)
+   Tomas      allotment  Mon 11:00  (3 weeks running)
+   Tomas      allotment  Thu 07:00  (3 weeks running)
+   Vera       allotment  Fri 07:00  (4 weeks running)
+   Vera       allotment  Sun 07:00  (3 weeks running)
+   Agnes      bakery     Mon 07:00  (3 weeks running)
+   Claire     bakery     Mon 07:00  (4 weeks running)
+   Claire     bakery     Wed 07:00  (4 weeks running)
+   Claire     bakery     Thu 11:00  (4 weeks running)
+   Claire     bakery     Sat 07:00  (4 weeks running)
+   Dev        bakery     Mon 07:00  (4 weeks running)
+   Dev        bakery     Wed 07:00  (4 weeks running)
+   Dev        bakery     Fri 07:00  (4 weeks running)
+   Dev        bakery     Sat 09:00  (4 weeks running)
+   June       bakery     Mon 07:00  (4 weeks running)
+   June       bakery     Wed 07:00  (4 weeks running)
+   June       bakery     Fri 07:00  (4 weeks running)
+   Leo        bakery     Thu 07:00  (4 weeks running)
+   Leo        bakery     Mon 07:00  (3 weeks running)
+   Luca       bakery     Wed 07:00  (4 weeks running)
+   Luca       bakery     Mon 07:00  (3 weeks running)
+   Mo Kelly   bakery     Thu 07:00  (4 weeks running)
+   Mo Kelly   bakery     Mon 07:00  (3 weeks running)
+   Pat Kelly  bakery     Wed 09:00  (4 weeks running)
+   Stan       bakery     Tue 07:00  (4 weeks running)
+   Stan       bakery     Thu 07:00  (4 weeks running)
+   Stan       bakery     Mon 07:00  (3 weeks running)
+   Tomas      bakery     Mon 07:00  (4 weeks running)
+   Vera       bakery     Thu 07:00  (4 weeks running)
+   Leo        benchA     Mon 15:00  (3 weeks running)
+   June       benchB     Mon 13:00  (4 weeks running)
+   Agnes      cafe       Tue 11:00  (4 weeks running)
+   Agnes      cafe       Sun 09:00  (4 weeks running)
+   Agnes      cafe       Thu 11:00  (3 weeks running)
+   Claire     cafe       Sun 09:00  (4 weeks running)
+   Claire     cafe       Tue 11:00  (3 weeks running)
+   Dev        cafe       Tue 11:00  (4 weeks running)
+   Dev        cafe       Thu 13:00  (4 weeks running)
+   Dev        cafe       Sun 09:00  (4 weeks running)
+   Hana       cafe       Sun 09:00  (4 weeks running)
+   June       cafe       Tue 13:00  (4 weeks running)
+   June       cafe       Sat 09:00  (4 weeks running)
+   Leo        cafe       Sun 09:00  (4 weeks running)
+   Marge      cafe       Sun 09:00  (3 weeks running)
+   Mo Kelly   cafe       Sat 09:00  (4 weeks running)
+   Pat Kelly  cafe       Tue 09:00  (4 weeks running)
+   Pat Kelly  cafe       Sat 09:00  (3 weeks running)
+   Tomas      cafe       Sat 09:00  (3 weeks running)
+   Vera       cafe       Sun 09:00  (4 weeks running)
+   Dev        field      Fri 11:00  (4 weeks running)
+   Dev        field      Sun 11:00  (3 weeks running)
+   Hana       field      Sun 11:00  (3 weeks running)
+   June       field      Fri 15:00  (4 weeks running)
+   Leo        field      Sun 11:00  (3 weeks running)
+   Mo Kelly   field      Sun 11:00  (3 weeks running)
+   Pat Kelly  field      Sun 11:00  (3 weeks running)
+   Agnes      ground     Sat 13:00  (4 weeks running)
+   Claire     ground     Sat 13:00  (4 weeks running)
+   Dev        ground     Sat 13:00  (4 weeks running)
+   Hana       ground     Sat 13:00  (4 weeks running)
+   Leo        ground     Sat 13:00  (4 weeks running)
+   Marge      ground     Sat 13:00  (4 weeks running)
+   Mo Kelly   ground     Sat 13:00  (4 weeks running)
+   Pat Kelly  ground     Sat 13:00  (4 weeks running)
+   Stan       ground     Sat 13:00  (4 weeks running)
+   Tomas      ground     Sat 13:00  (4 weeks running)
+   Agnes      market     Fri 09:00  (4 weeks running)
+   Bram       market     Fri 09:00  (3 weeks running)
+   Mo Kelly   market     Fri 09:00  (4 weeks running)
+   Agnes      oak        Thu 13:00  (3 weeks running)
+   Agnes      oak        Sun 11:00  (3 weeks running)
+   Claire     oak        Sun 07:00  (3 weeks running)
+   Hana       oak        Mon 13:00  (4 weeks running)
+   Hana       oak        Wed 13:00  (4 weeks running)
+   Hana       oak        Fri 19:00  (4 weeks running)
+   Luca       oak        Fri 19:00  (4 weeks running)
+   Agnes      post       Mon 13:00  (3 weeks running)
+   Claire     post       Mon 11:00  (4 weeks running)
+   Dev        post       Thu 11:00  (4 weeks running)
+   Tomas      post       Tue 11:00  (3 weeks running)
+   Agnes      pub        Thu 17:00  (3 weeks running)
+   Agnes      pub        Sat 15:00  (3 weeks running)
+   Dev        pub        Wed 19:00  (4 weeks running)
+   Dev        pub        Fri 19:00  (4 weeks running)
+   Dev        pub        Sun 17:00  (4 weeks running)
+   Dev        pub        Tue 19:00  (3 weeks running)
+   Hana       pub        Fri 15:00  (4 weeks running)
+   Hana       pub        Wed 17:00  (3 weeks running)
+   Hana       pub        Sun 19:00  (3 weeks running)
+   June       pub        Mon 17:00  (4 weeks running)
+   June       pub        Thu 13:00  (4 weeks running)
+   June       pub        Sat 17:00  (4 weeks running)
+   Luca       pub        Tue 17:00  (3 weeks running)
+   Marge      pub        Mon 15:00  (4 weeks running)
+   Marge      pub        Wed 15:00  (3 weeks running)
+   Mo Kelly   pub        Sat 15:00  (3 weeks running)
+   Pat Kelly  pub        Mon 17:00  (4 weeks running)
+   Pat Kelly  pub        Sat 15:00  (4 weeks running)
+   Stan       pub        Sat 15:00  (4 weeks running)
+   Tomas      pub        Tue 19:00  (4 weeks running)
+   Tomas      pub        Wed 19:00  (4 weeks running)
+   Tomas      pub        Thu 13:00  (4 weeks running)
+   Tomas      pub        Fri 19:00  (4 weeks running)
+   Tomas      pub        Sun 13:00  (4 weeks running)
+   Tomas      pub        Mon 19:00  (3 weeks running)
+   Agnes      stores     Thu 09:00  (3 weeks running)
+   June       stores     Mon 15:00  (3 weeks running)
+   Luca       stores     Fri 17:00  (3 weeks running)
+   Mo Kelly   stores     Tue 09:00  (4 weeks running)
+   Pat Kelly  stores     Tue 11:00  (4 weeks running)
+   Tomas      stores     Thu 15:00  (3 weeks running)
+   -> 127 rituals across 12 places: allotment, bakery, benchA, benchB, cafe, field, ground, market, oak, post, pub, stores
+
+LOOMS (places weaving the same pairs together, 3+ different days):
+   bakery     79 recurring pairs (79 with at least one side there by choice)
+   ground     66 recurring pairs (66 with at least one side there by choice)
+   allotment  58 recurring pairs (58 with at least one side there by choice)
+   cafe       47 recurring pairs (47 with at least one side there by choice)
+   pub        38 recurring pairs (38 with at least one side there by choice)
+   field      18 recurring pairs (18 with at least one side there by choice)
+   post       10 recurring pairs (9 with at least one side there by choice)
+   market     5 recurring pairs (5 with at least one side there by choice)
+   green      1 recurring pairs (0 with at least one side there by choice)
+   busstop    1 recurring pairs (0 with at least one side there by choice)
+   stores     1 recurring pairs (1 with at least one side there by choice)
+   oak        1 recurring pairs (1 with at least one side there by choice)
+
+EMOTIONAL ADOPTION (score >= 0.62: share of free life + persistence + bad-weather devotion):
+   Dev        adopted field      (0.72 — went in bad weather, every week)
+   Luca       adopted allotment  (0.71 — went in bad weather, every week)
+   Claire     adopted allotment  (0.68 — went in bad weather, every week)
+   June       adopted allotment  (0.67 — went in bad weather, every week)
+   Luca       adopted oak        (0.66 — went in bad weather, every week)
+   Tomas      adopted pub        (0.66 — every week)
+   Dev        adopted allotment  (0.65 — went in bad weather, every week)
+   Hana       adopted oak        (0.64 — went in bad weather, every week)
+   Hana       adopted allotment  (0.64 — went in bad weather, every week)
+   Luca       adopted pub        (0.64 — every week)
+
+LIVES THAT INTERSECT (same pair, 2+ places, 2+ meetings each):
+   Dev & Tomas: allotment, bakery, busstop, cafe, field, ground, post, pub
+   June & Tomas: allotment, bakery, cafe, field, ground, post, pub
+   Mo Kelly & Pat Kelly: allotment, bakery, cafe, field, ground, market, pub
+   Dev & June: allotment, bakery, field, ground, post, pub
+   Mo Kelly & Stan: allotment, bakery, cafe, field, ground, pub
+   Agnes & Pat Kelly: allotment, bakery, field, ground, market, pub
+   Agnes & Stan: allotment, bakery, cafe, ground, oak, pub
+   Agnes & Tomas: allotment, bakery, cafe, field, ground, oak
+   Agnes & Marge: allotment, bakery, cafe, ground, post, pub
+   June & Pat Kelly: allotment, bakery, cafe, field, ground, pub
+   -> 91 multi-context ties of 91 recurring pairs
+
+FORGOTTEN:
+   none
+
+ATTACHMENT DRIVERS (mean adoption score by design attribute):
+   covered 0.46  vs  uncovered 0.38
+   multi-need 0.41  vs  single-need 0.43
+   all-day hours 0.29  vs  narrow hours 0.43
+
+TOWN VERDICTS
+   MEMORABLE: 12/14 places host at least one ritual (85%)
+   LOVABLE:   6/14 residents have adopted a place (42%) — missing: Agnes, Bram, Leo, Marge, Mo Kelly, Pat Kelly, Stan, Vera
+   SOCIALLY RICH: 91 multi-place ties; 99% of recurring pair-meetings involve choice, not duty
