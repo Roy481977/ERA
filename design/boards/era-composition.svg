@@ -1,0 +1,632 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2124" height="2474" viewBox="0 0 2124 2474">
+<rect width="2124" height="2474" fill="#ffffff"/>
+<text x="58.0" y="80.0" font-family="Helvetica,Arial,sans-serif" font-size="48.0" font-weight="700" letter-spacing="6.00" fill="#22242a" text-anchor="start">ERA</text>
+<text x="184.0" y="80.0" font-family="Helvetica,Arial,sans-serif" font-size="48.0" font-weight="300" letter-spacing="2.40" fill="#22242a" text-anchor="start">TOWN COMPOSITION</text>
+<line x1="58.0" y1="100.0" x2="2066.0" y2="100.0" stroke="#dcd8ce" stroke-width="1.50"/>
+<text x="58.0" y="126.0" font-family="Helvetica,Arial,sans-serif" font-size="15.0" font-weight="700" letter-spacing="2.20" fill="#7b7e87" text-anchor="start">THE SOCIAL STRUCTURE &#183; NINE COMPOSITIONS &#183; ONE CANON</text>
+<text x="58.0" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="15.0" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">Not assets, not environments &#8212; the shape of everyday life. Each diagram is a topology of encounters: where routines cross, friendships become accidents waiting to happen.</text>
+<text x="2066.0" y="126.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="2.20" fill="#7b7e87" text-anchor="end">DESIGN STUDY &#183; NOT A MASTERPLAN</text>
+<text x="1494.0" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="end">flows:</text>
+<line x1="1506.0" y1="145.5" x2="1540.0" y2="145.5" stroke="#e07a30" stroke-width="4" stroke-linecap="round" />
+<text x="1548.0" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#e07a30" text-anchor="start">daily errands</text>
+<line x1="1667.6" y1="145.5" x2="1701.6" y2="145.5" stroke="#3aa0a6" stroke-width="4" stroke-linecap="round" stroke-dasharray="3,6"/>
+<text x="1709.6" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#3aa0a6" text-anchor="start">school tide</text>
+<line x1="1814.8" y1="145.5" x2="1848.8" y2="145.5" stroke="#2f7a52" stroke-width="4" stroke-linecap="round" />
+<text x="1856.8" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">matchday</text>
+<text x="1940.4" y="150.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">grey wash = quiet</text>
+<rect x="58.0" y="186.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="70.8" y="205.6" width="140.8" height="278.8" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="544.4" y="205.6" width="140.8" height="278.8" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="222.6" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="164.0" y="288.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="200.0" y="241.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="233.4" y="300.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="125.7" y="264.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="260.9" y="248.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="173.4" y="318.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="153.6" y="226.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="222.6" y="422.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="164.0" y="439.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="200.0" y="392.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="233.4" y="451.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="125.7" y="415.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="260.9" y="399.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="173.4" y="469.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="153.6" y="377.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="581.0" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="522.4" y="288.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="558.4" y="241.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="591.8" y="300.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="484.1" y="264.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="619.3" y="248.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="531.8" y="318.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="512.0" y="226.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="581.0" y="422.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="522.4" y="439.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="558.4" y="392.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="591.8" y="451.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="484.1" y="415.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="619.3" y="399.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="531.8" y="469.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="512.0" y="377.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="402.5" y="225.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="342.3" y="242.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="379.3" y="194.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="413.6" y="254.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="303.1" y="218.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="441.9" y="201.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="402.5" y="463.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="342.3" y="480.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="379.3" y="432.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="413.6" y="492.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="303.1" y="456.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="441.9" y="439.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="378.0" cy="345.0" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="378.0" cy="345.0" r="8" fill="#7a9758"/>
+<rect x="338.0" y="313.8" width="16" height="16" rx="3" fill="#e07a30"/>
+<circle cx="410.0" cy="321.8" r="7" fill="#e8b53c"/>
+<circle cx="346.0" cy="368.2" r="7" fill="#2f7a52"/>
+<circle cx="410.0" cy="368.2" r="7" fill="#4a7fb5"/>
+<rect x="609.2" y="443.5" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="614.2" y1="437.5" x2="614.2" y2="443.5" stroke="#8d8674" stroke-width="2"/>
+<line x1="628.2" y1="437.5" x2="628.2" y2="443.5" stroke="#8d8674" stroke-width="2"/>
+<text x="621.2" y="436.5" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 198.8,275.3 L 378.0,345.0" fill="none" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="345.0" x2="387.9" y2="343.3" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="345.0" x2="384.1" y2="352.9" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 198.8,426.3 L 378.0,345.0" fill="none" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="345.0" x2="383.7" y2="336.8" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="345.0" x2="387.9" y2="346.2" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 557.2,275.3 L 378.0,345.0" fill="none" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="345.0" x2="371.9" y2="352.9" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="345.0" x2="368.1" y2="343.3" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 378.0,228.8 L 378.0,345.0" fill="none" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="345.0" x2="383.2" y2="353.6" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="345.0" x2="372.8" y2="353.6" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 378.0,467.0 L 378.0,345.0" fill="none" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="345.0" x2="372.8" y2="336.4" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="345.0" x2="383.2" y2="336.4" stroke="#e07a30" stroke-width="3.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 378.0,356.6 L 506.0,414.7 L 608.4,443.7" fill="none" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.50" />
+<line x1="608.4" y1="443.7" x2="618.1" y2="441.1" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" opacity="0.50"/>
+<line x1="608.4" y1="443.7" x2="615.2" y2="451.0" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" opacity="0.50"/>
+<text x="58.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T1</text>
+<text x="110.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE SINGLE HEART</text>
+<text x="58.0" y="555.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">everything meets in one square</text>
+<text x="58.0" y="576.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  everyone crosses everyone, daily; the town has one unmistakable stage</text>
+<text x="58.0" y="593.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  no gradient &#8212; the centre exhausts itself, the edges die; quiet is accidental, not</text>
+<text x="74.0" y="610.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">designed</text>
+<text x="58.0" y="627.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  public stories only: markets, announcements, spectacles &#8212; intimacy has nowhere to</text>
+<text x="74.0" y="644.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">happen</text>
+<rect x="742.0" y="186.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="754.8" y="205.6" width="614.4" height="69.7" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="754.8" y="426.3" width="614.4" height="58.1" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="802.5" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="828.1" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="860.1" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="885.7" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="917.7" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="943.3" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="975.3" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1000.9" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1032.9" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1058.5" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1090.5" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1116.1" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1148.1" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1173.7" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1205.7" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1231.3" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1263.3" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1288.9" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1320.9" y="271.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1346.5" y="411.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="818.8" cy="345.0" r="7" fill="#4a7fb5"/>
+<text x="818.8" y="332.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">SCHOOL</text>
+<circle cx="934.0" cy="345.0" r="7" fill="#e8b53c"/>
+<rect x="1041.2" y="337.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<text x="1049.2" y="332.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">MARKET</text>
+<circle cx="1138.8" cy="345.0" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1138.8" cy="345.0" r="8" fill="#7a9758"/>
+<text x="1138.8" y="332.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK</text>
+<circle cx="1202.8" cy="345.0" r="7" fill="#2f7a52"/>
+<rect x="1306.0" y="339.0" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1311.0" y1="333.0" x2="1311.0" y2="339.0" stroke="#8d8674" stroke-width="2"/>
+<line x1="1325.0" y1="333.0" x2="1325.0" y2="339.0" stroke="#8d8674" stroke-width="2"/>
+<text x="1318.0" y="332.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 793.2,345.0 L 1023.6,345.0" fill="none" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1023.6" y1="345.0" x2="1032.2" y2="339.8" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1023.6" y1="345.0" x2="1032.2" y2="350.2" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1087.6,345.0 L 1292.4,345.0" fill="none" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<line x1="1292.4" y1="345.0" x2="1301.0" y2="339.8" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" opacity="0.55"/>
+<line x1="1292.4" y1="345.0" x2="1301.0" y2="350.2" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" opacity="0.55"/>
+<path d="M 831.6,321.8 L 1036.4,321.8" fill="none" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,6"/>
+<line x1="1036.4" y1="321.8" x2="1045.0" y2="316.6" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1036.4" y1="321.8" x2="1045.0" y2="326.9" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<text x="742.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T2</text>
+<text x="794.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE STRING</text>
+<text x="742.0" y="555.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">one street carries the whole town</text>
+<text x="742.0" y="576.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  maximum repeated encounters &#8212; the same faces at the same times, every day</text>
+<text x="742.0" y="593.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  no shortcuts, no discovery, no second route; the ends are exile; one blockage stops the</text>
+<text x="758.0" y="610.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">town</text>
+<text x="742.0" y="627.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  routine stories: the commuter who nods, the timed hellos &#8212; warm but monotone</text>
+<rect x="1426.0" y="186.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<path d="M 1938.0,345.0 L 1935.6,362.3 L 1928.6,379.1 L 1917.1,395.1 L 1901.3,409.9 L 1881.8,423.0 L 1858.9,434.3 L 1833.2,443.3 L 1805.3,449.9 L 1776.0,454.0 L 1746.0,455.3 L 1716.0,454.0 L 1686.7,449.9 L 1658.8,443.3 L 1633.1,434.3 L 1610.2,423.0 L 1590.7,409.9 L 1574.9,395.1 L 1563.4,379.1 L 1556.4,362.3 L 1554.0,345.0 L 1556.4,327.7 L 1563.4,310.9 L 1574.9,294.9 L 1590.7,280.1 L 1610.2,267.0 L 1633.1,255.7 L 1658.8,246.7 L 1686.7,240.1 L 1716.0,236.0 L 1746.0,234.7 L 1776.0,236.0 L 1805.3,240.1 L 1833.2,246.7 L 1858.9,255.7 L 1881.8,267.0 L 1901.3,280.1 L 1917.1,294.9 L 1928.6,310.9 L 1935.6,327.7 L 1938.0,345.0" fill="none" stroke="#e07a30" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<circle cx="1746.0" cy="345.0" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1746.0" cy="345.0" r="8" fill="#7a9758"/>
+<text x="1746.0" y="332.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK</text>
+<rect x="1546.0" y="337.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<circle cx="1938.0" cy="345.0" r="7" fill="#2f7a52"/>
+<circle cx="1746.0" cy="234.7" r="7" fill="#4a7fb5"/>
+<circle cx="1746.0" cy="455.3" r="7" fill="#e8b53c"/>
+<rect x="1887.6" y="240.3" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1892.6" y1="234.3" x2="1892.6" y2="240.3" stroke="#8d8674" stroke-width="2"/>
+<line x1="1906.6" y1="234.3" x2="1906.6" y2="240.3" stroke="#8d8674" stroke-width="2"/>
+<text x="1899.6" y="233.3" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<rect x="2019.9" y="341.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1973.9" y="354.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="2002.2" y="317.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="2028.5" y="363.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1944.9" y="444.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1898.9" y="457.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1927.2" y="420.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1953.5" y="466.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1763.9" y="486.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1717.9" y="499.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1746.2" y="462.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1772.5" y="508.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1582.9" y="444.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1536.9" y="457.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1565.2" y="420.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1591.4" y="466.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1507.9" y="341.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1461.9" y="354.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1490.2" y="317.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1516.5" y="363.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1582.9" y="238.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1536.9" y="251.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1565.2" y="215.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1591.4" y="261.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1763.9" y="196.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1717.9" y="209.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1746.2" y="172.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1772.5" y="218.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1944.9" y="238.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1898.9" y="251.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1927.2" y="215.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1953.5" y="261.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<path d="M 1650.0,281.1 L 1746.0,345.0" fill="none" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,6"/>
+<line x1="1746.0" y1="345.0" x2="1756.0" y2="345.5" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1746.0" y1="345.0" x2="1750.3" y2="354.0" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1848.4,292.7 L 1893.2,257.9" fill="none" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.50" />
+<line x1="1893.2" y1="257.9" x2="1896.8" y2="248.6" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" opacity="0.50"/>
+<line x1="1893.2" y1="257.9" x2="1903.1" y2="256.7" stroke="#2f7a52" stroke-width="5.0" stroke-linecap="round" opacity="0.50"/>
+<text x="1426.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T3</text>
+<text x="1478.0" y="534.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE RING</text>
+<text x="1426.0" y="555.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">an orbit with the green at its centre</text>
+<text x="1426.0" y="576.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  no dead ends; two directions mean chance meetings; the centre is always near</text>
+<text x="1426.0" y="593.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  all places equal &#8594; no heart, no climax; compression never happens; navigation is</text>
+<text x="1442.0" y="610.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">ambiguous</text>
+<text x="1426.0" y="627.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  coincidence stories &#8212; but few anchored memories; nowhere is THE place</text>
+<rect x="58.0" y="782.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<path d="M 454.8,790.0 L 442.0,871.3 L 461.2,964.2 L 448.4,1092.0" fill="none" stroke="#b9d0de" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+<rect x="506.0" y="801.6" width="179.2" height="116.2" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="222.6" y="856.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="164.0" y="872.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="200.0" y="825.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="233.4" y="884.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="125.7" y="849.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="260.9" y="832.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="173.4" y="902.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="153.6" y="810.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="211.1" y="1007.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="149.7" y="1024.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="187.4" y="975.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="222.4" y="1036.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="109.6" y="999.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="251.3" y="982.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="159.6" y="1055.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="138.8" y="959.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="277.1" y="1026.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="347.8" y="1042.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="295.2" y="1056.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="327.5" y="1014.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="357.5" y="1067.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="260.8" y="1035.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="382.2" y="1020.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="301.2" cy="929.4" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="301.2" cy="929.4" r="8" fill="#7a9758"/>
+<text x="301.2" y="916.4" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK</text>
+<rect x="242.0" y="898.2" width="16" height="16" rx="3" fill="#e07a30"/>
+<circle cx="352.4" cy="900.3" r="7" fill="#e8b53c"/>
+<circle cx="346.0" cy="958.4" r="7" fill="#2f7a52"/>
+<circle cx="211.6" cy="946.8" r="7" fill="#4a7fb5"/>
+<rect x="583.6" y="1004.7" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="588.6" y1="998.7" x2="588.6" y2="1004.7" stroke="#8d8674" stroke-width="2"/>
+<line x1="602.6" y1="998.7" x2="602.6" y2="1004.7" stroke="#8d8674" stroke-width="2"/>
+<text x="595.6" y="997.7" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 186.0,964.2 L 275.6,935.2" fill="none" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="275.6" y1="935.2" x2="282.2" y2="927.6" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="275.6" y1="935.2" x2="285.3" y2="937.5" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 339.6,1022.3 L 307.6,952.6" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="307.6" y1="952.6" x2="299.3" y2="947.0" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="307.6" y1="952.6" x2="308.7" y2="942.7" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 314.0,941.0 L 448.4,941.0 L 557.2,987.5" fill="none" stroke="#2f7a52" stroke-width="7.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<line x1="557.2" y1="987.5" x2="567.1" y2="986.1" stroke="#2f7a52" stroke-width="7.0" stroke-linecap="round" opacity="0.55"/>
+<line x1="557.2" y1="987.5" x2="563.1" y2="995.6" stroke="#2f7a52" stroke-width="7.0" stroke-linecap="round" opacity="0.55"/>
+<text x="448.4" y="929.4" font-family="Helvetica,Arial,sans-serif" font-size="1.0" font-weight="400" letter-spacing="0.00" fill="#22242a" text-anchor="start"></text>
+<text x="448.4" y="917.8" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.00" fill="#5b7c96" text-anchor="middle">the bridge</text>
+<text x="58.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T4</text>
+<text x="110.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">TWO SHORES</text>
+<text x="58.0" y="1151.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">the ground across the water, one bridge</text>
+<text x="58.0" y="1172.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  matchday becomes pilgrimage; the bridge funnels the whole town into one shared moment</text>
+<text x="58.0" y="1189.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  the ground is exiled on the thirteen quiet days; the river cuts more than it joins</text>
+<text x="58.0" y="1206.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  ritual stories: the crossing, the bridge meeting, the returning crowd at dusk</text>
+<rect x="742.0" y="782.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="754.8" y="801.6" width="614.4" height="52.3" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="754.8" y="1045.5" width="614.4" height="40.7" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="879.6" y="844.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="823.9" y="860.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="858.1" y="815.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="889.9" y="871.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="787.6" y="837.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="916.1" y="822.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="832.9" y="888.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1276.4" y="844.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1220.7" y="860.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1254.9" y="815.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1286.7" y="871.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1184.4" y="837.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1312.9" y="822.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1229.7" y="888.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="879.6" y="1042.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="823.9" y="1057.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="858.1" y="1013.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="889.9" y="1068.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="787.6" y="1035.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="916.1" y="1019.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="832.9" y="1085.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1276.4" y="1042.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1220.7" y="1057.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1254.9" y="1013.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1286.7" y="1068.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1184.4" y="1035.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1312.9" y="1019.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1229.7" y="1085.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="926.0" y="933.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<text x="934.0" y="928.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">MARKET</text>
+<circle cx="895.6" cy="912.0" r="7" fill="#e8b53c"/>
+<circle cx="972.4" cy="912.0" r="7" fill="#3aa0a6"/>
+<circle cx="1190.0" cy="941.0" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1190.0" cy="941.0" r="8" fill="#7a9758"/>
+<text x="1190.0" y="928.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK</text>
+<circle cx="1151.6" cy="970.0" r="7" fill="#2f7a52"/>
+<circle cx="882.8" cy="975.8" r="7" fill="#4a7fb5"/>
+<rect x="1306.0" y="871.1" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1311.0" y1="865.1" x2="1311.0" y2="871.1" stroke="#8d8674" stroke-width="2"/>
+<line x1="1325.0" y1="865.1" x2="1325.0" y2="871.1" stroke="#8d8674" stroke-width="2"/>
+<text x="1318.0" y="864.1" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 959.6,941.0 L 1164.4,941.0" fill="none" stroke="#e07a30" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1164.4" y1="941.0" x2="1173.0" y2="935.8" stroke="#e07a30" stroke-width="5.5" stroke-linecap="round" opacity="0.75"/>
+<line x1="1164.4" y1="941.0" x2="1173.0" y2="946.2" stroke="#e07a30" stroke-width="5.5" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1164.4,929.4 L 972.4,929.4" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="972.4" y1="929.4" x2="963.8" y2="934.5" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="972.4" y1="929.4" x2="963.8" y2="924.2" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1202.8,929.4 L 1298.8,888.7" fill="none" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<line x1="1298.8" y1="888.7" x2="1304.7" y2="880.6" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" opacity="0.55"/>
+<line x1="1298.8" y1="888.7" x2="1308.7" y2="890.1" stroke="#2f7a52" stroke-width="6.0" stroke-linecap="round" opacity="0.55"/>
+<path d="M 895.6,964.2 L 934.0,946.8" fill="none" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,6"/>
+<line x1="934.0" y1="946.8" x2="939.7" y2="938.6" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="934.0" y1="946.8" x2="943.9" y2="948.0" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<text x="742.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T5</text>
+<text x="794.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">TWIN CENTRES</text>
+<text x="742.0" y="1151.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">market at one end, Oak at the other</text>
+<text x="742.0" y="1172.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  busy and quiet built in; walking has direction; District 01 is this structure</text>
+<text x="742.0" y="1189.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  two hearts can split loyalty; the connecting street must never fail or both centres do</text>
+<text x="742.0" y="1206.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  contrast stories: commerce vs. calm, the walk between moods</text>
+<rect x="1426.0" y="782.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="1734.0" y="935.0" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1739.0" y1="929.0" x2="1739.0" y2="935.0" stroke="#8d8674" stroke-width="2"/>
+<line x1="1753.0" y1="929.0" x2="1753.0" y2="935.0" stroke="#8d8674" stroke-width="2"/>
+<text x="1746.0" y="928.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 1912.4,941.0 L 1910.4,956.4 L 1904.3,971.5 L 1894.3,985.8 L 1880.6,999.0 L 1863.7,1010.8 L 1843.8,1020.9 L 1821.5,1029.0 L 1797.4,1034.9 L 1772.0,1038.5 L 1746.0,1039.7 L 1720.0,1038.5 L 1694.6,1034.9 L 1670.5,1029.0 L 1648.2,1020.9 L 1628.3,1010.8 L 1611.4,999.0 L 1597.7,985.8 L 1587.7,971.5 L 1581.6,956.4 L 1579.6,941.0 L 1581.6,925.6 L 1587.7,910.5 L 1597.7,896.2 L 1611.4,883.0 L 1628.3,871.2 L 1648.2,861.1 L 1670.5,853.0 L 1694.6,847.1 L 1720.0,843.5 L 1746.0,842.3 L 1772.0,843.5 L 1797.4,847.1 L 1821.5,853.0 L 1843.8,861.1 L 1863.7,871.2 L 1880.6,883.0 L 1894.3,896.2 L 1904.3,910.5 L 1910.4,925.6 L 1912.4,941.0" fill="none" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.50" />
+<rect x="1571.6" y="933.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<circle cx="1912.4" cy="941.0" r="7" fill="#2f7a52"/>
+<circle cx="1746.0" cy="842.3" r="7" fill="#e8b53c"/>
+<circle cx="1746.0" cy="1039.7" r="7" fill="#4a7fb5"/>
+<circle cx="1630.8" cy="859.7" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1630.8" cy="859.7" r="8" fill="#7a9758"/>
+<rect x="2007.1" y="937.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1961.1" y="950.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1989.4" y="913.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="2015.7" y="959.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1935.9" y="1036.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1889.9" y="1048.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1918.1" y="1012.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1944.4" y="1058.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1763.9" y="1076.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1717.9" y="1089.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1746.2" y="1053.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1772.5" y="1099.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1592.0" y="1036.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1545.9" y="1048.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1574.2" y="1012.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1600.5" y="1058.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1520.7" y="937.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1474.7" y="950.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1503.0" y="913.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1529.3" y="959.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1592.0" y="838.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1545.9" y="851.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1574.2" y="815.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1600.5" y="861.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1763.9" y="798.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1717.9" y="810.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1746.2" y="774.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1772.5" y="820.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1935.9" y="838.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1889.9" y="851.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1918.1" y="815.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1944.4" y="861.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<text x="1746.0" y="964.2" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.00" fill="#a09a8a" text-anchor="middle">empty 13 days of 14</text>
+<text x="1426.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T6</text>
+<text x="1478.0" y="1130.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">STADIUM AT THE HEART</text>
+<text x="1426.0" y="1151.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">the town orbits the ground</text>
+<text x="1426.0" y="1172.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  football permeates &#8212; literally; matchday is effortless</text>
+<text x="1426.0" y="1189.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  violates the brief: the ground dominates and lies empty 13 days of 14; a dead heart</text>
+<text x="1442.0" y="1206.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">most of the time</text>
+<text x="1426.0" y="1223.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  football stories only &#8212; the town has no life to return to on Sunday</text>
+<rect x="58.0" y="1378.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="182.6" y="1452.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="127.4" y="1467.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="161.3" y="1423.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="192.9" y="1478.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="91.3" y="1445.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="218.8" y="1429.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="136.3" y="1495.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="117.6" y="1409.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="242.0" y="1469.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="160.4" cy="1496.3" r="7" fill="#e8b53c"/>
+<rect x="182.6" y="1626.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="127.4" y="1641.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="161.3" y="1597.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="192.9" y="1653.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="91.3" y="1619.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="218.8" y="1604.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="136.3" y="1670.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="117.6" y="1583.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="242.0" y="1644.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="192.4" cy="1595.1" r="7" fill="#4a7fb5"/>
+<rect x="413.0" y="1649.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="357.8" y="1665.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="391.7" y="1621.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="423.3" y="1676.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="321.7" y="1643.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="449.2" y="1627.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="366.7" y="1693.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="348.0" y="1606.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="472.4" y="1667.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="352.4" cy="1618.3" r="7" fill="#2f7a52"/>
+<circle cx="365.2" cy="1513.8" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="365.2" cy="1513.8" r="8" fill="#7a9758"/>
+<text x="365.2" y="1500.8" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">SHARED GREEN</text>
+<rect x="408.4" y="1482.5" width="16" height="16" rx="3" fill="#e07a30"/>
+<rect x="583.6" y="1554.2" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="588.6" y1="1548.2" x2="588.6" y2="1554.2" stroke="#8d8674" stroke-width="2"/>
+<line x1="602.6" y1="1548.2" x2="602.6" y2="1554.2" stroke="#8d8674" stroke-width="2"/>
+<text x="595.6" y="1547.2" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 186.0,1467.3 L 339.6,1508.0" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="339.6" y1="1508.0" x2="349.2" y2="1505.2" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="339.6" y1="1508.0" x2="346.6" y2="1515.1" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 186.0,1618.3 L 339.6,1525.4" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="339.6" y1="1525.4" x2="344.3" y2="1516.5" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="339.6" y1="1525.4" x2="349.6" y2="1525.4" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 390.8,1629.9 L 378.0,1542.8" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="378.0" y1="1542.8" x2="371.7" y2="1535.1" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="378.0" y1="1542.8" x2="381.9" y2="1533.6" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 390.8,1519.6 L 570.0,1554.4" fill="none" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<line x1="570.0" y1="1554.4" x2="579.4" y2="1551.0" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" opacity="0.55"/>
+<line x1="570.0" y1="1554.4" x2="577.4" y2="1561.1" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" opacity="0.55"/>
+<path d="M 186.0,1606.7 L 211.6,1502.2" fill="none" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,6"/>
+<line x1="211.6" y1="1502.2" x2="208.6" y2="1492.6" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="211.6" y1="1502.2" x2="218.6" y2="1495.1" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<text x="58.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T7</text>
+<text x="110.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE CONSTELLATION</text>
+<text x="58.0" y="1747.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">three hamlets, one shared green</text>
+<text x="58.0" y="1768.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  neighbourhood identity &#8212; each hamlet its own anchor; natural rivalries (street</text>
+<text x="74.0" y="1785.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">teams!)</text>
+<text x="58.0" y="1802.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  cross-town encounters are rare; friends happen within hamlets, strangers stay strangers</text>
+<text x="58.0" y="1819.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  belonging and rivalry stories: our end, their end, the derby inside the town</text>
+<rect x="742.0" y="1378.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="754.8" y="1397.6" width="614.4" height="58.1" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="754.8" y="1629.9" width="614.4" height="46.5" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="828.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="860.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="892.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="924.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="956.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="988.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1020.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1052.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1084.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1116.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1148.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1180.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1212.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1244.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1276.1" y="1463.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1308.1" y="1614.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="806.0" cy="1537.0" r="7" fill="#4a7fb5"/>
+<text x="806.0" y="1524.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">SCHOOL</text>
+<rect x="977.2" y="1529.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<circle cx="1023.6" cy="1508.0" r="7" fill="#e8b53c"/>
+<circle cx="1113.2" cy="1537.0" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1113.2" cy="1537.0" r="8" fill="#7a9758"/>
+<text x="1113.2" y="1524.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK</text>
+<circle cx="1151.6" cy="1566.0" r="7" fill="#2f7a52"/>
+<rect x="1306.0" y="1531.0" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1311.0" y1="1525.0" x2="1311.0" y2="1531.0" stroke="#8d8674" stroke-width="2"/>
+<line x1="1325.0" y1="1525.0" x2="1325.0" y2="1531.0" stroke="#8d8674" stroke-width="2"/>
+<text x="1318.0" y="1524.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 818.8,1519.6 L 972.4,1519.6" fill="none" stroke="#3aa0a6" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="3,7"/>
+<line x1="972.4" y1="1519.6" x2="981.0" y2="1514.4" stroke="#3aa0a6" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="972.4" y1="1519.6" x2="981.0" y2="1524.7" stroke="#3aa0a6" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 972.4,1519.6 L 818.8,1519.6" fill="none" stroke="#3aa0a6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,8"/>
+<line x1="818.8" y1="1519.6" x2="810.2" y2="1524.7" stroke="#3aa0a6" stroke-width="2.4" stroke-linecap="round" opacity="0.75"/>
+<line x1="818.8" y1="1519.6" x2="810.2" y2="1514.4" stroke="#3aa0a6" stroke-width="2.4" stroke-linecap="round" opacity="0.75"/>
+<path d="M 934.0,1554.4 L 1094.0,1554.4" fill="none" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1094.0" y1="1554.4" x2="1102.6" y2="1549.3" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1094.0" y1="1554.4" x2="1102.6" y2="1559.6" stroke="#e07a30" stroke-width="4.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1126.0,1531.2 L 1292.4,1531.2" fill="none" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.50" />
+<line x1="1292.4" y1="1531.2" x2="1301.0" y2="1526.0" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" opacity="0.50"/>
+<line x1="1292.4" y1="1531.2" x2="1301.0" y2="1536.3" stroke="#2f7a52" stroke-width="5.5" stroke-linecap="round" opacity="0.50"/>
+<text x="889.2" y="1490.5" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.00" fill="#3aa0a6" text-anchor="middle">the tide, twice a day</text>
+<text x="742.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T8</text>
+<text x="794.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE SCHOOL AXIS</text>
+<text x="742.0" y="1747.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">the children&#8217;s tide crosses everyone</text>
+<text x="742.0" y="1768.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  generations overlap by design &#8212; the school run crosses the shopping run twice</text>
+<text x="758.0" y="1785.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">daily</text>
+<text x="742.0" y="1802.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  the rhythm collapses in holidays; adults without children orbit outside it</text>
+<text x="742.0" y="1819.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  growing-up stories: the walk that shortens as you age, teachers met in the market</text>
+<rect x="1426.0" y="1378.0" width="640" height="318" rx="10" fill="#fbfaf7" stroke="#dcd8ce" stroke-width="1.4"/>
+<rect x="1438.8" y="1397.6" width="128.0" height="278.8" rx="14" fill="#eef0f4" opacity="1.00"/>
+<rect x="1938.0" y="1397.6" width="115.2" height="278.8" rx="14" fill="#eef0f4" opacity="1.00"/>
+<path d="M 1874.0,1386.0 L 1861.2,1478.9 L 1880.4,1583.5 L 1867.6,1688.0" fill="none" stroke="#b9d0de" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+<rect x="1536.6" y="1452.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1484.0" y="1466.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1516.3" y="1425.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1546.3" y="1477.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1449.6" y="1445.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1571.0" y="1430.9" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1525.2" y="1603.2" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1469.5" y="1618.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1503.7" y="1574.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1535.5" y="1630.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1433.2" y="1596.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1561.7" y="1580.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1478.5" y="1647.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1690.2" y="1429.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1637.6" y="1443.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1669.9" y="1401.8" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1699.9" y="1454.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1603.2" y="1422.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1724.6" y="1407.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1677.4" y="1649.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1624.8" y="1664.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1657.1" y="1622.5" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1687.1" y="1675.0" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1590.4" y="1643.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1711.8" y="1628.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="2008.7" y="1440.6" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1959.3" y="1454.3" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1989.6" y="1415.1" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="2017.9" y="1464.4" width="7" height="7" rx="2" fill="#d9a58c"/>
+<rect x="1927.0" y="1434.7" width="7" height="7" rx="2" fill="#d9a58c"/>
+<circle cx="1490.0" cy="1537.0" r="7" fill="#4a7fb5"/>
+<text x="1490.0" y="1524.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">SCHOOL</text>
+<circle cx="1618.0" cy="1537.0" r="7" fill="#e8b53c"/>
+<rect x="1699.6" y="1529.0" width="16" height="16" rx="3" fill="#e07a30"/>
+<text x="1707.6" y="1524.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">MARKET</text>
+<circle cx="1758.8" cy="1502.2" r="7" fill="#3aa0a6"/>
+<circle cx="1790.8" cy="1542.8" r="15" fill="#7a9758" opacity="0.3"/>
+<circle cx="1790.8" cy="1542.8" r="8" fill="#7a9758"/>
+<circle cx="1822.8" cy="1566.0" r="7" fill="#2f7a52"/>
+<text x="1790.8" y="1593.5" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">OAK &#183; THE CROSSING</text>
+<rect x="1977.2" y="1623.9" width="24" height="12" rx="3" fill="none" stroke="#8d8674" stroke-width="3"/>
+<line x1="1982.2" y1="1617.9" x2="1982.2" y2="1623.9" stroke="#8d8674" stroke-width="2"/>
+<line x1="1996.2" y1="1617.9" x2="1996.2" y2="1623.9" stroke="#8d8674" stroke-width="2"/>
+<text x="1989.2" y="1616.9" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.80" fill="#7b7e87" text-anchor="middle">GROUND</text>
+<path d="M 1477.2,1537.0 L 1701.2,1537.0" fill="none" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1701.2" y1="1537.0" x2="1709.8" y2="1531.8" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1701.2" y1="1537.0" x2="1709.8" y2="1542.2" stroke="#e07a30" stroke-width="5.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1502.8,1525.4 L 1682.0,1525.4" fill="none" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" stroke-dasharray="2,6"/>
+<line x1="1682.0" y1="1525.4" x2="1690.6" y2="1520.2" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<line x1="1682.0" y1="1525.4" x2="1690.6" y2="1530.5" stroke="#3aa0a6" stroke-width="3.0" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1669.2,1432.5 L 1758.8,1490.5 L 1784.4,1525.4" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1784.4" y1="1525.4" x2="1793.6" y2="1529.2" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="1784.4" y1="1525.4" x2="1785.3" y2="1535.3" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1656.4,1641.5 L 1758.8,1577.7 L 1784.4,1548.6" fill="none" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+<line x1="1784.4" y1="1548.6" x2="1786.2" y2="1538.8" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<line x1="1784.4" y1="1548.6" x2="1793.9" y2="1545.6" stroke="#e07a30" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
+<path d="M 1797.2,1542.8 L 1874.0,1577.7 L 1963.6,1618.3" fill="none" stroke="#2f7a52" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55" />
+<line x1="1963.6" y1="1618.3" x2="1973.5" y2="1617.2" stroke="#2f7a52" stroke-width="6.5" stroke-linecap="round" opacity="0.55"/>
+<line x1="1963.6" y1="1618.3" x2="1969.3" y2="1626.5" stroke="#2f7a52" stroke-width="6.5" stroke-linecap="round" opacity="0.55"/>
+<text x="1906.0" y="1629.9" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="0.00" fill="#5b7c96" text-anchor="middle">the bridge</text>
+<text x="1426.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="700" letter-spacing="1.60" fill="#22242a" text-anchor="start">T9</text>
+<text x="1478.0" y="1726.0" font-family="Helvetica,Arial,sans-serif" font-size="17.0" font-weight="400" letter-spacing="0.80" fill="#22242a" text-anchor="start">THE WEAVE</text>
+<text x="1426.0" y="1747.0" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">two lines of different frequency, crossing at the Oak</text>
+<text x="1426.0" y="1768.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#2f7a52" text-anchor="start">+  the daily line (school&#8211;bakery&#8211;market) crosses the weekly line</text>
+<text x="1442.0" y="1785.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">(homes&#8211;Oak&#8211;bridge&#8211;ground) at one point &#8212; everyone meets</text>
+<text x="1442.0" y="1802.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">everyone, at different cadences; quiet edges survive</text>
+<text x="1426.0" y="1819.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#b0442c" text-anchor="start">&#8722;  the crossing must be sized with care &#8212; too small congests, too large dissipates</text>
+<text x="1426.0" y="1836.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#a3a6ae" text-anchor="start">&#9656;  every kind: routine on the daily line, ritual on the weekly, and their collisions at</text>
+<text x="1442.0" y="1853.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">the Oak</text>
+<line x1="58.0" y1="1986.0" x2="2066.0" y2="1986.0" stroke="#dcd8ce" stroke-width="1.50"/>
+<text x="58.0" y="2006.0" font-family="Helvetica,Arial,sans-serif" font-size="14.0" font-weight="700" letter-spacing="2.20" fill="#22242a" text-anchor="start">AGAINST THE NINE QUESTIONS (condensed to five)</text>
+<text x="338.0" y="2034.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" letter-spacing="0.60" fill="#7b7e87" text-anchor="start">everyone meets</text>
+<text x="638.0" y="2034.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" letter-spacing="0.60" fill="#7b7e87" text-anchor="start">repeated encounters</text>
+<text x="938.0" y="2034.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" letter-spacing="0.60" fill="#7b7e87" text-anchor="start">quiet AND busy</text>
+<text x="1238.0" y="2034.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" letter-spacing="0.60" fill="#7b7e87" text-anchor="start">football permeates, gently</text>
+<text x="1538.0" y="2034.0" font-family="Helvetica,Arial,sans-serif" font-size="12.5" font-weight="700" letter-spacing="0.60" fill="#7b7e87" text-anchor="start">one emotional heart</text>
+<text x="58.0" y="2058.0" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T1  THE SINGLE HEART</text>
+<circle cx="368.0" cy="2054.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="668.0" cy="2054.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2054.0" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<circle cx="1268.0" cy="2054.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2054.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<text x="58.0" y="2075.5" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T2  THE STRING</text>
+<circle cx="368.0" cy="2071.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="668.0" cy="2071.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2071.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1268.0" cy="2071.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2071.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<text x="58.0" y="2093.0" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T3  THE RING</text>
+<circle cx="368.0" cy="2089.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="668.0" cy="2089.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="968.0" cy="2089.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1268.0" cy="2089.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2089.0" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<text x="58.0" y="2110.5" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T4  TWO SHORES</text>
+<circle cx="368.0" cy="2106.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="668.0" cy="2106.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="968.0" cy="2106.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1268.0" cy="2106.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1568.0" cy="2106.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<text x="58.0" y="2128.0" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T5  TWIN CENTRES</text>
+<circle cx="368.0" cy="2124.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="668.0" cy="2124.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2124.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1268.0" cy="2124.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2124.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<text x="58.0" y="2145.5" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T6  STADIUM AT THE HEART</text>
+<circle cx="368.0" cy="2141.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="668.0" cy="2141.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="968.0" cy="2141.5" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<circle cx="1268.0" cy="2141.5" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<circle cx="1568.0" cy="2141.5" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<text x="58.0" y="2163.0" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T7  THE CONSTELLATION</text>
+<circle cx="368.0" cy="2159.0" r="5" fill="none" stroke="#c04a30" stroke-width="1.6" />
+<circle cx="668.0" cy="2159.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2159.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1268.0" cy="2159.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2159.0" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<text x="58.0" y="2180.5" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="400" letter-spacing="0.40" fill="#7b7e87" text-anchor="start">T8  THE SCHOOL AXIS</text>
+<circle cx="368.0" cy="2176.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="668.0" cy="2176.5" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2176.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1268.0" cy="2176.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<circle cx="1568.0" cy="2176.5" r="5" fill="#d9a53c" stroke="#d9a53c" stroke-width="1.6" opacity="0.55"/>
+<text x="58.0" y="2198.0" font-family="Helvetica,Arial,sans-serif" font-size="12.0" font-weight="700" letter-spacing="0.40" fill="#22242a" text-anchor="start">T9  THE WEAVE</text>
+<circle cx="368.0" cy="2194.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="668.0" cy="2194.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="968.0" cy="2194.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1268.0" cy="2194.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<circle cx="1568.0" cy="2194.0" r="5" fill="#2f7a52" stroke="#2f7a52" stroke-width="1.6" />
+<line x1="58.0" y1="2227.5" x2="2066.0" y2="2227.5" stroke="#dcd8ce" stroke-width="1.50"/>
+<text x="58.0" y="2249.5" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="2.20" fill="#22242a" text-anchor="start">THE VERDICT</text>
+<text x="2066.0" y="2249.5" font-family="Helvetica,Arial,sans-serif" font-size="13.0" font-weight="700" letter-spacing="2.20" fill="#22242a" text-anchor="end">DISTRICT 01 IS THE WEAVE&#8217;S CROSSING, ZOOMED IN</text>
+<text x="58.0" y="2273.5" font-family="Helvetica,Arial,sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">CANONICAL &#8212; <tspan font-weight="700">T9 THE WEAVE</tspan>: a daily line (school &#183; bakery &#183; market) and a weekly line (homes &#183; Oak &#183; bridge &#183; ground) crossing at ONE point &#8212; the Oak, the pub on its corner, quiet lanes ringing the edges.</text>
+<text x="58.0" y="2293.5" font-family="Helvetica,Arial,sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">The ground sits across the water at the weekly line&#8217;s end &#8212; floodlights and sound, never dominance &#8212; and on matchday the bridge turns the whole town into one procession (T4&#8217;s gift).</text>
+<text x="58.0" y="2319.5" font-family="Helvetica,Arial,sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">WHY IT SUPPORTS THE SIMULATION &#8212; encounters are made by routines of DIFFERENT FREQUENCY sharing one node: daily crosses weekly crosses seasonal at the Oak, so familiar strangers are manufactured by geometry (Recognition, CD-003),</text>
+<text x="58.0" y="2339.5" font-family="Helvetica,Arial,sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">friendships become accidents of repetition (CD-001), quiet edges give dyads somewhere to become stories, and the school tide guarantees the generations collide twice a day. Deterministic tides make watchable crowds (CD-006).</text>
+<text x="58.0" y="2365.5" font-family="Helvetica,Arial,sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.00" fill="#7b7e87" text-anchor="start">REJECTED FOR THE RECORD &#8212; T6 (stadium at the heart) fails the brief outright: a dead centre 13 days of 14. T3 (the ring) has no heart at all. Both kept on the board so they are never re-argued.</text>
+</svg>
