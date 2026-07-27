@@ -316,6 +316,7 @@ const PAL={BRK:0xc86448,BRK2:0xa04639,BRK3:0xd8a478,RND:0xf8f4eb,RND2:0xece2d0,
   ORG:0xf2782c,MUS:0xf8bc3a,OLV:0x8a9c48,RED:0xda3a2c,GRN:0x1e6c4c,
   NVY:0x1c5488,TEAL:0x22949a,PNK:0xe88a7c,INK:0x26282c,
   LAWN:0x8ca874,ASPH:0x6e6a66,SOIL:0x76604c,WATER:0x7d99a8};
+const LEAF=[0x5d7847,0x6d8852,0x4f6c3d,0x7a9459];
 const scene=new THREE.Scene();
 const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
 renderer.setSize(innerWidth,innerHeight);
@@ -391,10 +392,15 @@ for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
  const deck=box(9,0.5,5.2,0xa9a294);deck.position.copy(V(b[0],b[1],0.45));scene.add(deck);
  [[0,2.3],[0,-2.3]].forEach(o=>{const par=box(9,0.9,0.5,PAL.CONC);
    par.position.copy(V(b[0],b[1]+o[1],1.1));scene.add(par);});}
-// ---- houses & shops
-const winMats=[];   // {mesh, home:bool, pid?}
-function windowPane(w,h){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
-  new THREE.MeshLambertMaterial({color:PAL.GLS}));return m;}
+// ---- houses & shops — the Museum language, three kits, one module
+const winMats=[];
+function windowUnit(g,w,h,x,y,zf){          // thick white surround + sill (SL-2)
+  const fr=box(w+0.24,h+0.24,0.12,PAL.RND);fr.position.set(x,y,zf);g.add(fr);
+  const gl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+    new THREE.MeshLambertMaterial({color:PAL.GLS}));
+  gl.position.set(x,y,zf+0.08);g.add(gl);
+  const sill=box(w+0.36,0.12,0.22,PAL.RND);sill.position.set(x,y-h/2-0.16,zf+0.06);g.add(sill);
+  return gl.material;}
 function bodyCol(seed){const u=(seed%100)/100;
   if(u<0.38)return PAL.BRK;if(u<0.52)return PAL.BRK2;if(u<0.60)return PAL.BRK3;
   if(u<0.85)return [0xf0e6c8,0xf2d9a6,0xecc39a,0xe8c4b4,0xc9cfae,0xc3cdd6,0xcfc0c6,0xe0d6c2][seed%8];
@@ -409,33 +415,77 @@ function makeLabel(txt){const cv=document.createElement("canvas");
   const t=new THREE.CanvasTexture(cv);
   return new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.85),
     new THREE.MeshBasicMaterial({map:t}));}
+const GARDEN=[0xda3a2c,0xf2782c,0xf8bc3a,0xe88a7c,0xc3cdd6,0xf8f4eb];
 D.level.plots.forEach(p=>{
   const seed=hash(p.id),shop=p.kit!=="home";
-  const w=shop?7.6:5.6,dep=shop?5.4:4.6,ht=shop?3.4:2.9;
+  const kit=shop?9:(seed%3);                 // 0 cottage · 1 dormer · 2 wide
+  const w=shop?7.6:(kit===2?6.4:5.6),dep=shop?5.4:4.6,ht=shop?3.4:2.9;
+  const bcol=shop?PAL.RND2:bodyCol(seed);
+  const brick=(bcol===PAL.BRK||bcol===PAL.BRK2||bcol===PAL.BRK3);
   const g=new THREE.Group();
-  const body=roundedBox(w,ht,dep,0.28,shop?PAL.RND2:bodyCol(seed));g.add(body);
-  const roof=gableRoof(dep,w,(seed%3)?PAL.TILG:PAL.TILB);
+  // plinth — the building meets its ground (SL-5)
+  const pl0=box(w+0.3,0.22,dep+0.3,0x8d7f6d);pl0.position.y=0.11;g.add(pl0);
+  const body=roundedBox(w,ht,dep,0.28,bcol);g.add(body);
+  // quoins: few and fat (SL-3) on brick bodies
+  if(brick&&seed%100<40){[-1,1].forEach(sx=>{for(let q=0;q<3;q++){
+    const qb=box(0.5,0.34,0.5,PAL.RND2);
+    qb.position.set(sx*(w/2-0.02),0.55+q*0.95,dep/2-0.22);g.add(qb);}});}
+  // roof: prism + ridge cap + verge boards + chimney with pots
+  const roofCol=(seed%3)?PAL.TILG:PAL.TILB;
+  const roof=gableRoof(dep,w,roofCol);
   roof.rotation.y=Math.PI/2;roof.position.y=ht+0.05;g.add(roof);
-  const ch=box(0.8,1.1,0.8,PAL.BRK2);ch.position.set(w*0.28,ht+0.9,0);g.add(ch);
+  const ridge=box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0xa96a4a);
+  ridge.position.set(0,ht+dep*0.36+0.08,0);g.add(ridge);
+  [-1,1].forEach(sx=>{const vg=box(0.16,0.34,dep+0.7,PAL.RND);
+    vg.position.set(sx*(w/2+0.28),ht+0.28,0);g.add(vg);});
+  const ch=box(0.85,1.2,0.85,PAL.BRK2);ch.position.set(w*0.28,ht+0.95,0);g.add(ch);
+  [[-0.2,0],[0.2,0]].forEach(o=>{const pot=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.11,0.14,0.3,8),mat(0xc8805a));
+    pot.position.set(w*0.28+o[0],ht+1.68,o[1]);g.add(pot);});
+  // dormer kit
+  if(kit===1){const dm=box(1.5,1.0,1.4,bcol);dm.position.set(-w*0.18,ht+0.6,dep*0.14);g.add(dm);
+    const dr=gableRoof(1.4,1.5,roofCol);dr.rotation.y=Math.PI/2;
+    dr.position.set(-w*0.18,ht+1.1,dep*0.14);dr.scale.set(1,0.8,1);g.add(dr);
+    windowUnit(g,0.7,0.6,-w*0.18,ht+0.55,dep*0.14+0.72);}
   const acc=ACC[p.acc]||PAL.OLV;
-  const door=box(1.05,1.9,0.15,acc);door.position.set(-w*0.18,0.95,dep/2+0.10);g.add(door);
-  // windows (front)
-  if(shop){const band=windowPane(w*0.72,1.15);
-    band.position.set(0.6,1.35,dep/2+0.12);g.add(band);
-    winMats.push({m:band.material,shop:true,pid:p.kit});
-    const aw=box(w*0.8,0.16,0.9,acc);aw.rotation.x=0.5;
-    aw.position.set(0.5,2.15,dep/2+0.45);g.add(aw);
+  // door: surround + door + canopy + step
+  const ds=box(1.45,2.25,0.14,PAL.RND);ds.position.set(-w*0.18,1.12,dep/2+0.08);g.add(ds);
+  const door=box(1.05,1.95,0.16,acc);door.position.set(-w*0.18,0.97,dep/2+0.12);g.add(door);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,5),mat(0xf8bc3a));
+  knob.position.set(-w*0.18+0.35,0.95,dep/2+0.22);g.add(knob);
+  if(!shop){const can=box(1.6,0.12,0.7,roofCol);can.rotation.x=0.35;
+    can.position.set(-w*0.18,2.25,dep/2+0.35);g.add(can);
+    const step=box(1.3,0.12,0.5,PAL.CONC);step.position.set(-w*0.18,0.06,dep/2+0.4);g.add(step);}
+  // windows
+  if(shop){
+    const gl=windowUnit(g,w*0.66,1.15,0.6,1.35,dep/2+0.06);
+    winMats.push({m:gl,shop:true,pid:p.kit});
+    // fascia + pilasters + valanced awning + sign
+    const fas=box(w*0.9,0.6,0.2,PAL.RND);fas.position.set(0,2.62,dep/2+0.1);g.add(fas);
+    [-1,1].forEach(sx=>{const pi=box(0.3,2.5,0.22,PAL.RND2);
+      pi.position.set(sx*w*0.44,1.35,dep/2+0.08);g.add(pi);});
+    const aw=box(w*0.8,0.14,1.0,acc);aw.rotation.x=0.5;
+    aw.position.set(0.5,2.2,dep/2+0.5);g.add(aw);
+    for(let v2=0;v2<6;v2++){const va=box(w*0.8/6-0.06,0.22,0.1,(v2%2)?PAL.RND:acc);
+      va.position.set(0.5-w*0.4+w*0.8*(v2+0.5)/6,1.98,dep/2+0.93);g.add(va);}
     const sign=makeLabel(p.kit.toUpperCase());
-    sign.position.set(0,2.85,dep/2+0.12);g.add(sign);
+    sign.position.set(0,2.62,dep/2+0.22);g.add(sign);
+    if(p.kit==="pub"){const br=box(0.9,0.08,0.08,0x5a544a);
+      br.position.set(w/2+0.4,2.9,dep/2-0.4);g.add(br);
+      const hs=box(0.7,0.9,0.08,PAL.GRN);hs.position.set(w/2+0.75,2.4,dep/2-0.4);g.add(hs);}
+    winMats.push({m:windowUnit(g,1.0,0.9,-w*0.36,3.0,dep/2+0.02),shop:true,pid:p.kit});
   } else {
-    [[-w*0.28,1.6],[w*0.28,1.6]].forEach(o=>{
-      const win=windowPane(1.0,1.35);win.position.set(o[0],o[1],dep/2+0.12);
-      g.add(win);winMats.push({m:win.material,shop:false});});
-    // garden wall
+    [[-w*0.28,1.55],[w*0.30,1.55]].forEach(o=>{
+      winMats.push({m:windowUnit(g,0.95,1.3,o[0],o[1],dep/2+0.02),shop:false});});
+    // garden wall + flower strip + odd garden tree
     const gw=box(w+2.6,0.55,0.3,0xb0a48e);gw.position.set(0,0.28,dep/2+2.5);g.add(gw);
+    for(let f2=0;f2<6;f2++){
+      const fl=box(0.22,0.3,0.22,GARDEN[(seed+f2)%6]);
+      fl.position.set(-w/2+0.6+f2*(w-1)/5,0.32,dep/2+2.1);g.add(fl);
+      const st2=box(0.1,0.24,0.1,0x55703f);
+      st2.position.set(-w/2+0.6+f2*(w-1)/5,0.12,dep/2+2.1);g.add(st2);}
   }
   g.position.copy(V(p.x,p.y,0));
-  // face the nearest road — the door opens onto a street, always
   let best=null;
   D.level.roads.forEach(r=>{const cy=(r[1]+r[3])/2,cxr=(r[0]+r[2])/2;
     const horiz=(r[2]-r[0])>(r[3]-r[1]);
@@ -443,18 +493,31 @@ D.level.plots.forEach(p=>{
                  :Math.abs(p.x-cxr)+((p.y<r[1]||p.y>r[3])?Math.min(Math.abs(p.y-r[1]),Math.abs(p.y-r[3])):0);
     if(best===null||d<best.d)best={d,horiz,cy,cxr};});
   if(best){
-    if(best.horiz)g.rotation.y=(best.cy<p.y)?0:Math.PI;   // face down/up toward road
+    if(best.horiz)g.rotation.y=(best.cy<p.y)?0:Math.PI;
     else g.rotation.y=(best.cxr<p.x)?-Math.PI/2:Math.PI/2;}
-  scene.add(g);});
+  scene.add(g);
+  if(!shop&&seed%4===0)tree(p.x+w*0.9,p.y+2.2,0.8);   // the garden tree
+});
 // ---- oak + trees + hedges + benches
 function tree(x,y,s){const gp=new THREE.Group();
-  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.22*s,0.3*s,1.4*s,7),mat(0x84583a));
-  tr.position.y=0.7*s;tr.castShadow=true;gp.add(tr);
-  [[0,2.1,0,1.5],[-0.8,1.7,0.3,1.0],[0.7,1.8,-0.3,0.85]].forEach(o=>{
-    const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3]*s,10,8),mat(0x5d7847));
+  const sd=hash("t"+(x*7|0)+"_"+(y*7|0));
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.2*s,0.32*s,1.5*s,7),mat(0x84583a));
+  tr.position.y=0.75*s;tr.castShadow=true;gp.add(tr);
+  const g1=LEAF[sd%4],g2=LEAF[(sd+1)%4];
+  [[0,2.2,0,1.35,g1],[-0.75,1.75,0.3,0.95,g2],[0.7,1.85,-0.3,0.85,g2],
+   [0.15,2.75,0.15,0.8,g1],[-0.3,1.6,-0.6,0.7,g1]].forEach(o=>{
+    const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3]*s,9,7),mat(o[4]));
     cr.position.set(o[0]*s,o[1]*s,o[2]*s);cr.castShadow=true;gp.add(cr);});
   gp.position.copy(V(x,y,0));scene.add(gp);return gp;}
-tree(D.level.oak[0],D.level.oak[1],2.6);          // THE oak
+// THE oak — six lobes, the town's largest living thing
+{const gp=new THREE.Group();
+ const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.85,3.2,9),mat(0x6e4a30));
+ tr.position.y=1.6;tr.castShadow=true;gp.add(tr);
+ [[0,4.6,0,2.9,0x4f6c3d],[-2.1,3.6,0.7,1.9,0x5d7847],[1.9,3.8,-0.6,1.8,0x5d7847],
+  [0.4,5.9,0.4,1.6,0x6d8852],[-1.2,3.2,-1.5,1.5,0x6d8852],[1.1,3.1,1.5,1.4,0x4f6c3d]]
+  .forEach(o=>{const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3],10,8),mat(o[4]));
+    cr.position.set(o[0],o[1],o[2]);cr.castShadow=true;gp.add(cr);});
+ gp.position.copy(V(D.level.oak[0],D.level.oak[1],0));scene.add(gp);}
 D.level.veg.forEach(v=>{if(v[2])tree(v[0],v[1],1.0);
   else{const sh=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,6),mat(0x6d8852));
     sh.position.copy(V(v[0],v[1],0.5));scene.add(sh);}});
@@ -506,7 +569,11 @@ const bikeProps={};
    pl2.position.copy(V(o[0],o[1],1.1));scene.add(pl2);});}
 {const pb=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,1.3,10),mat(PAL.RED));
  pb.position.copy(V(96.5,15.6,0.65));pb.castShadow=true;scene.add(pb);}
-{const ph=box(1.0,2.3,1.0,PAL.RED);ph.position.copy(V(76.5,15.6,1.15));scene.add(ph);}
+{const ph=box(0.78,2.1,0.78,PAL.RED);ph.position.copy(V(76.5,14.4,1.05));scene.add(ph);
+ const phr=box(0.9,0.16,0.9,0xa02a20);phr.position.copy(V(76.5,14.4,2.18));scene.add(phr);
+ const phg=new THREE.Mesh(new THREE.PlaneGeometry(0.5,1.1),
+   new THREE.MeshLambertMaterial({color:PAL.GLSI}));
+ phg.position.copy(V(76.5,13.99,1.15));scene.add(phg);}
 // street lights
 const lamps=[];
 [[66,14.2],[80,14.2],[94,14.2],[108,14.2],[122,16],[131,25],[141,33],[148,42]]
@@ -516,7 +583,8 @@ const lamps=[];
       new THREE.MeshBasicMaterial({color:0x9a948a}));
     head.position.copy(V(lp[0],lp[1],3.2));scene.add(head);lamps.push(head);});
 // ---- the ground
-{patch(146,52,176,72,0x6f9c58,0.06);          // pitch
+{for(let st2=0;st2<8;st2++)patch(146,52+st2*2.5,176,52+(st2+1)*2.5,
+    (st2%2)?0x6f9c58:0x77a660,0.06);           // mown pitch stripes
  const line=(x0,y0,x1,y1)=>{const m=box(Math.max(x1-x0,0.3),0.02,Math.max(y1-y0,0.3),0xffffff);
    m.position.copy(V((x0+x1)/2,(y0+y1)/2,0.09));scene.add(m);};
  line(146,52,176,52.3);line(146,71.7,176,72);line(146,52,146.3,72);line(175.7,52,176,72);
@@ -537,15 +605,49 @@ const lamps=[];
      new THREE.MeshBasicMaterial({color:0x8d867a}));
    head.position.copy(V(fl[0],fl[1],7.8));scene.add(head);lamps.push(head);
    head.userData.flood=true;});}
-// ---- residents
+// ---- residents — warm figures, seeded wardrobes, matchday scarves
+const COATS=[0xa9553c,0x6f7d4e,0x3f5e7a,0xc9973c,0x7a4a63,0xb3927a,0x4e6e66,0x8a5a3f];
+const SKIN=[0xe8c39e,0xd9a878,0xc78f62,0xb87a52];
 const bodies=R.map((r,i)=>{
-  const h=r.child?1.0:1.55;                  // ~0.85 of the door — human scale
-  const geo=new THREE.CapsuleGeometry(r.child?0.22:0.27,h-0.55,3,8);
-  const m=new THREE.Mesh(geo,mat(new THREE.Color().setHSL((hash(r.n)%360)/360,0.38,0.38).getHex()));
-  m.castShadow=true;scene.add(m);
-  const nose=new THREE.Mesh(new THREE.SphereGeometry(0.09,6,5),mat(0xf4f1ea));
-  m.add(nose);nose.position.set(0.24,h*0.28,0);
-  return m;});
+  const sd=hash(r.n),child=r.child;
+  const sc=child?0.66:1.0;
+  const g=new THREE.Group();
+  const legs=new THREE.Mesh(new THREE.CylinderGeometry(0.20*sc,0.24*sc,0.5*sc,8),
+    mat(sd%3?0x4a4440:0x5c5450));
+  legs.position.y=0.25*sc;legs.castShadow=true;g.add(legs);
+  const coat=child?[0xda3a2c,0xf8bc3a,0x2f8a5e,0x3f5e7a,0xe88a7c][sd%5]
+                  :COATS[sd%8];
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.26*sc,0.55*sc,3,8),mat(coat));
+  torso.position.y=0.85*sc;torso.castShadow=true;g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.185*sc,9,7),mat(SKIN[sd%4]));
+  head.position.y=1.38*sc;head.castShadow=true;g.add(head);
+  const hairc=[0x3a3028,0x6e5a42,0x9a8a76,0xd8d2c4][r.age>62?3:sd%3];
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.19*sc,9,7,0,Math.PI*2,0,1.5),
+    mat(hairc));
+  hair.position.y=1.43*sc;g.add(hair);
+  const scarf=new THREE.Mesh(new THREE.TorusGeometry(0.2*sc,0.06*sc,6,12),mat(PAL.GRN));
+  scarf.rotation.x=Math.PI/2;scarf.position.y=1.18*sc;scarf.visible=false;g.add(scarf);
+  g.userData={scarf,sc};
+  scene.add(g);return g;});
+// ---- matchday dressing: bunting across Market Street, the club crest
+const bunting=new THREE.Group();
+{const runs=[[66,13.4,80,13.4],[80,13.4,94,13.4],[94,13.4,108,13.4]];
+ runs.forEach(rn=>{const n2=10;
+   for(let k=0;k<n2;k++){const t2=k/(n2-1);
+     const bx=rn[0]+(rn[2]-rn[0])*t2,by=rn[1];
+     const sag=Math.sin(t2*Math.PI)*0.55;
+     const fl=new THREE.Mesh(new THREE.ConeGeometry(0.14,0.34,3),
+       mat(k%2?PAL.GRN:PAL.RND));
+     fl.position.copy(V(bx,by,3.1-sag));fl.rotation.x=Math.PI;
+     bunting.add(fl);}});
+ scene.add(bunting);bunting.visible=false;}
+{const cv2=document.createElement("canvas");cv2.width=128;cv2.height=128;
+ const c3=cv2.getContext("2d");c3.fillStyle="#1e6c4c";c3.fillRect(0,0,128,128);
+ c3.fillStyle="#f8f4eb";c3.font="bold 44px Georgia";c3.textAlign="center";
+ c3.fillText("AFC",64,58);c3.font="24px Georgia";c3.fillText("est.1921",64,92);
+ const crest=new THREE.Mesh(new THREE.PlaneGeometry(3,3),
+   new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv2)}));
+ crest.position.copy(V(152.5,47.4,2.4));crest.rotation.y=Math.PI;scene.add(crest);}
 // ---- lights
 const amb=new THREE.AmbientLight(0xffffff,0.45);scene.add(amb);
 const hemi=new THREE.HemisphereLight(0xcfd8e8,0x6a6a58,0.35);scene.add(hemi);
@@ -564,9 +666,12 @@ function lighting(day,tod){
     -24+60);
   sun.target.position.set(86,0,-24);
   sun.intensity=(wx==="r"?0.25:wx==="w"?0.7:1.0)*dayT;
+  const low=Math.min(1,Math.max(0,(1-Math.abs(tod-800)/420))); // 1 at midday
+  sun.color.setHex(low>0.75?0xfff2dd:0xffd9a0);                // golden shoulders
   amb.intensity=0.18+0.3*dayT*(wx==="r"?0.7:1);
   hemi.intensity=0.15+0.25*dayT;
-  const skyDay=wx==="r"?0x9aa4ac:0xbcd0da,skyNight=0x141a2c;
+  let skyDay=wx==="r"?0x9aa4ac:0xbcd0da;const skyNight=0x141a2c;
+  if(dayT>0&&dayT<0.85&&wx!=="r")skyDay=0xd8c4a8;              // dawn & dusk warmth
   const k=dayT;
   scene.background=new THREE.Color(skyNight).lerp(new THREE.Color(skyDay),k);
   scene.fog.color.copy(scene.background);
@@ -634,12 +739,18 @@ function frame(t){const dt=Math.min(0.1,(t-lastT)/1000);lastT=t;
   advance(dt);
   const day=Math.floor(simMin/DAYMIN),tod=simMin%DAYMIN;
   if(day!==recDay)rebuildRec(day);
+  const homeMatch=isMatchHome(day);
   for(let i=0;i<AG.length;i++){const a=AG[i],m=bodies[i];
     if(a.mode==="off"||a.mode==="home"){m.visible=false;continue;}
     m.visible=true;
-    const h=R[i].child?0.62:0.88;
-    m.position.set(a.x,h,-a.y);
-    m.rotation.y=a.hd;}
+    const walking=a.mode==="walk";
+    const bob=walking?Math.abs(Math.sin(tod*22+i))*0.05:0;
+    m.position.set(a.x,bob,-a.y);
+    m.rotation.y=a.hd;
+    m.rotation.z=walking?Math.sin(tod*22+i)*0.035:0;
+    m.rotation.x=walking?0.06:0;
+    m.userData.scarf.visible=homeMatch&&R[i].sup;}
+  bunting.visible=homeMatch;
   for(const pid in bikeProps){let has=false;
     AG.forEach((a,i)=>{if(a.mode==="at"&&a.place===pid&&R[i].bike)has=true;});
     bikeProps[pid].visible=has;}
