@@ -165,6 +165,61 @@ def rel_story(W, nm, o):
     return "; ".join(bits)
 
 
+def firsts(W, ix, nm):
+    """a life's first times — detected for ANY resident, from the record"""
+    r = W.by_name[nm]
+    out = []
+    if r.get("arrives") is not None:
+        out.append((r["arrives"], "first day in town"))
+    named = sorted((rl["named"], o) for o, rl in r["rel"].items() if "named" in rl)
+    if named:
+        out.append((named[0][0], f"first face that became a name: {named[0][1]}"))
+    bef = sorted((rl["befriended"], o) for o, rl in r["rel"].items() if "befriended" in rl)
+    if bef:
+        out.append((bef[0][0], f"first real friendship: {bef[0][1]}"))
+    args = sorted((dy, o) for o, rl in r["rel"].items()
+                  for dy, e in rl["ev"] if e.startswith("argued"))
+    if args:
+        out.append((args[0][0], f"first argument: with {args[0][1]}"))
+    if r.get("matches"):
+        out.append((r["matches"][0], "first match at the ground"))
+    tick = next((dy for dy, t in r["log"] if "season ticket" in t), None)
+    if tick:
+        out.append((tick, "bought a season ticket"))
+    # first adopted place: 12th chosen visit anywhere
+    bestp = None
+    for p in sorted({pl for (n2, pl) in ix["chosen_nd"] if n2 == nm}):
+        ds_ = sorted(ix["chosen_nd"][(nm, p)])
+        if len(ds_) >= 12 and (bestp is None or ds_[11] < bestp[0]):
+            bestp = (ds_[11], p)
+    if bestp:
+        out.append((bestp[0], f"first place that became theirs: the {bestp[1]}"))
+    rep = next((dy for dy, t in r["log"] if t.startswith("fixed the")), None)
+    if rep:
+        out.append((rep, "first household repair seen through"))
+    return sorted(out)
+
+
+def match_memories(W, ix, nm):
+    """the games this resident was actually AT that the town still talks about"""
+    fb = W.football
+    r = W.by_name[nm]
+    if not fb or len(r.get("matches", [])) < 5:
+        return []
+    att_days = set(r["matches"])
+    mem = []
+    for w, res in sorted(fb.results.items()):
+        if res["day"] not in att_days:
+            continue
+        gf, ga = res["score"]
+        if abs(gf - ga) >= 3 or (res["result"] == "win" and gf >= 3):
+            mem.append((abs(gf - ga), res["day"],
+                        f"was there when {fb.name} {'beat' if res['result'] == 'win' else 'lost to'} "
+                        f"{res['opp']} {gf}–{ga}"))
+    mem.sort(key=lambda x: (-x[0], x[1]))
+    return [(dy, txt) for _, dy, txt in mem[:2]]
+
+
 def place_identity(W, ix, pid):
     per_day_place = ix["per_day_place"]
     tot = sum(v for (p2, dd), v in per_day_place.items() if p2 == pid)
@@ -448,7 +503,7 @@ def write_all(W):
         A(f"  {hh.plot} — {', '.join(hh.members)} (balance {hh.balance:.0f})")
         for (dy, txt) in hh.history[:6]:
             A(f"     {ds(dy):11s} {txt}")
-    with open((W.dd["id"] + "_chronicle.txt"), "w") as fout:
+    with open((W.out_prefix + "_chronicle.txt"), "w") as fout:
         fout.write("\n".join(L) + "\n")
 
     # ---------------- biographies
@@ -484,6 +539,17 @@ def write_biographies(W, ix):
             if c:
                 top = sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))[:3]
                 B.append(f"    {QN[qi]:14s} " + ", ".join(f"{p}({v})" for p, v in top))
+        if r.get("arrives") is not None:
+            fs = firsts(W, ix, nm)
+            if fs:
+                B.append("  firsts:")
+                for dy, txt in fs:
+                    B.append(f"    {ds(dy):11s} {txt}")
+        mems = match_memories(W, ix, nm)
+        if mems:
+            B.append("  matches still talked about:")
+            for dy, txt in mems:
+                B.append(f"    {ds(dy):11s} {txt}")
         hist = switches(W, ix, nm)
         stk = match_streak(W, ix, nm)
         if stk:
@@ -558,5 +624,5 @@ def write_biographies(W, ix):
             "=" * 72, ""]
     for nm, title in picks[:5]:
         bios += biography(nm, title)
-    with open((W.dd["id"] + "_biographies.txt"), "w") as fout:
+    with open((W.out_prefix + "_biographies.txt"), "w") as fout:
         fout.write("\n".join(bios) + "\n")

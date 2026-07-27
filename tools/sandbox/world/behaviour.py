@@ -14,6 +14,7 @@ express the same rule; every divergence is a generalisation, not a tune.
 import math
 from collections import defaultdict
 from .people import NEEDS, GROW, rel, pmem, add_intent
+from .player import render_view
 
 # an intention kind targets a capability; resolution = strongest open provider
 CAP_INTENTS = {"buy", "repair", "prep"}
@@ -52,6 +53,25 @@ def run(world):
 
     def active(r, day):
         return day >= r.get("arrives", -1)
+
+    def finish(r, it, day):
+        """an intention is fulfilled — same effects however it was fulfilled"""
+        it["state"] = "done"
+        it["done"] = day
+        state["int_done"] += 1
+        if it["kind"] == "repair":
+            hh = W.households[r["hh"]]
+            if it["note"] in hh.upkeep:
+                hh.upkeep.remove(it["note"])
+                hh.note(day, f"fixed: {it['note']}")
+            r["log"].append((day, f"fixed the {it['note']}"))
+        if it["kind"] == "return":
+            o = BY[it["target"]]
+            rel(r, o["n"])["obligation"] = 0.0
+            rel(o, r["n"])["trust"] += 1.0
+            rel(r, o["n"])["trust"] += 0.5
+            rel(r, o["n"])["ev"].append((day, "returned " + it["note"]))
+            r["log"].append((day, f"returned the {it['note']} to {o['n']}"))
 
     def matchday_open(pid, w):
         if not W.places[pid].matchday_only:
@@ -221,24 +241,34 @@ def run(world):
                             if not pl.open_at(d, s):
                                 continue
                             open_now[pid] = pl
-                        for it in sorted(r["intents"], key=lambda i: -i["prio"]):
-                            if it["state"] != "open":
-                                continue
-                            tgt = it["target"]
-                            if it["kind"] in CAP_INTENTS:
-                                pv = provider(W, tgt, open_now)
-                                if pv:
-                                    place, why, intent_used = pv, f"intention: {it['kind']} ({it['note'] or tgt})", it
-                                    break
-                            else:                    # visit / return / celebrate a person
-                                o = BY.get(tgt)
-                                if o and active(o, day):
-                                    gp = guess.get(tgt, {}).get(s)
-                                    if it["kind"] == "celebrate":
-                                        gp = provider(W, "celebration", open_now) or gp
-                                    if gp and gp in open_now:
-                                        place, why, intent_used = gp, f"intention: {it['kind']} {tgt}", it
+                        # a controller (human input) pre-empts the utility AI —
+                        # for THIS resident's free slot only; same options, same world
+                        ctrl = W.controllers.get(r["n"])
+                        if ctrl is not None:
+                            pick = ctrl.choose(render_view(W, r, day, d, s, open_now))
+                            if pick == "home":
+                                place, why = "home", None
+                            elif pick in open_now:
+                                place, why = pick, "chose it"
+                        if place is None:
+                            for it in sorted(r["intents"], key=lambda i: -i["prio"]):
+                                if it["state"] != "open":
+                                    continue
+                                tgt = it["target"]
+                                if it["kind"] in CAP_INTENTS:
+                                    pv = provider(W, tgt, open_now)
+                                    if pv:
+                                        place, why, intent_used = pv, f"intention: {it['kind']} ({it['note'] or tgt})", it
                                         break
+                                else:                # visit / return / celebrate a person
+                                    o = BY.get(tgt)
+                                    if o and active(o, day):
+                                        gp = guess.get(tgt, {}).get(s)
+                                        if it["kind"] == "celebrate":
+                                            gp = provider(W, "celebration", open_now) or gp
+                                        if gp and gp in open_now:
+                                            place, why, intent_used = gp, f"intention: {it['kind']} {tgt}", it
+                                            break
                         if place is None:
                             for pid, pl in open_now.items():
                                 v = sum(r["needs"].get(n, 0) * st for n, st in pl.sat.items())
@@ -272,9 +302,20 @@ def run(world):
                     for n, st in pl.sat.items():
                         if n in r["needs"]:
                             r["needs"][n] = max(0.0, r["needs"][n] - st * 1.4)
-                    if "football" in pl.sat and ("season ticket" in r.get("poss", [])
-                                                 or r["tr"]["foot"] > 0.55):
-                        state["traces"].append((day, r["n"], "scarf on the rail"))
+                    if "football" in pl.sat:
+                        r.setdefault("matches", []).append(day)
+                        if "season ticket" in r.get("poss", []) or r["tr"]["foot"] > 0.55:
+                            state["traces"].append((day, r["n"], "scarf on the rail"))
+                        # a third match makes a supporter — of anyone
+                        if (len(r["matches"]) == 3 and not r.get("child")
+                                and "season ticket" not in r.get("poss", [])):
+                            r.setdefault("poss", []).append("season ticket")
+                            W.households[r["hh"]].balance -= 60
+                            r["log"].append((day, "bought a season ticket"))
+                            fc = next((i for i in W.insts.values()
+                                       if i.kind == "football_club"), None)
+                            if fc:
+                                fc.join(day, r["n"])
                     r["habit"][(place, d, s)] = r["habit"].get((place, d, s), 0) + 1
                     state["occ"][(place, s)] += 1
                     m = pmem(r, place)
@@ -295,21 +336,15 @@ def run(world):
                 state["visits"].append((day, s, r["n"], place,
                                         why or "", intent_used is not None, wx))
                 if intent_used is not None:
-                    intent_used["state"] = "done"
-                    intent_used["done"] = day
-                    state["int_done"] += 1
-                    if intent_used["kind"] == "repair":
-                        hh = W.households[r["hh"]]
-                        if intent_used["note"] in hh.upkeep:
-                            hh.upkeep.remove(intent_used["note"])
-                            hh.note(day, f"fixed: {intent_used['note']}")
-                    if intent_used["kind"] == "return":
-                        o = BY[intent_used["target"]]
-                        rel(r, o["n"])["obligation"] = 0.0
-                        rel(o, r["n"])["trust"] += 1.0
-                        rel(r, o["n"])["trust"] += 0.5
-                        rel(r, o["n"])["ev"].append((day, "returned " + intent_used["note"]))
-                        r["log"].append((day, f"returned the {intent_used['note']} to {o['n']}"))
+                    finish(r, intent_used, day)
+                elif place != "home":
+                    # walking into a provider settles the errand anyway —
+                    # true for every resident, human-steered or not
+                    pl2 = W.places[place]
+                    for it in r["intents"]:
+                        if it["state"] == "open" and it["kind"] in CAP_INTENTS \
+                                and pl2.sat.get(it["target"], 0) >= PROVIDER_MIN:
+                            finish(r, it, day)
             # ---- co-presence -> relationships
             for pid, names in present.items():
                 pl = W.places[pid]
@@ -335,6 +370,11 @@ def run(world):
                         if ra["rec"] > 3:
                             ra["affection"] += 0.2 * a["tr"]["soc"]
                             rb["affection"] += 0.2 * b["tr"]["soc"]
+                        for rr in (ra, rb):
+                            if rr["rec"] == 7 and "named" not in rr:
+                                rr["named"] = day          # a face becomes a name
+                            if rr["affection"] >= 5.0 and "befriended" not in rr:
+                                rr["befriended"] = day
                         if len(names) > 6:
                             ra["irritation"] += 0.15 * a["tr"]["temper"]
                             rb["irritation"] += 0.15 * b["tr"]["temper"]
@@ -347,11 +387,18 @@ def run(world):
                             a["log"].append((day, f"made peace with {b['n']} at the {pid}"))
                             state["argulog"].append((day, a["n"], b["n"], "resolved", pid))
                         state["copresence"][(names[i], names[j], pid)] += 1
+                nameset = set(names)
                 for nm in names:
                     m = pmem(BY[nm], pid)
                     for other in names:
                         if other != nm:
                             m["assoc"][other] += 1
+                    # bumping into the very person you meant to see settles it
+                    r2 = BY[nm]
+                    for it in r2["intents"]:
+                        if it["state"] == "open" and it["kind"] in ("visit", "celebrate", "return") \
+                                and it["target"] in nameset and it["target"] != nm:
+                            finish(r2, it, day)
                 # a visit intent landing at someone's home would be hosted —
                 # households count their visitors via co-presence at the plot
         # ---- arguments pick their pair at day end

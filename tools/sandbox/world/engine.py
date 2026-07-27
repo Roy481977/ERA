@@ -28,9 +28,11 @@ class World:
     pass
 
 
-def build_world(dd, weeks=None):
+def build_world(dd, weeks=None, controllers=None):
     W = World()
     W.dd = dd
+    W.controllers = controllers or {}
+    W.out_prefix = dd["id"] + ("_player" if controllers else "")
     W.rng = Rng(dd["seed"])
     W.clock = Clock(weeks or dd["weeks"])
     W.weather = Weather(W.rng, W.clock)
@@ -125,9 +127,12 @@ def build_world(dd, weeks=None):
     return W
 
 
-def run_world(module_name, weeks=None, outputs=True):
+def run_world(module_name, weeks=None, outputs=True, controllers_module=None):
     dd = importlib.import_module(module_name).DISTRICT
-    W = build_world(dd, weeks)
+    ctrl = None
+    if controllers_module:
+        ctrl = importlib.import_module(controllers_module).CONTROLLERS
+    W = build_world(dd, weeks, controllers=ctrl)
     from . import behaviour
     behaviour.run(W)
     if outputs:
@@ -139,8 +144,9 @@ def run_world(module_name, weeks=None, outputs=True):
 
 if __name__ == "__main__":
     mod = sys.argv[1] if len(sys.argv) > 1 else "district01_data"
-    wks = int(sys.argv[2]) if len(sys.argv) > 2 else None
-    W = run_world(mod, wks)
+    wks = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else None
+    cm = next((a.split("=", 1)[1] for a in sys.argv[2:] if a.startswith("controllers=")), None)
+    W = run_world(mod, wks, controllers_module=cm)
     st = W.state
     print(f"{W.dd['name']}: {len(W.residents)} residents, {W.clock.weeks} weeks, "
           f"{len(st['visits'])} visit records, {len(st['eventlog'])} events, "

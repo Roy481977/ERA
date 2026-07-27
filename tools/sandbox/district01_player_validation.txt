@@ -8,28 +8,42 @@ like another year had passed?
 EVIDENCE THE YEAR HAPPENED
 
 In the people:
-  82 pairs genuinely met for the first time this year; each
+  81 pairs genuinely met for the first time this year; each
   remembers where and when.
   No once-frequent pair ever went five weeks apart: the cooling
   mechanism exists, but a district this small never triggers it —
   the familiar-stranger saturation, unchanged by the refactor.
 
 In the routines:
-  Median resident kept 70% of the autumn routine —
+  Median resident kept 71% of the autumn routine —
   lives persisted AND changed: neither frozen nor amnesiac.
 
 In the institutions (new this phase — they outlive their people):
-  the football club: 17 residents became members this year, by their own habits.
+  the football club: 18 residents became members this year, by their own habits.
   the allotment society: 7 residents became members this year, by their own habits.
   the bakery: Bill retired after years as baker — and the business carried on without him.
   the football club: 25W 9D 18L over 52 matches; finished 8 in the
-  autumn series and 3 in the spring; balance 3856 on real
+  autumn series and 3 in the spring; balance 3976 on real
   gate receipts; 8 injuries. It played whether anyone watched or not.
 
 In the calendar:
-  the allotment breathed with the seasons (804 winter visits vs 2207 in spring);
-  the family day emptied the streets (79 vs 156 a week before); a
+  the allotment breathed with the seasons (811 winter visits vs 2172 in spring);
+  the family day emptied the streets (88 vs 158 a week before); a
   fixture every Saturday kept the fortnight heartbeat under it all.
+
+THE PLAYER QUESTION
+  If this resident were controlled by a human instead of the simulator,
+  would the world continue behaving naturally?
+  Roy: 1812 lived moments — 2.3% of the town's public life.
+    The town's five busiest places are IDENTICAL
+    with or without them: pub, bakery, cafe, stores, green.
+    They know 41 people by name and made 41 real friendships —
+    all through the same co-presence rules as everyone else.
+  When the controller returns no input, the resident's slot falls
+  through to the ordinary utility choice — an idle player's year is
+  byte-identical to an uncontrolled run (verified by twin runs).
+  Nobody in the town exists to serve this resident; the simulation
+  does not know which resident is watched.
 
 WHAT WOULD GIVE IT AWAY (honest limits)
   Nobody was born, nobody died, nobody moved away. Children did not

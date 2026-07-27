@@ -97,6 +97,13 @@ DISTRICT = {
          "tr": {"soc": 0.55, "rout": 0.7, "out": 0.5, "foot": 0.65,
                 "temper": 0.25, "duty": 0.5, "range": 0.9},
          "poss": []},
+        # the player's body — one more resident; the engine cannot tell.
+        # human input, when present, replaces only this row's free choices.
+        {"n": "Roy", "age": 47, "hh": 97, "home": "P12", "occ": "newcomer",
+         "arrives": 7,
+         "tr": {"soc": 0.6, "rout": 0.5, "out": 0.6, "foot": 0.7,
+                "temper": 0.2, "duty": 0.5, "range": 1.0},
+         "poss": []},
     ],
 
     # canon residents — data rows, zero special-case behaviour
@@ -141,6 +148,7 @@ DISTRICT = {
                       "pupil": True,
                       "shifts": [(range(5), (1, 2, 3), "green")]},
         "retired":   {"institution": None, "income": 70, "shifts": []},
+        "newcomer":  {"institution": None, "income": 80, "shifts": []},
     },
 
     # ------------------------------------------------------ institutions

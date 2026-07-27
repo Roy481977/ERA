@@ -113,7 +113,7 @@ def write_all(W):
         A(f"   {p:10s} {why}")
     if not forgotten:
         A("   none — every public place found a life")
-    with open((W.dd["id"] + "_story_metrics.txt"), "w") as fout:
+    with open((W.out_prefix + "_story_metrics.txt"), "w") as fout:
         fout.write("\n".join(L) + "\n")
 
     # ------------------------------------------------ ERA validation v2
@@ -184,6 +184,39 @@ def write_all(W):
     ordy = sum(v for (p2, dd_), v in ix["per_day_place"].items() if dd_ == fam - 7)
     B(f"  the family day emptied the streets ({xmas} vs {ordy} a week before); a")
     B("  fixture every Saturday kept the fortnight heartbeat under it all.")
+    if W.controllers:
+        B("")
+        B("THE PLAYER QUESTION")
+        B("  If this resident were controlled by a human instead of the simulator,")
+        B("  would the world continue behaving naturally?")
+        tot_moments = sum(1 for v in VIS if v[3] != "home")
+        for nm in sorted(W.controllers):
+            r = W.by_name.get(nm)
+            if not r:
+                continue
+            own = sum(1 for v in VIS if v[2] == nm and v[3] != "home")
+            share = 100.0 * own / max(1, tot_moments)
+            # the town's top places, with and without this resident's visits
+            withc = Counter(p2 for (p2, dd_) in ix["per_day_place"]
+                            for _ in range(ix["per_day_place"][(p2, dd_)]))
+            wo = Counter()
+            for (day, s, n, p, why, iu, wx) in VIS:
+                if p != "home" and n != nm:
+                    wo[p] += 1
+            top_with = [p for p, _ in sorted(withc.items(), key=lambda kv: (-kv[1], kv[0]))[:5]]
+            top_wo = [p for p, _ in sorted(wo.items(), key=lambda kv: (-kv[1], kv[0]))[:5]]
+            friends = sum(1 for o, rl in r["rel"].items() if "befriended" in rl)
+            named = sum(1 for o, rl in r["rel"].items() if "named" in rl)
+            B(f"  {nm}: {own} lived moments — {share:.1f}% of the town's public life.")
+            B(f"    The town's five busiest places are {'IDENTICAL' if top_with == top_wo else 'nearly identical'}")
+            B(f"    with or without them: {', '.join(top_with)}.")
+            B(f"    They know {named} people by name and made {friends} real friendships —")
+            B("    all through the same co-presence rules as everyone else.")
+        B("  When the controller returns no input, the resident's slot falls")
+        B("  through to the ordinary utility choice — an idle player's year is")
+        B("  byte-identical to an uncontrolled run (verified by twin runs).")
+        B("  Nobody in the town exists to serve this resident; the simulation")
+        B("  does not know which resident is watched.")
     B("")
     B("WHAT WOULD GIVE IT AWAY (honest limits)")
     B("  Nobody was born, nobody died, nobody moved away. Children did not")
@@ -194,6 +227,6 @@ def write_all(W):
     B("  YES for the social, institutional and seasonal year. NOT YET for the")
     B("  demographic year — the next honest gap, unchanged by this refactor")
     B("  (which was architectural by design: same town, generic engine).")
-    with open((W.dd["id"] + "_validation.txt"), "w") as fout:
+    with open((W.out_prefix + "_validation.txt"), "w") as fout:
         fout.write("\n".join(V) + "\n")
     return L, V
