@@ -204,3 +204,84 @@ for _pid, _xy in REV["plots"].items():
     DISTRICT["plot_loc"][_pid] = list(_xy)
 DISTRICT["places"]["benchB"]["loc"] = tuple(REV["benchB"])
 DISTRICT["rev"] = REV
+
+# ------------------------------------------------------------------
+# REV2 — THE VILLAGE PLAN (Continuous Creative Direction, PROPOSED).
+# The prototype plan is replaced, not optimised. Language untouched;
+# composition redrawn: a continuous shop-and-terrace wall on the south
+# side of Market Street, the green opened into a three-sided room with
+# homes facing it (June's window looks down the green to the oak), the
+# square walled by the pub, the post office clock as the vertical accent.
+REV2 = {
+    "plots": {
+        # the south street wall: shops and terrace, fronts on the pavement
+        "P02": (34.0, 11.6),   # bakery at the school corner (zebra beside it)
+        "P05": (46.0, 11.6),   # stores
+        "P04": (56.0, 11.6),   # cafe, facing the green across the street
+        "P06": (68.0, 11.6),   # post office — carries the clock
+        "P14": (80.0, 11.4),   # terrace
+        "P13": (90.0, 11.4),   # terrace
+        "P15": (100.0, 11.4),  # terrace end — Jack stays 30 m from the pub
+        # the green's shoulders on the north side
+        "P01": (26.0, 25.4),   # Hana's cottage at the green's west shoulder
+        "P03": (70.0, 25.4),   # the east shoulder cottage
+        # North Lane homes face south into the green
+        "P08": (38.0, 49.5),
+        "P09": (48.0, 50.3),   # June — her window looks down the green
+        "P10": (58.0, 49.5),
+        # the pub walls the square
+        "P07": (114.0, 26.5),
+        # P11, P12 keep the quiet School Lane fringe
+    },
+    "places": {
+        "green":  (48.0, 31.0),
+        "oak":    (48.0, 32.5),
+        "benchA": (42.0, 24.6),   # the watching seat, at the green's mouth
+        "benchB": (50.5, 33.8),   # the quiet seat, under the oak
+    },
+    "oak_lm": (48.0, 32.0),
+    "roads": {
+        "high-street": (64.0, 15.0, 112.0, 21.5),   # reaches the square
+        "north-lane":  (26.0, 42.5, 66.0, 46.5),    # fronts the green
+    },
+    "new_roads": [
+        {"id": "green-west", "x0": 30.0, "y0": 21.5, "x1": 34.0, "y1": 42.5},
+    ],
+    "paths": {
+        "bakery-sq":  (10.0, 21.5, 30.0, 24.5),
+        "pave-w-s":   (-20.0, 11.0, 112.0, 15.0),
+        "hs-walk":    (64.0, 21.5, 112.0, 25.5),
+        "north-path": (26.0, 46.5, 66.0, 48.5),
+    },
+    "worn": {
+        "worn-sq-oak":    [(42.0, 22.0), (48.0, 31.0)],
+        "worn-oak-hs":    [(52.0, 33.0), (62.0, 23.0)],
+        "worn-oak-north": [(48.0, 34.0), (48.0, 46.5)],
+    },
+}
+for _pid, _xy in REV2["plots"].items():
+    DISTRICT["plot_loc"][_pid] = list(_xy)
+for _pl, _xy in REV2["places"].items():
+    DISTRICT["places"][_pl]["loc"] = tuple(_xy)
+for _shop, _plot in (("bakery", "P02"), ("stores", "P05"), ("cafe", "P04"),
+                     ("post", "P06"), ("pub", "P07")):
+    DISTRICT["places"][_shop]["loc"] = tuple(DISTRICT["plot_loc"][_plot])
+_LV = DISTRICT["level"]
+_LV["landmarks"]["oak"]["x"], _LV["landmarks"]["oak"]["y"] = REV2["oak_lm"]
+for _r in _LV["roads"]:
+    if _r["id"] in REV2["roads"]:
+        _r["x0"], _r["y0"], _r["x1"], _r["y1"] = REV2["roads"][_r["id"]]
+for _nr in REV2["new_roads"]:
+    if not any(r["id"] == _nr["id"] for r in _LV["roads"]):
+        _LV["roads"].append(dict(_nr))
+for _p in _LV["paths"]:
+    if _p["id"] in REV2["paths"]:
+        _p["x0"], _p["y0"], _p["x1"], _p["y1"] = REV2["paths"][_p["id"]]
+    if _p["id"] in REV2["worn"]:
+        _p["pts"] = [tuple(q) for q in REV2["worn"][_p["id"]]]
+for _f in _LV["furniture"]:
+    if _f["m"] == "ST-04 bench" and abs(_f["x"] - 46.0) < 1:
+        _f["x"], _f["y"] = 42.0, 24.6
+    elif _f["m"] == "ST-04 bench" and abs(_f["x"] - 55.2) < 1:
+        _f["x"], _f["y"] = 50.5, 33.8
+DISTRICT["rev2"] = REV2

@@ -172,15 +172,18 @@ for p in LV["paths"]:
 # the road to the match: market -> bridge -> turnstiles
 # ADJ-6: the Market Street front-door spine + Loop link;
 # ADJ-11: the riverside path from the square to the bridge
-segs += [((64.0, 26.5), (86.0, 26.5)), ((86.0, 26.5), (108.0, 26.5)),
-         ((64.0, 26.5), (64.0, 21.5)), ((108.0, 26.5), (108.0, 18.2)),
+segs += [((64.0, 23.5), (86.0, 23.5)), ((86.0, 23.5), (112.0, 23.5)),
+         ((64.0, 23.5), (64.0, 21.5)), ((112.0, 23.5), (112.0, 18.2)),
          ((52.0, 15.0), (52.0, -1.5)),
          ((117.0, 16.0), (126.0, 10.5)), ((126.0, 10.5), (134.0, 17.0)),
          ((134.0, 17.0), (137.4, 24.0))]
-segs += [((108.0, 18.2), (117.0, 20.0)), ((117.0, 20.0), (128.0, 24.0)),
+segs += [((112.0, 18.2), (117.0, 20.0)), ((117.0, 20.0), (128.0, 24.0)),
          ((128.0, 24.0), (137.4, 27.2)), ((137.4, 27.2), (146.0, 40.0)),
          ((146.0, 40.0), (152.0, 47.6)),
-         ((-8.0, 15.0), (-8.0, 26.0)), ((20.0, 42.5), (20.0, 30.0))]
+         ((-8.0, 15.0), (-8.0, 26.0)),
+         ((32.0, 21.5), (32.0, 42.5)),                       # green-west lane
+         ((48.0, 21.5), (48.0, 32.0)), ((48.0, 32.0), (48.0, 46.5)),  # June's line
+         ((42.0, 24.6), (48.0, 32.0)), ((50.5, 33.8), (48.0, 32.0))]  # bench spurs
 nodes, edges = [], []
 
 
@@ -271,16 +274,16 @@ level["paths"] = level["paths"] + [{"k": p["k"], "pts": p["pts"]} for p in worn_
 
 # ---- PHASE 12 micro-places (each justified by the record) --------------
 level["terrain"]["ground_apron"] = [136.0, 44.0, 182.0, 78.0]      # ADJ-9
-MICRO = {
-    "pubwall":  [110.0, 26.2, 122.0, 26.2],   # the wall pub lingerers lean on
+MICRO = {  # REV2 — the village plan
+    "pubwall":  [104.0, 24.5, 111.0, 24.5],   # the wall pub lingerers lean on
     "rail_turn": [146.0, 46.2, 160.0, 46.2],  # the railing before football
     "rail_bridge": [132.5, 25.0, 136.5, 25.6],
     "teens":    [54.0, -13.5],                # the corner the teenagers claim
-    "green_rect": [36.0, 21.8, 64.0, 30.0],   # the green, mown distinct
-    "green_wall": [36.0, 22.0, 64.0, 22.0],   # its low road-edge wall
+    "green_rect": [34.0, 22.0, 62.0, 42.0],   # the green — now a room
+    "green_wall": [52.0, 22.2, 62.0, 22.2],   # low wall east of the mouth
     "hedges":   [[2.0, -5.4, 46.0, -4.6], [56.0, -5.4, 110.0, -4.6]],
     "frame_trees": [[121.0, 23.0], [125.0, 26.8], [129.0, 29.6],
-                    [36.5, 29.0], [63.5, 29.2]],
+                    [33.0, 42.8], [63.0, 41.0]],
     "riverside": [[117.0, 16.0], [126.0, 10.5], [134.0, 17.0], [137.4, 24.0]],
 }
 DATA = {
