@@ -1,0 +1,124 @@
+========================================================================
+ERA VALIDATION — living district, 40 residents, 12 weeks, seed 27
+========================================================================
+
+[ PASS  ] residents develop distinct lives
+          - median cross-household routine overlap 0.19; most similar pair Arthur&Petra at 0.59
+
+[ PASS  ] every resident can form attachment
+          - 32/32 adults adopted at least one place
+          - nobody placeless
+
+[ PASS  ] places matter differently to different people
+          - 6 places hold 2+ adopters with different lives
+          - allotment: adopted by 29 (ages 9–78)
+          - pub: adopted by 29 (ages 30–78)
+          - cafe: adopted by 21 (ages 8–77)
+
+[CONCERN] familiar strangers remain possible
+          - 0/780 known pairs are still in the 1–6 'nodding' band (0%) at week 12
+
+[ PASS  ] routines recover after interruption
+          - 5/6 illness interruptions recovered within 2 weeks
+          - Beth: ill day 15, routine back in 2 week(s)
+          - Enid: ill day 23, routine back in 2 week(s)
+          - Owen: ill day 37, routine back in 3 week(s)
+          - Tomas: ill day 44, routine back in 2 week(s)
+
+[ PASS  ] football shapes life without consuming it
+          - Saturday: 30% of outings are ground/pub; weekdays: 0.0% touch the ground (staff only)
+
+[ PASS  ] Tuesday and Saturday are structurally different
+          - week 7: |Tue|=161 |Sat|=140, symmetric difference 161
+
+[ PASS  ] the district produces solitude, waiting, encounters and belonging
+          - quiet-place visits 2616 · bus-stop waits 786 · light encounters 1192 pairs · adopted-place visits 5128
+
+[ PASS  ] behaviour stays believable over months
+          - routine stability weeks 3..12: 0.64 0.68 0.74 0.72 0.71 0.67 0.72 0.79 0.81 0.78
+          - no need diverges (max accumulated need 27.7); intention outcomes over the run: 235 fulfilled / 2 forgotten
+
+========================================================================
+FIVE LIVES (selected: June; the newcomer; the most eventful; a child; a shift worker)
+========================================================================
+
+--- June, 61, post2, household 90 (P09) ---
+    traits: sociability 0.65 routine 0.90 outdoors 0.62 football 0.80 temper 0.14
+    possessions: season ticket
+    adopted: allotment (50 chosen visits), pub (38 chosen visits), cafe (38 chosen visits)
+    avoided for a while: bakery
+    close to Pat: rec 73, comfort 13.4, affection 9.1, trust 0.0
+    close to Tomas: rec 69, comfort 12.6, affection 8.5, trust 0.0
+    close to Claire: rec 69, comfort 11.6, affection 8.5, trust 0.0
+    rubbed wrong by Hana: irritation 1.9, unresolved tension
+    intentions now open: none
+    routine stability: wk2:0.65  wk5:0.63  wk8:0.65  wk11:0.71
+    life log:
+      d05 Sat: words with Hana at the bakery
+      d61 Sat: household problem: leaking gutter
+      d82 Sat: household problem: broken pane
+      d82 Sat: birthday
+
+--- Petra, 34, commuter, household 99 (P10) ---
+    traits: sociability 0.70 routine 0.60 outdoors 0.60 football 0.30 temper 0.30
+    possessions: bike
+    adopted: bakery (37 chosen visits), allotment (26 chosen visits), pub (24 chosen visits)
+    close to Leo: rec 49, comfort 8.8, affection 6.4, trust 0.0
+    close to Nell: rec 49, comfort 8.5, affection 6.4, trust 0.0
+    close to Sam: rec 49, comfort 8.4, affection 6.4, trust 0.0
+    rubbed wrong by Sam: irritation 2.1
+    intentions now open: none
+    routine stability: wk8:0.47  wk11:0.61
+    life log:
+      d35 Mon: moved into P10 — knows nobody
+      d46 Fri: birthday
+
+--- Owen, 71, retired, household 11 (P12) ---
+    traits: sociability 0.86 routine 0.58 outdoors 0.29 football 0.08 temper 0.50
+    adopted: bakery (60 chosen visits), allotment (37 chosen visits), pub (37 chosen visits)
+    close to Marge: rec 70, comfort 11.2, affection 11.5, trust 0.0
+    close to Bill: rec 69, comfort 10.9, affection 11.4, trust 0.0
+    close to Sam: rec 68, comfort 12.0, affection 11.2, trust 0.0
+    rubbed wrong by Marge: irritation 5.0
+    intentions now open: none
+    routine stability: wk2:0.65  wk5:0.57  wk8:0.69  wk11:0.63
+    life log:
+      d11 Fri: means to call on Ken
+      d15 Tue: borrowed the ladder from Enid
+      d15 Tue: returned the ladder to Enid
+      d37 Wed: ill for 3 days
+      d73 Thu: birthday
+
+--- Stan, 13, school, household 1 (P02) ---
+    traits: sociability 0.89 routine 0.35 outdoors 0.74 football 0.85 temper 0.36
+    possessions: ball
+    adopted: bakery (62 chosen visits), allotment (34 chosen visits), cafe (24 chosen visits)
+    close to Luca: rec 84, comfort 13.7, affection 14.3, trust 0.0
+    close to Iris: rec 84, comfort 14.3, affection 14.3, trust 0.0
+    close to Ron: rec 84, comfort 14.3, affection 14.3, trust 0.0
+    rubbed wrong by Luca: irritation 4.5
+    intentions now open: none
+    routine stability: wk2:0.69  wk5:0.78  wk8:0.82  wk11:0.73
+    life log:
+
+--- Hana, 44, baker, household 0 (P01) ---
+    traits: sociability 0.87 routine 0.35 outdoors 0.85 football 0.53 temper 0.48
+    adopted: allotment (33 chosen visits), oak (29 chosen visits), pub (28 chosen visits)
+    avoided for a while: bakery
+    close to Marge: rec 79, comfort 12.1, affection 13.2, trust 0.0
+    close to Bill: rec 75, comfort 11.4, affection 12.5, trust 0.0
+    close to Rosa: rec 74, comfort 11.2, affection 12.3, trust 0.0
+    rubbed wrong by Bill: irritation 4.9
+    intentions now open: none
+    routine stability: wk2:0.73  wk5:0.71  wk8:0.73  wk11:0.71
+    life log:
+      d05 Sat: words with June at the bakery
+      d18 Fri: birthday
+      d39 Fri: means to call on Marge
+
+========================================================================
+DISTRICT FAILURES EXPOSED
+========================================================================
+  the green/oak quarter after 17:00: 226 visits in 12 weeks — the pub owns the evening; standing finding, third run in a row
+  market: 19 visits, all Friday — pairing with 'square' holds, no action
+  arguments: 6 broke out, 4 made peace (quiet places did the mending: allotment, benchB, oak)
