@@ -333,6 +333,17 @@ function gH(x,y){
   if(x>=34&&x<=62&&y>=22&&y<=42)return 0.35;      // the green plateau
   if(y>=47.2&&x<=118)return 0.63;                 // the north terrace
   return 0;}
+// SPRINT 022 — contact AO blobs: everything meets the ground in shade
+const aoTex=(()=>{const av=document.createElement("canvas");av.width=av.height=128;
+  const ac=av.getContext("2d");
+  const ag=ac.createRadialGradient(64,64,8,64,64,62);
+  ag.addColorStop(0,"rgba(30,26,20,0.4)");ag.addColorStop(0.7,"rgba(30,26,20,0.18)");
+  ag.addColorStop(1,"rgba(30,26,20,0)");
+  ac.fillStyle=ag;ac.fillRect(0,0,128,128);
+  const t9=new THREE.CanvasTexture(av);t9.encoding=THREE.sRGBEncoding;return t9;})();
+function aoBlob(w9,d9){const m9=new THREE.Mesh(new THREE.PlaneGeometry(w9,d9),
+  new THREE.MeshLambertMaterial({map:aoTex,transparent:true,depthWrite:false}));
+  m9.rotation.x=-Math.PI/2;m9.position.y=0.018;return m9;}
 const mat=c=>new THREE.MeshLambertMaterial({color:c});
 function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   const s=new THREE.Shape();const hw=w/2,hd=d/2;
@@ -610,6 +621,7 @@ D.level.plots.forEach(p=>{
   const g=new THREE.Group();
   // plinth — the building meets its ground (SL-5)
   const pl0=box(w+0.3,0.22,dep+0.3,0x8d7f6d);pl0.position.y=0.11;g.add(pl0);
+  g.add(aoBlob(w+2.4,dep+2.4));
   const body=roundedBox(w,ht,dep,0.28,bcol);g.add(body);
   // quoins: few and fat (SL-3) on brick bodies
   if(brick&&seed%100<40){[-1,1].forEach(sx=>{for(let q=0;q<3;q++){
@@ -735,6 +747,7 @@ function tree(x,y,s){const gp=new THREE.Group();
    [0.15,2.75,0.15,0.8,g1],[-0.3,1.6,-0.6,0.7,g1]].forEach(o=>{
     const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3]*s,9,7),mat(o[4]));
     cr.position.set(o[0]*s,o[1]*s,o[2]*s);cr.castShadow=true;gp.add(cr);});
+  const ab=aoBlob(3.2*s,3.2*s);gp.add(ab);
   gp.position.copy(V(x,y,gH(x,y)));scene.add(gp);return gp;}
 // THE OAK — the town's cathedral: nine lobes, root flare, and the swing
 {const gp=new THREE.Group();
@@ -755,6 +768,7 @@ function tree(x,y,s){const gp=new THREE.Group();
    new THREE.CylinderGeometry(0.025,0.025,2.5,5),mat(0xcdc0a8));
    rope.position.set(3.15+o[0],2.15,0.75);gp.add(rope);});
  const seat=box(0.85,0.09,0.32,0x8a6a48);seat.position.set(3.15,0.9,0.75);gp.add(seat);
+ gp.add(aoBlob(11,11));
  gp.position.copy(V(D.level.oak[0],D.level.oak[1],gH(D.level.oak[0],D.level.oak[1])));scene.add(gp);}
 const SWING=[D.level.oak[0]+3.15,D.level.oak[1]-0.75];
 D.level.veg.forEach(v=>{if(v[2])tree(v[0],v[1],1.0);
@@ -1062,6 +1076,7 @@ const bodies=R.map((r,i)=>{
   const hair=new THREE.Mesh(new THREE.SphereGeometry(0.19*sc,9,7,0,Math.PI*2,0,1.5),
     mat(hairc));
   hair.position.y=1.43*sc;g.add(hair);
+  g.add(aoBlob(0.95*sc,0.95*sc));
   const scarf=new THREE.Mesh(new THREE.TorusGeometry(0.2*sc,0.06*sc,6,12),mat(PAL.GRN));
   scarf.rotation.x=Math.PI/2;scarf.position.y=1.18*sc;scarf.visible=false;g.add(scarf);
   g.userData={scarf,sc};
@@ -1297,11 +1312,13 @@ const lampLights=[];
 const amb=new THREE.AmbientLight(0xffffff,0.45);scene.add(amb);
 const hemi=new THREE.HemisphereLight(0xcfd8e8,0x6a6a58,0.35);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffe8c8,1.0);
-sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-130;sun.shadow.camera.right=130;
-sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;
-sun.shadow.camera.far=400;
+sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);
+sun.shadow.camera.left=-110;sun.shadow.camera.right=120;
+sun.shadow.camera.top=95;sun.shadow.camera.bottom=-75;
+sun.shadow.camera.far=400;sun.shadow.bias=-0.0004;sun.shadow.radius=3;
 scene.add(sun);scene.add(sun.target);
+// SPRINT 022 — bounced warm fill from opposite the sun (cheap GI)
+const fill=new THREE.DirectionalLight(0xffd9a8,0.0);scene.add(fill);scene.add(fill.target);
 scene.fog=new THREE.Fog(0xcfd8d0,180,650);
 function lighting(day,tod){
   const wx=D.wx[day];
@@ -1309,19 +1326,23 @@ function lighting(day,tod){
   // the sun genuinely travels: low and golden at the shoulders, high at one
   const prog=Math.max(0,Math.min(1,(tod-400)/(1290-400)));
   const az=Math.PI*(0.08+prog*0.84);
-  const el=0.12+Math.sin(prog*Math.PI)*0.78;          // radians of elevation
+  // the Book's long light: the sun stays low, shadows stay long
+  const el=0.11+Math.sin(prog*Math.PI)*0.46;          // radians of elevation
   const rS=260;
   sun.position.set(86-Math.cos(az)*rS*Math.cos(el),
     Math.sin(el)*rS*0.6+6,-24+Math.sin(az)*rS*Math.cos(el)*0.4+70);
   sun.target.position.set(86,0,-24);
   const golden=Math.pow(1-Math.sin(prog*Math.PI),1.5);  // 1 at shoulders
-  sun.color.setHex(golden>0.55?0xffc27a:(golden>0.25?0xffdfae:0xfff3e0));
+  sun.color.setHex(golden>0.55?0xffc27a:(golden>0.25?0xffdfae:0xffe9c6));
+  fill.position.set(86+Math.cos(az)*180,42,-24-Math.sin(az)*70);
+  fill.target.position.set(86,0,-24);
+  fill.intensity=0.16*dayT*(wx==="r"?0.4:1);
   sun.intensity=(wx==="r"?0.22:wx==="w"?0.75:1.25)*dayT*(0.75+0.25*(1-golden));
   amb.intensity=0.05+0.37*dayT*(wx==="r"?0.72:1);
   amb.color.setHex(dayT>0.25?0xffffff:0x8fa2c8);
   hemi.intensity=0.06+0.42*dayT;
   hemi.color.setHex(wx==="r"?0x9aa8b4:(dayT>0.25?0xbcd4e4:0x2a3450));
-  hemi.groundColor.setHex(0x77704e);
+  hemi.groundColor.setHex(0x8a7a56);   // warmer bounce off the ground
   // sky by hour
   const nightAmt=1-dayT;
   if(wx==="r")paintSky("#7e8c99","#a8b2ba","#c2beb0");
