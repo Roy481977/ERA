@@ -438,7 +438,9 @@ for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.69);
 // supporter cottages are drawn from synthetic plots (viewer layer only)
 D.level.roads.push([177.0,48.0,180.6,76.0]);          // Ground Lane
 [["G1",184.0,54.0,"GRN"],["G2",184.0,61.5,"RED"],
- ["G3",184.0,69.0,"NVY"],["G4",184.0,76.5,"OLV"]].forEach(gp=>{
+ ["G3",184.0,69.0,"NVY"],["G4",184.0,73.0,"OLV"],
+ ["N1",78.0,25.2,"MUS"],["N2",88.0,25.2,"TEAL"],   // SPRINT 018: the north row
+ ["N3",98.0,25.2,"RED"],["W1",105.0,25.4,"GRN"]].forEach(gp=>{
   D.level.plots.push({id:gp[0],x:gp[1],y:gp[2],kit:"home",acc:gp[3]});});
 D.level.roads.forEach(r=>{
   const w=r[2]-r[0],d=r[3]-r[1],cx2=(r[0]+r[2])/2,cy2=(r[1]+r[3])/2;
@@ -619,9 +621,11 @@ D.level.plots.forEach(p=>{
           ps.position.set(u,0.3,dep/2+2.5);g.add(ps);}});
     }else{
       const gw=box(w+2.6,0.55,0.3,0xb0a48e);gw.position.set(0,0.28,dep/2+2.5);g.add(gw);}
-    const bush=new THREE.Mesh(new THREE.SphereGeometry(0.42,8,6),
+    if(seed%5<3){const bush=new THREE.Mesh(new THREE.SphereGeometry(0.26,8,6),
       mat([0xda3a2c,0xf2782c,0xe88a7c][seed%3]));
-    bush.position.set(w*0.34,0.42,dep/2+1.6);g.add(bush);
+      bush.position.set(w*0.34,0.3,dep/2+1.6);g.add(bush);
+      const bg7=new THREE.Mesh(new THREE.SphereGeometry(0.34,8,6),mat(0x55703f));
+      bg7.position.set(w*0.34-0.4,0.32,dep/2+1.55);g.add(bg7);}
     for(let f2=0;f2<6;f2++){
       const fl=box(0.22,0.3,0.22,GARDEN[(seed+f2)%6]);
       fl.position.set(-w/2+0.6+f2*(w-1)/5,0.32,dep/2+2.1);g.add(fl);
@@ -824,6 +828,52 @@ const lamps=[];
      new THREE.MeshBasicMaterial({color:0x8d867a}));
    head.position.copy(V(fl[0],fl[1],7.8));scene.add(head);lamps.push(head);
    head.userData.flood=true;});}
+// SPRINT 018 — enclosed blocks: the twitten, the square's edges, courtyards
+{ // the twitten — a walled passage between N1 and N2, Market St to the gardens
+ [[81.9],[84.1]].forEach(o=>{const tw2=box(0.35,2.2,6.4,0xe0d6c2);
+   tw2.position.copy(V(o[0],25.2,1.1));scene.add(tw2);
+   const twc=box(0.5,0.14,6.6,0xb0a48e);twc.position.copy(V(o[0],25.2,2.27));scene.add(twc);});
+ const twp=box(1.6,0.06,6.4,0xc4ae92);twp.position.copy(V(83,25.2,0.05));scene.add(twp);
+ // the square's west edge: W1's gable + a garden wall down to the street
+ const sw6=box(0.4,1.05,3.2,0xb0a48e);sw6.position.copy(V(104.6,20.2,0.52));scene.add(sw6);
+ const sw6c=box(0.56,0.14,3.4,0xc4bcac);sw6c.position.copy(V(104.6,20.2,1.12));scene.add(sw6c);
+ // the square's south edge: low wall with a gap at the bus stop
+ [[109.5,113.8],[117.2,124.5]].forEach(sg7=>{
+   const ln7=sg7[1]-sg7[0];
+   const sw7=box(ln7,0.8,0.4,0xb0a48e);
+   sw7.position.copy(V((sg7[0]+sg7[1])/2,13.8,0.4));scene.add(sw7);
+   const sw7c=box(ln7+0.2,0.14,0.55,0xc4bcac);
+   sw7c.position.copy(V((sg7[0]+sg7[1])/2,13.8,0.87));scene.add(sw7c);});
+ // the pub's beer garden — a walled courtyard east of the pub
+ {const bx0=118.6,bx1=124.6,by0=23.6,by1=29.8;
+  const cb2=box(bx1-bx0,0.05,by1-by0,0xc4ae92);
+  cb2.position.copy(V((bx0+bx1)/2,(by0+by1)/2,0.045));scene.add(cb2);
+  [[bx0,by1,bx1,by1],[bx1,by0,bx1,by1],[bx0,by0,114.9,by0]].forEach(w9=>{
+    const ln9=Math.hypot(w9[2]-w9[0],w9[3]-w9[1]);if(ln9<0.5)return;
+    const wb9=box(ln9,0.9,0.4,PAL.BRK2);
+    wb9.position.copy(V((w9[0]+w9[2])/2,(w9[1]+w9[3])/2,0.45));
+    wb9.rotation.y=Math.atan2(w9[3]-w9[1],w9[2]-w9[0]);scene.add(wb9);
+    const wc9=box(ln9+0.2,0.13,0.55,0xb0a48e);
+    wc9.position.copy(V((w9[0]+w9[2])/2,(w9[1]+w9[3])/2,0.96));
+    wc9.rotation.y=Math.atan2(w9[3]-w9[1],w9[2]-w9[0]);scene.add(wc9);});
+  [[120.2,25.2],[123,27.6]].forEach(bb2=>{
+    const bn2=box(1.7,0.35,0.55,0x7c6a4e);bn2.position.copy(V(bb2[0],bb2[1],0.42));scene.add(bn2);});
+  const up2=box(0.07,2.0,0.07,0xd8d2c4);up2.position.copy(V(121.6,26.4,1.0));scene.add(up2);
+  const uc2=new THREE.Mesh(new THREE.ConeGeometry(1.1,0.5,8),mat(0xece2d0));
+  uc2.position.copy(V(121.6,26.4,2.1));scene.add(uc2);}
+ // the bakery's work yard — walls, crates, sacks at the school corner
+ {const yx0=30.4,yx1=36.8,yy0=5.2,yy1=8.2;
+  [[yx0,yy0,yx1,yy0],[yx0,yy0,yx0,yy1]].forEach(w8=>{
+    const ln8=Math.hypot(w8[2]-w8[0],w8[3]-w8[1]);
+    const wb8=box(ln8,0.95,0.38,PAL.BRK2);
+    wb8.position.copy(V((w8[0]+w8[2])/2,(w8[1]+w8[3])/2,0.47));
+    wb8.rotation.y=Math.atan2(w8[3]-w8[1],w8[2]-w8[0]);scene.add(wb8);});
+  [[31.6,6.4,0],[32.9,6.2,0.2],[32.2,6.3,0.62]].forEach(cr=>{
+    const c8=box(1.0,0.62,0.8,0x9a8a72);
+    c8.position.copy(V(cr[0],cr[1],0.31+cr[2]));c8.rotation.y=cr[2]*2;scene.add(c8);});
+  [[35.3,6.6],[34.4,6.2]].forEach(sk8=>{
+    const s8=new THREE.Mesh(new THREE.SphereGeometry(0.42,7,5),mat(0xd8cabc));
+    s8.scale.y=0.72;s8.position.copy(V(sk8[0],sk8[1],0.3));scene.add(s8);});}}
 // SPRINT 016 — the precinct's own edges: wall, clubhouse, gatehouse
 { // low brick perimeter wall on the east, gate gap at the lane's middle
  [[179.2,50.5,179.2,60.0],[179.2,64.0,179.2,76.0],[168.5,50.2,176.5,50.2]]
@@ -1064,6 +1114,7 @@ const matchFlags=[];
    fg.position.copy(V(fx,fy,gH(fx,fy)));scene.add(fg);matchFlags.push(fg);});
 // the rows join — link sections make terraces of the street and North Lane
  [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]],
+  [["P03","N1"],["N2","N3"],["W1","P07"]],
   [["P08","P09"],["P09","P10"]]].forEach(row=>{row.forEach(pr2=>{
    const a5=D.level.plots.find(q=>q.id===pr2[0]),b5=D.level.plots.find(q=>q.id===pr2[1]);
    if(!a5||!b5)return;const gap=Math.abs(b5.x-a5.x);if(gap>16)return;
@@ -1081,7 +1132,7 @@ const matchFlags=[];
      wf.position.copy(V(lx,ly+o[0],1.45));scene.add(wf);
      const wg=box(0.7,0.7,0.12,PAL.GLS);wg.position.copy(V(lx,ly+o[0],1.45));scene.add(wg);});});});
  // Market Street gains its tree rhythm — front-garden trees along the south side
- [[6,13.0,0.85],[26,13.0,0.85],[78,23.6,0.78],[90,23.6,0.78],[102,23.4,0.78]]
+ [[6,13.0,0.85],[26,13.0,0.85],[108.2,29.5,0.8]]
    .forEach(t4=>tree(t4[0],t4[1],t4[2]));
  // a flower moment by the watching bench
  {const bed=box(1.6,0.28,0.7,0x7a6a54);bed.position.copy(V(44.2,25.6,0.49));scene.add(bed);

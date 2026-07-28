@@ -276,7 +276,7 @@ level["paths"] = level["paths"] + [{"k": p["k"], "pts": p["pts"]} for p in worn_
 # ---- PHASE 12 micro-places (each justified by the record) --------------
 level["terrain"]["ground_apron"] = [136.0, 44.0, 182.0, 78.0]      # ADJ-9
 MICRO = {  # REV2 — the village plan
-    "pubwall":  [104.0, 24.5, 111.0, 24.5],   # the wall pub lingerers lean on
+    "pubwall":  [109.0, 24.2, 112.8, 24.2],   # the wall pub lingerers lean on
     "rail_turn": [146.0, 46.2, 160.0, 46.2],  # the railing before football
     "rail_bridge": [132.5, 25.0, 136.5, 25.6],
     "teens":    [54.0, -13.5],                # the corner the teenagers claim
