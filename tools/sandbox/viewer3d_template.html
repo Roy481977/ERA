@@ -333,6 +333,7 @@ function gH(x,y){
   if(x>=34&&x<=62&&y>=22&&y<=42)return 0.35;      // the green plateau
   if(y>=47.2&&x<=118)return 0.63;                 // the north terrace
   return 0;}
+const CANOPY=[0x4a6338,0x55703f,0x67804a,0x7a9459,0x8fae5e,0xa2bd6a];
 // SPRINT 022 — contact AO blobs: everything meets the ground in shade
 const aoTex=(()=>{const av=document.createElement("canvas");av.width=av.height=128;
   const ac=av.getContext("2d");
@@ -738,15 +739,36 @@ D.level.plots.forEach(p=>{
   if(!shop&&seed%4===0)tree(p.x+w*0.9,p.y+2.2,0.8);   // the garden tree
 });
 // ---- oak + trees + hedges + benches
+// SPRINT 023 — painterly trees: lime-to-forest gradient, shadow underside
 function tree(x,y,s){const gp=new THREE.Group();
   const sd=hash("t"+(x*7|0)+"_"+(y*7|0));
-  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.2*s,0.32*s,1.5*s,7),mat(0x84583a));
-  tr.position.y=0.75*s;tr.castShadow=true;gp.add(tr);
-  const g1=LEAF[sd%4],g2=LEAF[(sd+1)%4];
-  [[0,2.2,0,1.35,g1],[-0.75,1.75,0.3,0.95,g2],[0.7,1.85,-0.3,0.85,g2],
-   [0.15,2.75,0.15,0.8,g1],[-0.3,1.6,-0.6,0.7,g1]].forEach(o=>{
-    const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3]*s,9,7),mat(o[4]));
-    cr.position.set(o[0]*s,o[1]*s,o[2]*s);cr.castShadow=true;gp.add(cr);});
+  const sz=s*(0.85+((sd>>3)%10)*0.05);               // seeded canopy size
+  const kind=sd%5<2?0:(sd%5<4?1:2);                   // round · tall · spreading
+  const kx=kind===2?1.3:1.0, ky=kind===1?1.25:(kind===2?0.72:0.92);
+  const warm=(sd>>5)%3;                               // palette shift per tree
+  const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.18*sz,0.34*sz,1.6*sz,7),
+    mat(sd%2?0x84583a:0x74563e));
+  tr.position.y=0.8*sz;tr.castShadow=true;gp.add(tr);
+  // the dark underside — the canopy's own shade
+  const und=new THREE.Mesh(new THREE.SphereGeometry(1.25*sz*kx,10,8),mat(0x41562f));
+  und.scale.y=0.62*ky;und.position.set(0,1.75*sz,0);und.castShadow=true;gp.add(und);
+  // jittered lobes, colour rising from forest to lime with height
+  const NL2=7+(sd%3);
+  for(let li=0;li<NL2;li++){
+    const a9=(li/NL2)*6.28+(sd%7)*0.4;
+    const rr=(0.35+((sd>>li)%5)*0.11)*sz*kx;
+    const lx2=Math.cos(a9)*rr,lz2=Math.sin(a9)*rr*0.85;
+    const lh=(1.75+((sd>>(li+2))%6)*0.22)*sz*ky;
+    const lr=(0.62+((sd>>(li+1))%5)*0.13)*sz;
+    const tfrac=Math.max(0,Math.min(1,(lh/(sz*ky)-1.6)/1.4));
+    const ci=Math.min(5,Math.max(0,Math.round(tfrac*4)+warm-1+(li%2)));
+    const cr=new THREE.Mesh(new THREE.SphereGeometry(lr,10,8),mat(CANOPY[ci]));
+    cr.scale.y=0.82;cr.position.set(lx2,lh,lz2);cr.castShadow=true;gp.add(cr);}
+  // the lime crown
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(0.66*sz,10,8),
+    mat(CANOPY[Math.min(5,4+warm)]));
+  crown.scale.y=0.8;crown.position.set(0.1*sz,(2.6+(kind===1?0.5:0))*sz*ky,0);
+  crown.castShadow=true;gp.add(crown);
   const ab=aoBlob(3.2*s,3.2*s);gp.add(ab);
   gp.position.copy(V(x,y,gH(x,y)));scene.add(gp);return gp;}
 // THE OAK — the town's cathedral: nine lobes, root flare, and the swing
@@ -758,9 +780,11 @@ function tree(x,y,s){const gp=new THREE.Group();
    rt.position.set(o[0],0.3,o[2]);rt.rotation.z=o[0]*0.4;gp.add(rt);});
  const bough=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.3,3.4,7),mat(0x6e4a30));
  bough.rotation.z=Math.PI/2.35;bough.position.set(1.8,3.5,0.4);gp.add(bough);
- [[0,5.4,0,3.3,0x4f6c3d],[-2.5,4.2,0.8,2.2,0x5d7847],[2.3,4.4,-0.7,2.1,0x5d7847],
-  [0.5,6.9,0.5,1.9,0x6d8852],[-1.5,3.6,-1.8,1.7,0x6d8852],[1.4,3.5,1.8,1.6,0x4f6c3d],
-  [-3.4,3.4,-0.3,1.4,0x7a9459],[3.3,3.3,0.6,1.35,0x4f6c3d],[0,4.4,-2.4,1.5,0x5d7847]]
+ {const ou=new THREE.Mesh(new THREE.SphereGeometry(3.6,12,9),mat(0x41562f));
+  ou.scale.y=0.55;ou.position.set(0,3.4,0);ou.castShadow=true;gp.add(ou);}
+ [[0,5.4,0,3.3,0x55703f],[-2.5,4.2,0.8,2.2,0x4a6338],[2.3,4.4,-0.7,2.1,0x67804a],
+  [0.5,6.9,0.5,1.9,0xa2bd6a],[-1.5,3.6,-1.8,1.7,0x4a6338],[1.4,3.5,1.8,1.6,0x55703f],
+  [-3.4,3.4,-0.3,1.4,0x67804a],[3.3,3.3,0.6,1.35,0x4a6338],[0,4.4,-2.4,1.5,0x8fae5e]]
   .forEach(o=>{const cr=new THREE.Mesh(new THREE.SphereGeometry(o[3],10,8),mat(o[4]));
     cr.scale.y=0.85;cr.position.set(o[0],o[1],o[2]);cr.castShadow=true;gp.add(cr);});
  // the swing — two ropes and a worn seat, hung from the long bough
@@ -772,8 +796,10 @@ function tree(x,y,s){const gp=new THREE.Group();
  gp.position.copy(V(D.level.oak[0],D.level.oak[1],gH(D.level.oak[0],D.level.oak[1])));scene.add(gp);}
 const SWING=[D.level.oak[0]+3.15,D.level.oak[1]-0.75];
 D.level.veg.forEach(v=>{if(v[2])tree(v[0],v[1],1.0);
-  else{const sh=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,6),mat(0x6d8852));
-    sh.position.copy(V(v[0],v[1],0.5));scene.add(sh);}});
+  else{const sh=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,6),mat(0x55703f));
+    sh.position.copy(V(v[0],v[1],0.45));scene.add(sh);
+    const sh2=new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6),mat(0x8fae5e));
+    sh2.position.copy(V(v[0]+0.25,v[1]-0.15,0.85));scene.add(sh2);}});
 [[42,24.6],[50.5,33.8]].forEach(b2=>{const bz=gH(b2[0],b2[1]);
   const bn=box(1.9,0.35,0.6,0x7c6a4e);bn.position.copy(V(b2[0],b2[1],bz+0.45));scene.add(bn);
   const bk=box(1.9,0.5,0.12,0x7c6a4e);bk.position.copy(V(b2[0],b2[1]-0.28,bz+0.85));scene.add(bk);});
@@ -1154,6 +1180,10 @@ const bunting=new THREE.Group();
     mat(0x5e7a48));
    hb.position.copy(V(hr[0]+hr[2]/2,hr[1],3.2));hb.rotation.z=hr[3];
    hb.rotation.y=0.12;scene.add(hb);});
+ // copses on the near slopes and field edges
+ [[-62,62],[148,104],[206,42],[96,-58],[-52,-44]].forEach((cp2,i8)=>{
+   tree(cp2[0],cp2[1],1.25);tree(cp2[0]+4.5,cp2[1]+2.2,1.0);
+   tree(cp2[0]-3.2,cp2[1]+3.8,0.85);});
  // three distant roofs on the slopes
  [[-40,104],[176,96],[214,70]].forEach(dr2=>{
    const hw2=box(3.2,2.2,2.6,0xece2d0);hw2.position.copy(V(dr2[0],dr2[1],4.6));scene.add(hw2);
