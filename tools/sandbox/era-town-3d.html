@@ -380,16 +380,44 @@ function noiseTex(base,spot,n){const cv2=document.createElement("canvas");
     c2.arc(rnd()*256,rnd()*256,r2,0,7);c2.fill();}
   c2.globalAlpha=1;const t2=new THREE.CanvasTexture(cv2);t2.encoding=THREE.sRGBEncoding;
   t2.wrapS=t2.wrapT=THREE.RepeatWrapping;return t2;}
-const grassTex=noiseTex("#98a883","#7e9468",240);grassTex.repeat.set(26,20);
+function groundTexMake(){const cv3=document.createElement("canvas");
+  cv3.width=cv3.height=1024;const c3=cv3.getContext("2d");
+  c3.fillStyle="#95a67e";c3.fillRect(0,0,1024,1024);
+  let sd3=11;const rn3=()=>{sd3=(sd3*1103515245+12345)>>>0;return ((sd3>>>8)%8388608)/8388608;};
+  // broad sun-baked and cool patches (low frequency)
+  for(let k=0;k<26;k++){const warm=rn3()<0.55;
+    c3.fillStyle=warm?"#aca878":"#74895c";
+    c3.globalAlpha=0.10+rn3()*0.12;
+    const rx=90+rn3()*220,ry=rx*(0.55+rn3()*0.5);
+    c3.save();c3.translate(rn3()*1024,rn3()*1024);c3.rotate(rn3()*3.1);
+    c3.beginPath();c3.ellipse(0,0,rx,ry,0,0,7);c3.fill();c3.restore();}
+  // mid mottling
+  for(let k=0;k<120;k++){c3.fillStyle=(rn3()<0.5)?"#8fa172":"#7e9468";
+    c3.globalAlpha=0.08+rn3()*0.1;const r3=24+rn3()*60;
+    c3.beginPath();c3.arc(rn3()*1024,rn3()*1024,r3,0,7);c3.fill();}
+  // fine speckle
+  for(let k=0;k<650;k++){c3.fillStyle=(rn3()<0.5)?"#a3b287":"#6f855c";
+    c3.globalAlpha=0.10+rn3()*0.12;const r3=2+rn3()*6;
+    c3.beginPath();c3.arc(rn3()*1024,rn3()*1024,r3,0,7);c3.fill();}
+  c3.globalAlpha=1;const t3=new THREE.CanvasTexture(cv3);
+  t3.encoding=THREE.sRGBEncoding;t3.wrapS=t3.wrapT=THREE.RepeatWrapping;return t3;}
+const grassTex=groundTexMake();grassTex.repeat.set(7,5.6);
+// warm-at-the-heart temperature drift, sampled smoothly per tile
+function groundTint(cx,cy){
+  const d3=Math.hypot(cx-60,cy-8)/210;
+  const t=Math.max(0,Math.min(1,d3));
+  const r=0xe8-Math.round(0x14*t),g2=0xe2-Math.round(0x06*t),b=0xc2+Math.round(0x08*t);
+  return (r<<16)|(g2<<8)|b;}
 // ---- terrain
 // the deep bed (visible only inside the river pits)
 {const g=new THREE.Mesh(new THREE.PlaneGeometry(500,400),mat(0x55604a));
  g.rotation.x=-Math.PI/2;g.position.set(86,-1.15,-24);g.receiveShadow=true;scene.add(g);}
-function texPatch(x0,y0,x1,y1,h){
+function texPatch(x0,y0,x1,y1,h,tint){
   const t2=grassTex.clone();t2.needsUpdate=true;
-  t2.repeat.set(Math.max(1,(x1-x0)/20),Math.max(1,(y1-y0)/20));
+  t2.repeat.set(Math.max(0.35,(x1-x0)/71),Math.max(0.35,(y1-y0)/71));
   const m=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,y1-y0),
-    new THREE.MeshLambertMaterial({map:t2,color:0xdfe6cc}));
+    new THREE.MeshLambertMaterial({map:t2,
+      color:tint||groundTint((x0+x1)/2,(y0+y1)/2)}));
   m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,h,-(y0+y1)/2);
   m.receiveShadow=true;scene.add(m);}
 // river pits: P1 (134,-16,144.6,66) P2 (147,62,156,79.5) -> merged set below
@@ -430,15 +458,30 @@ function patch(x0,y0,x1,y1,c,h){const m=new THREE.Mesh(
   new THREE.PlaneGeometry(x1-x0,y1-y0),mat(c));
   m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,h||0.02,-(y0+y1)/2);
   m.receiveShadow=true;scene.add(m);return m;}
-patch(-16,-32,96,-14,0x84a468);              // playing field
+texPatch(-16,-32,96,-14,0.025,0xc6d8a4);     // playing field, textured
 patch(2,58,78,80,0x9a9469,0.65);             // allotments (on the terrace)
-patch(146,50,179,72.5,0x84a066);             // the precinct surround, tight
+texPatch(146,50,179,72.5,0.025,0xc2d4a0);    // the precinct surround, textured
 patch(146,43.5,163,50.2,0xb3a68c,0.035);     // turnstile forecourt, gravel
 // allotment rows + sheds
 for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.69);
 [[8,62],[24,66],[46,63],[64,70]].forEach(s2=>{
   const sh=box(2.4,1.4,1.8,0x84583a);sh.position.copy(V(s2[0],s2[1],1.35));scene.add(sh);
   const rf=box(2.7,0.22,2.1,0x949aa0);rf.position.copy(V(s2[0],s2[1],2.15));scene.add(rf);});
+// SPRINT 021 — gentle pathing wear where the town actually treads
+{const wcv=document.createElement("canvas");wcv.width=wcv.height=256;
+ const wc2=wcv.getContext("2d");
+ const wg2=wc2.createRadialGradient(128,128,10,128,128,124);
+ wg2.addColorStop(0,"rgba(124,104,78,0.42)");
+ wg2.addColorStop(0.6,"rgba(124,104,78,0.20)");
+ wg2.addColorStop(1,"rgba(124,104,78,0)");
+ wc2.fillStyle=wg2;wc2.fillRect(0,0,256,256);
+ const wtex=new THREE.CanvasTexture(wcv);wtex.encoding=THREE.sRGBEncoding;
+ [[46,20.5,11,7,0],[48,32,9.5,8,0],[116,20,13,9,0],[115.5,10,7,5,0],
+  [151,45,9,6,0.5],[34,15.5,7,5,0],[137.4,27.2,7,5,0.65]].forEach(wp=>{
+   const wm=new THREE.Mesh(new THREE.PlaneGeometry(wp[2],wp[3]),
+     new THREE.MeshLambertMaterial({map:wtex,transparent:true,depthWrite:false}));
+   wm.rotation.x=-Math.PI/2;wm.rotation.z=wp[4];
+   wm.position.set(wp[0],gH(wp[0],wp[1])+0.075,-wp[1]);scene.add(wm);});}
 // ---- roads, kerbs, pavements
 // SPRINT 016 — the precinct joins the fabric: Ground Lane and the
 // supporter cottages are drawn from synthetic plots (viewer layer only)
@@ -723,7 +766,10 @@ D.level.veg.forEach(v=>{if(v[2])tree(v[0],v[1],1.0);
 // ---- Phase 12 micro-places: the green edged, walls, railings, hedges,
 // framing trees (Bridge Road conceals the pylons until the bend), riverside
 {const GR=D.micro.green_rect;
- const m=new THREE.Mesh(new THREE.PlaneGeometry(GR[2]-GR[0],GR[3]-GR[1]),mat(0x9cb281));
+ const gt5=grassTex.clone();gt5.needsUpdate=true;
+ gt5.repeat.set((GR[2]-GR[0])/71,(GR[3]-GR[1])/71);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(GR[2]-GR[0],GR[3]-GR[1]),
+   new THREE.MeshLambertMaterial({map:gt5,color:0xdce8b6}));
  m.rotation.x=-Math.PI/2;m.position.set((GR[0]+GR[2])/2,0.37,-(GR[1]+GR[3])/2);
  m.receiveShadow=true;scene.add(m);
  const GW=D.micro.green_wall;
