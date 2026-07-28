@@ -482,8 +482,8 @@ function texPatch(x0,y0,x1,y1,h,tint){
 texPatch(-164,-224,134,47.2,-0.02);            // west + south-west
 texPatch(-164,47.2,118,176,0.63);              // THE NORTH TERRACE
 texPatch(118,47.2,134,176,-0.02);              // east of terrace, west of river
-texPatch(134,-224,336,-16,-0.02);              // south
-texPatch(144.6,-16,336,62,-0.02);              // east of the channel
+texPatch(134,-224,336,-9,-0.02);              // south
+texPatch(144.6,-9,336,62,-0.02);              // east of the channel
 texPatch(134,66,147,176,-0.02);
 texPatch(144.6,62,147,66,-0.02);
 texPatch(147,79.5,156,176,-0.02);
@@ -492,14 +492,9 @@ texPatch(156,84.5,168,176,-0.02);
 texPatch(168,62,336,76.5,-0.02);
 texPatch(168,85,336,176,-0.02);
 texPatch(196,76.5,336,85,-0.02);
-// pit skirts — cut earth faces so the tiers read carved, never hollow
-{const PITS=[[134,-16,144.6,66],[147,62,156,79.5],[156,73,168,84.5],[168,76.5,196,85]];
- PITS.forEach(P5=>{const [x0,y0,x1,y1]=P5;
-  [[x0,y0,x1,y0],[x0,y1,x1,y1],[x0,y0,x0,y1],[x1,y0,x1,y1]].forEach(e5=>{
-    const len=Math.hypot(e5[2]-e5[0],e5[3]-e5[1]);
-    const sk=box(len,1.25,0.35,0x6a5a48);
-    sk.position.copy(V((e5[0]+e5[2])/2,(e5[1]+e5[3])/2,-0.62));
-    sk.rotation.y=Math.atan2(e5[3]-e5[1],e5[2]-e5[0]);scene.add(sk);});});}
+// SPRINT 025 — the rectangular pit skirts are gone. They were the cut faces
+// of a rectangular trench; the river no longer runs in one. The channel's own
+// curved cut bank does this work now.
 // terrace skirt + retaining wall + gate steps
 {const sk2=box(282,0.72,0.4,0x77885e);sk2.position.copy(V(-23,47.2,0.27));scene.add(sk2);
  const sk3=box(0.4,0.72,129,0x77885e);sk3.position.copy(V(118,111.6,0.27));scene.add(sk3);
@@ -577,20 +572,148 @@ D.level.paths.forEach(p=>{
 // zebra
 for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
   st.position.copy(V(28.6+k*1.15,18.3,0.07));scene.add(st);}
-// ---- river + bridge
+// ---- THE RIVER (SPRINT 025) — a carved channel, and water with depth
 {const pts=[[141.5,-10],[139.5,4],[142,30],[140,48],[143.5,62],
    [150,73],[162,79],[176,81],[190,80]];   // SPRINT 015: the river's arm
- for(let i=1;i<pts.length;i++){const ax=pts[i-1][0],ay=pts[i-1][1],
-   bx=pts[i][0],by=pts[i][1];const len=Math.hypot(bx-ax,by-ay)+2;
-   const m=box(D.level.water.w+1.5,0.06,len,PAL.WATER);
-   m.position.copy(V((ax+bx)/2,(ay+by)/2,-0.98));
-   m.rotation.y=Math.atan2(bx-ax,-(by-ay));scene.add(m);
-   const ang7=Math.atan2(bx-ax,-(by-ay));
-   [[-3.2],[3.2]].forEach(o7=>{   // grass ledges half-way down the cut
-     const lg=box(1.6,0.5,len,0x7e9468);
-     lg.position.copy(V((ax+bx)/2+Math.cos(ang7)*o7[0],
-       (ay+by)/2+Math.sin(ang7)*o7[0]*-1,-0.55));
-     lg.rotation.y=ang7;scene.add(lg);});}
+ // the arm is now a real curve, not a chain of straight strips
+ const CV=new THREE.CatmullRomCurve3(pts.map(p=>V(p[0],p[1],0)),false,"catmullrom",0.5);
+ const HW=(D.level.water.w+1.5)/2, NS=280;
+ // the channel breathes: pinched in the straights, broad on the bends
+ const ww=t=>HW*(0.90+0.15*Math.sin(t*9.7+0.6)+0.06*Math.sin(t*26.4+2.1));
+ function rib(oA,yA,oB,yB,m9,aA,aB){
+   const P=[],U=[],NM=[],CO=[],IX=[];
+   for(let i=0;i<=NS;i++){const t=i/NS;
+     const p=CV.getPoint(t),tg=CV.getTangent(t),nx=-tg.z,nz=tg.x;
+     const a=oA(t),b=oB(t);
+     P.push(p.x+nx*a,yA,p.z+nz*a);U.push(t,1);NM.push(0,1,0);
+     P.push(p.x+nx*b,yB,p.z+nz*b);U.push(t,0);NM.push(0,1,0);
+     if(aA!==undefined){CO.push(1,1,1,aA,1,1,1,aB);}}
+   for(let i=0;i<NS;i++){const a=2*i;IX.push(a,a+2,a+1,a+1,a+2,a+3);}
+   const g=new THREE.BufferGeometry();
+   g.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+   g.setAttribute("uv",new THREE.Float32BufferAttribute(U,2));
+   g.setAttribute("normal",new THREE.Float32BufferAttribute(NM,3));
+   if(aA!==undefined)g.setAttribute("color",new THREE.Float32BufferAttribute(CO,4));
+   g.setIndex(IX);const m=new THREE.Mesh(g,m9);m.receiveShadow=true;
+   scene.add(m);return m;}
+ // ---- the canvases the water is painted from
+ const siltTex=mkTex((c,W)=>{c.fillStyle="#5f5442";c.fillRect(0,0,W,W);
+   for(let k=0;k<190;k++){const v=72+Math.floor(_tr()*48);
+     c.fillStyle="rgba("+v+","+(v-7)+","+(v-20)+",0.5)";
+     c.beginPath();c.ellipse(_tr()*W,_tr()*W,4+_tr()*26,3+_tr()*14,_tr()*3,0,7);c.fill();}
+   for(let k=0;k<70;k++){c.fillStyle="rgba(154,146,124,0.22)";
+     c.beginPath();c.arc(_tr()*W,_tr()*W,1+_tr()*4,0,7);c.fill();}},256);
+ siltTex.repeat.set(9,1.4);
+ const shTex=mkTex((c,W)=>{c.fillStyle="#7f9660";c.fillRect(0,0,W,W);
+   for(let k=0;k<170;k++){const v=_tr();
+     c.fillStyle=v<0.4?"rgba(126,144,96,0.5)":(v<0.75?"rgba(94,114,72,0.5)"
+       :"rgba(142,134,94,0.45)");
+     c.beginPath();c.ellipse(_tr()*W,_tr()*W,5+_tr()*30,4+_tr()*16,_tr()*3,0,7);c.fill();}},512);
+ shTex.repeat.set(6,1);
+ // the water itself: deep in the middle, shoaling to nothing at the banks
+ const waterTex=mkTex((c,W)=>{
+   const g=c.createLinearGradient(0,0,0,W);
+   g.addColorStop(0.00,"rgba(126,148,138,0)");
+   g.addColorStop(0.05,"rgba(120,146,138,0.28)");
+   g.addColorStop(0.15,"rgba(98,128,126,0.74)");
+   g.addColorStop(0.33,"rgba(64,98,104,0.92)");
+   g.addColorStop(0.50,"rgba(48,78,88,0.96)");
+   g.addColorStop(0.67,"rgba(64,98,104,0.92)");
+   g.addColorStop(0.85,"rgba(98,128,126,0.74)");
+   g.addColorStop(0.95,"rgba(120,146,138,0.28)");
+   g.addColorStop(1.00,"rgba(126,148,138,0)");
+   c.fillStyle=g;c.fillRect(0,0,W,W);
+   c.globalCompositeOperation="source-atop";c.lineCap="round";
+   for(let k=0;k<66;k++){const y0=W*(0.08+_tr()*0.84),x0=_tr()*W,
+     ln=W*(0.12+_tr()*0.40),j1=(_tr()-0.5)*9,j2=(_tr()-0.5)*9;
+     c.strokeStyle=_tr()<0.5?"rgba(196,220,214,0.13)":"rgba(14,34,42,0.20)";
+     c.lineWidth=1.5+_tr()*6;
+     [0,-W].forEach(dx=>{c.beginPath();c.moveTo(x0+dx,y0);
+       c.bezierCurveTo(x0+dx+ln*0.34,y0+j1,x0+dx+ln*0.68,y0+j2,x0+dx+ln,y0);
+       c.stroke();});}
+   c.globalCompositeOperation="source-over";},512);
+ waterTex.wrapS=THREE.RepeatWrapping;waterTex.wrapT=THREE.ClampToEdgeWrapping;
+ waterTex.repeat.set(16,1);
+ // foam: broken lace where the water rubs the bank
+ const foamTex=mkTex((c,W)=>{
+   for(let k=0;k<160;k++){const x0=_tr()*W,y0=W*(0.26+_tr()*0.48),
+     rx=W*(0.008+_tr()*0.045),ry=1.4+_tr()*4.2,a=(0.12+_tr()*0.5).toFixed(2);
+     c.fillStyle="rgba(240,246,238,"+a+")";
+     [0,-W].forEach(dx=>{c.beginPath();c.ellipse(x0+dx,y0,rx,ry,0,0,7);c.fill();});}
+   const g=c.createLinearGradient(0,0,0,W);
+   g.addColorStop(0,"rgba(0,0,0,1)");g.addColorStop(0.40,"rgba(0,0,0,0)");
+   g.addColorStop(0.60,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,1)");
+   c.globalCompositeOperation="destination-out";c.fillStyle=g;c.fillRect(0,0,W,W);
+   c.globalCompositeOperation="source-over";},512);
+ foamTex.wrapS=THREE.RepeatWrapping;foamTex.wrapT=THREE.ClampToEdgeWrapping;
+ foamTex.repeat.set(22,1);
+ // the sky lying on the water: soft drifting sheets, never a mirror
+ const reflTex=mkTex((c,W)=>{
+   for(let k=0;k<32;k++){const x0=_tr()*W,y0=W*(0.15+_tr()*0.70),r=W*(0.04+_tr()*0.17);
+     const g2=c.createRadialGradient(x0,y0,0,x0,y0,r);
+     g2.addColorStop(0,"rgba(255,255,255,0.55)");
+     g2.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=g2;
+     [0,-W].forEach(dx=>{c.beginPath();c.ellipse(x0+dx,y0,r,r*0.30,0,0,7);c.fill();});}
+   const g=c.createLinearGradient(0,0,0,W);
+   g.addColorStop(0,"rgba(0,0,0,1)");g.addColorStop(0.30,"rgba(0,0,0,0)");
+   g.addColorStop(0.70,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,1)");
+   c.globalCompositeOperation="destination-out";c.fillStyle=g;c.fillRect(0,0,W,W);
+   c.globalCompositeOperation="source-over";},256);
+ reflTex.wrapS=THREE.RepeatWrapping;reflTex.wrapT=THREE.ClampToEdgeWrapping;
+ reflTex.repeat.set(7,1);
+ // ---- the channel floor, so nothing under the water is void
+ [[134,-9,144.6,66],[147,62,156,79.5],[156,73,168,84.5],[168,76.5,196,85]].forEach(P6=>{
+   const fl=new THREE.Mesh(new THREE.PlaneGeometry(P6[2]-P6[0],P6[3]-P6[1]),mat(0x6a5a48));
+   fl.rotation.x=-Math.PI/2;
+   fl.position.copy(V((P6[0]+P6[2])/2,(P6[1]+P6[3])/2,-1.12));
+   fl.receiveShadow=true;scene.add(fl);});
+ const SD=[1,-1];
+ // the ground-holes are still rectangles; the river is not. the shoulder
+ // therefore grows until it covers the hole, whatever the curve is doing.
+ const PIT6=[[134,-9,144.6,66],[147,62,156,79.5],[156,73,168,84.5],[168,76.5,196,85]];
+ const inPit6=(x,y)=>PIT6.some(P=>x>=P[0]&&x<=P[2]&&y>=P[1]&&y<=P[3]);
+ function cover(t,s){const p=CV.getPoint(t),tg=CV.getTangent(t),nx=-tg.z,nz=tg.x;
+   let last=0;for(let d=0.4;d<14;d+=0.08){
+     if(inPit6(p.x+nx*s*d,-(p.z+nz*s*d)))last=d;}
+   return last+1.5;}
+ // 1 — the bed the water is read through
+ rib(t=>ww(t)+1.5,-1.10,t=>-(ww(t)+1.5),-1.10,matT(0x8a7a63,siltTex));
+ // 2 — the cut bank: wet earth from the bed lip to the ledge
+ SD.forEach(s=>rib(t=>s*(ww(t)+0.30),-1.05,t=>s*(ww(t)+1.15),-0.34,
+   matT(0x9a8768,siltTex)));
+ // 3 — the grass ledge half-way down the cut
+ SD.forEach(s=>rib(t=>s*(ww(t)+1.15),-0.34,t=>s*(ww(t)+2.30),-0.26,
+   matT(0x7e9468,shTex)));
+ // 4 — the shoulder, climbing out of the cut. Solid to past the hole edge,
+ //     because a fade that begins too early lets the hole show through it.
+ const CO2=(t,s)=>Math.max(ww(t)+4.10,cover(t,s));
+ // the shoulder is field grass, not bank grass — it has to be the same
+ // material as the meadow it replaces or its edge draws itself.
+ const fgT=grassTex.clone();fgT.needsUpdate=true;fgT.repeat.set(13,1.15);
+ const FLD=0xe2e2c2;
+ SD.forEach(s=>rib(t=>s*(ww(t)+2.30),-0.26,t=>s*CO2(t,s),0.012,
+   new THREE.MeshLambertMaterial({map:fgT,color:FLD})));
+ // 4b — and then dissolving into the field, with nothing left to hide
+ SD.forEach(s=>rib(t=>s*CO2(t,s),0.012,t=>s*(CO2(t,s)+3.4),0.016,
+   new THREE.MeshLambertMaterial({map:fgT,color:FLD,transparent:true,
+     vertexColors:true,depthWrite:false,side:THREE.DoubleSide}),1,0));
+ // 5 — the water
+ const surfM=new THREE.MeshLambertMaterial({color:0xffffff,map:waterTex,
+   transparent:true,opacity:0.88,depthWrite:false,side:THREE.DoubleSide,
+   emissive:0xcfe2ea,emissiveIntensity:0.08});
+ rib(t=>ww(t),-0.98,t=>-ww(t),-0.98,surfM).renderOrder=2;
+ // 6 — shoreline foam
+ const foamM=new THREE.MeshBasicMaterial({color:0xf2f6ee,map:foamTex,
+   transparent:true,opacity:0.3,depthWrite:false,side:THREE.DoubleSide});
+ SD.forEach(s=>{rib(t=>s*(ww(t)+0.42),-0.955,t=>s*(ww(t)-0.85),-0.955,
+   foamM).renderOrder=3;});
+ // 7 — the sky, lying on the water
+ const reflM=new THREE.MeshBasicMaterial({color:0xcfe2ea,map:reflTex,
+   transparent:true,opacity:0.10,depthWrite:false,
+   blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+ rib(t=>ww(t)*0.93,-0.945,t=>-ww(t)*0.93,-0.945,reflM).renderOrder=4;
+ window.WATERM={surf:surfM,refl:reflM,foam:foamM,
+   tx:[waterTex,foamTex,reflTex]};
  // bank trees follow the bend
  [[136.5,52,1.0],[138.5,66,0.9],[146,78,1.1],[158,85,0.95],[172,86.5,1.05],
   [181,75,0.85]].forEach(bt=>tree(bt[0],bt[1],bt[2]));}
@@ -604,9 +727,11 @@ for(let k=0;k<5;k++){const st=box(0.8,0.12,6.4,0xefe9dc);
  window.BR={cx,hw,by:b[1]};
  // stone barrel: humped top, true arch opening where the water runs
  {const sh=new THREE.Shape();
-  sh.moveTo(-hw,-1.1);sh.lineTo(nx-1.15,-1.1);sh.lineTo(nx-1.15,0);
-  sh.absarc(nx,0,1.15,Math.PI,0,true);
-  sh.lineTo(nx+1.15,-1.1);sh.lineTo(hw,-1.1);sh.lineTo(hw,1.0);
+  // SPRINT 025 — a segmental arch as wide as the water, not a 2.3 m hole
+  const AR=Math.min(3.15,hw-0.8),AH=1.22,AY=-0.18;
+  sh.moveTo(-hw,-1.1);sh.lineTo(nx-AR,-1.1);sh.lineTo(nx-AR,AY);
+  sh.absellipse(nx,AY,AR,AH,Math.PI,0,true);
+  sh.lineTo(nx+AR,-1.1);sh.lineTo(hw,-1.1);sh.lineTo(hw,1.0);
   sh.quadraticCurveTo(0,1.9,-hw,1.0);sh.lineTo(-hw,-1.1);
   const gm=new THREE.ExtrudeGeometry(sh,{depth:5.4,bevelEnabled:false});
   const barrel=new THREE.Mesh(gm,mat(0x8d8578));
@@ -1424,6 +1549,20 @@ function lighting(day,tod){
   else if(golden>0.42&&dayT>0.05)paintSky("#7d9cc0","#e8c9a0","#f2b678");
   else paintSky("#82aecc","#c8dde8","#ecdfc2");
   if(nightAmt>0.6)paintSky("#0e1424","#1c2438","#2c3048");
+  // SPRINT 025 — the water takes the sky it is under
+  if(window.WATERM){const W5=window.WATERM;
+    const sc=wx==="r"?0x9fb0b8:(nightAmt>0.6?0x35415e
+      :(golden>0.42&&dayT>0.05?0xf2cfa0:0xcfe2ea));
+    W5.surf.emissive.setHex(sc);
+    W5.surf.emissiveIntensity=(0.05+0.13*dayT)*(wx==="r"?0.6:1);
+    W5.refl.color.setHex(sc);
+    W5.refl.opacity=(0.045+0.15*dayT*(1+golden*0.5))*(wx==="r"?0.35:1);
+    W5.foam.opacity=0.12+0.26*dayT;
+    // at night the river must still be legible as water, not a black gap:
+    // it holds the last of the sky and a little of the town's window light.
+    if(nightAmt>0.6){W5.refl.color.setHex(0x8496c0);W5.refl.opacity=0.20;
+      W5.surf.emissive.setHex(0x5d6f9c);W5.surf.emissiveIntensity=0.20;
+      W5.foam.opacity=0.10;}}
   scene.fog.color.setHex(wx==="r"?0xa8b2ba:(nightAmt>0.6?0x1c2438:0xd8d4c0));
   scene.fog.near=wx==="r"?170:210;scene.fog.far=wx==="r"?520:640;
   const lampsOn=tod>1170||tod<430;
@@ -1517,6 +1656,10 @@ function frame(t){const dt=Math.min(0.1,(t-lastT)/1000);lastT=t;
   for(const pid in bikeProps){let has=false;
     AG.forEach((a,i)=>{if(a.mode==="at"&&a.place===pid&&R[i].bike)has=true;});
     bikeProps[pid].visible=has;}
+  if(window.WATERM){const fl=(performance.now()*0.000035)%1;
+    window.WATERM.tx[0].offset.x=-fl;
+    window.WATERM.tx[1].offset.x=(-fl*1.4)%1;
+    window.WATERM.tx[2].offset.x=(-fl*0.35)%1;}
   lighting(day,tod);applyCam();
   renderer.render(scene,camera);
   $("clock").textContent=dateStr(day)+" · "+hm(tod)
