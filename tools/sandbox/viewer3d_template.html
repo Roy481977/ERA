@@ -551,7 +551,11 @@ const GARDEN=[0xda3a2c,0xf2782c,0xf8bc3a,0xe88a7c,0xc3cdd6,0xf8f4eb];
 D.level.plots.forEach(p=>{
   const seed=hash(p.id),shop=p.kit!=="home";
   const kit=shop?9:(seed%3);                 // 0 cottage · 1 dormer · 2 wide
-  const w=shop?7.6:(kit===2?6.4:5.6),dep=shop?5.4:4.6,ht=shop?3.4:2.9;
+  // SPRINT 020 — the silhouette steps: seeded height, pitch, orientation
+  const htVar=shop?(p.kit==="pub"?0.9:0):[0,0.35,0.8,0.15,1.15][seed%5];
+  const pf=0.82+(seed%4)*0.14;               // roof pitch factor
+  const fg=!shop&&seed%7===3;                // gable-to-street variant
+  const w=shop?7.6:(kit===2?6.4:5.6),dep=shop?5.4:4.6,ht=(shop?3.4:2.9)+htVar;
   const bcol=shop?PAL.RND2:bodyCol(seed);
   const brick=(bcol===PAL.BRK||bcol===PAL.BRK2||bcol===PAL.BRK3);
   const g=new THREE.Group();
@@ -564,19 +568,24 @@ D.level.plots.forEach(p=>{
     qb.position.set(sx*(w/2-0.02),0.55+q*0.95,dep/2-0.22);g.add(qb);}});}
   // roof: prism + ridge cap + verge boards + chimney with pots
   const roofCol=(seed%10<5)?PAL.TILB:((seed%10<8)?0xbf6a4a:PAL.TILG);
-  const roof=gableRoof(dep,w,roofCol);
-  roof.rotation.y=Math.PI/2;roof.position.y=ht+0.05;g.add(roof);
-  const ridge=box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0x99543a);
-  ridge.position.set(0,ht+dep*0.36+0.08,0);g.add(ridge);
-  [-1,1].forEach(sx=>{const vg=box(0.16,0.34,dep+0.7,PAL.RND);
+  const roof=fg?gableRoof(w,dep,roofCol):gableRoof(dep,w,roofCol);
+  if(!fg)roof.rotation.y=Math.PI/2;
+  roof.scale.y=pf;roof.position.y=ht+0.05;g.add(roof);
+  const ridge=fg?box(0.34,0.16,dep+0.8,roofCol===PAL.TILG?0x6f7688:0x99543a)
+              :box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0x99543a);
+  ridge.position.set(0,ht+(fg?w:dep)*0.36*pf+0.08,0);g.add(ridge);
+  if(!fg)[-1,1].forEach(sx=>{const vg=box(0.16,0.34,dep+0.7,PAL.RND);
     vg.position.set(sx*(w/2+0.28),ht+0.28,0);g.add(vg);});
+  if(htVar>=0.7&&!shop){                     // the upper windows of the tall houses
+    windowUnit(g,0.8,0.7,-w*0.22,ht-0.72,dep/2+0.02);
+    windowUnit(g,0.8,0.7,w*0.22,ht-0.72,dep/2+0.02);}
   const ch=box(0.95,2.0,0.95,PAL.BRK2);ch.position.set(w*0.28,ht+1.3,0);g.add(ch);
   const chc=box(1.15,0.18,1.15,0xb0a48e);chc.position.set(w*0.28,ht+2.36,0);g.add(chc);
   [[-0.22,0],[0.22,0]].forEach(o=>{const pot=new THREE.Mesh(
     new THREE.CylinderGeometry(0.12,0.15,0.42,8),mat(0xc8805a));
     pot.position.set(w*0.28+o[0],ht+2.62,o[1]);g.add(pot);});
   // dormer kit
-  if(kit===1){const dm=box(1.5,1.0,1.4,bcol);dm.position.set(-w*0.18,ht+0.6,dep*0.14);g.add(dm);
+  if((kit===1||(kit===2&&seed%2===1))&&!fg){const dm=box(1.5,1.0,1.4,bcol);dm.position.set(-w*0.18,ht+0.6,dep*0.14);g.add(dm);
     const dr=gableRoof(1.4,1.5,roofCol);dr.rotation.y=Math.PI/2;
     dr.position.set(-w*0.18,ht+1.1,dep*0.14);dr.scale.set(1,0.8,1);g.add(dr);
     windowUnit(g,0.7,0.6,-w*0.18,ht+0.55,dep*0.14+0.72);}
