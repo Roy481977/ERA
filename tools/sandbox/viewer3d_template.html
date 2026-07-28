@@ -380,6 +380,51 @@ const tileTex=mkTex((c,W)=>{c.fillStyle="#d0d0d0";c.fillRect(0,0,W,W);
   for(let k=0;k<7;k++){c.fillStyle="rgba(120,116,110,0.13)";
     c.fillRect(0,_tr()*W,W,3+_tr()*8);}},256);
 tileTex.repeat.set(1/1.4,1/1.4);
+// SPRINT 026 — two tile textures, because a village has two roofs.
+// Neutral greys, tinted by the material colour (the Sprint 024 convention).
+const panTex=mkTex((c,W)=>{                    // pantile: bold, rolled, staggered
+  c.fillStyle="#c9c9c9";c.fillRect(0,0,W,W);
+  const NC=4,ch=W/NC,NT=5,tw=W/NT,CL=[];
+  for(let r=0;r<NC;r++){CL.push([]);
+    for(let t=0;t<NT;t++)CL[r].push(192+Math.floor(_tr()*50));}
+  for(let r=0;r<NC;r++){
+    const off=(r%2)?tw*0.5:0;
+    for(let t=-1;t<=NT;t++){
+      const x=t*tw+off,v=CL[r][((t%NT)+NT)%NT];
+      c.fillStyle="rgb("+v+","+(v-3)+","+(v-9)+")";
+      c.fillRect(x+1.1,r*ch+2.4,tw-2.4,ch-3.0);
+      const gr=c.createLinearGradient(x,0,x+tw,0);   // the roll of the pantile
+      gr.addColorStop(0.00,"rgba(255,255,255,0.20)");
+      gr.addColorStop(0.34,"rgba(255,255,255,0.02)");
+      gr.addColorStop(0.60,"rgba(84,78,72,0.20)");
+      gr.addColorStop(0.86,"rgba(84,78,72,0.06)");
+      gr.addColorStop(1.00,"rgba(255,255,255,0.14)");
+      c.fillStyle=gr;c.fillRect(x+1.1,r*ch+2.4,tw-2.4,ch-3.0);}
+    c.fillStyle="rgba(80,73,66,0.34)";c.fillRect(0,r*ch,W,3.0);   // the lap shadow
+    c.fillStyle="rgba(255,255,255,0.10)";c.fillRect(0,r*ch+3.0,W,1.4);}
+  for(let k=0;k<9;k++){c.fillStyle="rgba(126,120,110,0.10)";      // weathering
+    c.beginPath();c.arc(_tr()*W,_tr()*W,10+_tr()*40,0,7);c.fill();}},256);
+panTex.repeat.set(1/1.20,1/1.20);
+const slaTex=mkTex((c,W)=>{                    // slate: thin, flat, cool, staggered
+  c.fillStyle="#c2c2c4";c.fillRect(0,0,W,W);
+  const NC=7,ch=W/NC,NT=6,tw=W/NT,CL=[];
+  for(let r=0;r<NC;r++){CL.push([]);
+    for(let t=0;t<NT;t++)CL[r].push(186+Math.floor(_tr()*56));}
+  for(let r=0;r<NC;r++){
+    const off=(r%2)?tw*0.5:tw*0.12;
+    for(let t=-1;t<=NT;t++){
+      const x=t*tw+off,v=CL[r][((t%NT)+NT)%NT];
+      c.fillStyle="rgb("+(v-4)+","+(v-1)+","+(v+4)+")";
+      c.fillRect(x+1.0,r*ch+1.6,tw-2.0,ch-2.2);
+      c.fillStyle="rgba(255,255,255,0.10)";c.fillRect(x+1.0,r*ch+1.6,tw-2.0,1.6);}
+    c.fillStyle="rgba(70,72,80,0.40)";c.fillRect(0,r*ch,W,2.2);}
+  for(let k=0;k<11;k++){c.fillStyle="rgba(140,146,156,0.12)";
+    c.beginPath();c.arc(_tr()*W,_tr()*W,8+_tr()*34,0,7);c.fill();}},256);
+slaTex.repeat.set(1/0.92,1/0.92);
+const _rmc={};
+function roofMat(col,slate){const k=col+"|"+(slate?1:0);
+  return _rmc[k]||(_rmc[k]=new THREE.MeshLambertMaterial(
+    {color:col,map:slate?slaTex:panTex}));}
 const plankTex=mkTex((c,W)=>{c.fillStyle="#d4d4d4";c.fillRect(0,0,W,W);
   const pw=W/7;
   for(let p2=0;p2<7;p2++){const v=190+Math.floor(_tr()*40);
@@ -403,13 +448,103 @@ function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   m.castShadow=true;m.receiveShadow=true;return m;}
 function box(w,h,d,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));
   m.castShadow=true;m.receiveShadow=true;return m;}
-function gableRoof(w,len,c){ // triangular prism, overhanging
-  const s=new THREE.Shape();const hw=w/2+0.35;
-  s.moveTo(-hw,0);s.lineTo(hw,0);s.lineTo(0,w*0.36);s.lineTo(-hw,0);
-  const g=new THREE.ExtrudeGeometry(s,{depth:len+0.7,bevelEnabled:true,
-    bevelThickness:0.06,bevelSize:0.06,bevelSegments:1});
-  g.translate(0,0,-(len+0.7)/2);
-  const m=new THREE.Mesh(g,matT(c,tileTex));m.castShadow=true;return m;}
+// ---- SPRINT 026 — a roof is a shape, not a prism -----------------------
+// span: across the slope (x) · run: along the ridge (z) · eaves at y=0
+// hip : 1 = gable · ~0.5 = half-hipped (jerkinhead) · 0 = fully hipped
+function roofMesh(span,run,col,o){
+  o=o||{};
+  const ovE=o.ovE===undefined?0.40:o.ovE,ovV=o.ovV===undefined?0.32:o.ovV;
+  const hw=span/2+ovE,hl=run/2+ovV;
+  const pit=o.pitch===undefined?0.76:o.pitch,rise=hw*pit;
+  const hgf=o.hip===undefined?1:o.hip;
+  const hg=rise*hgf,xg=hw*(1-hgf),rl=Math.max(0.004,hl-xg);
+  const SL=Math.hypot(hw,rise)/hw;          // slope length per unit of plan x
+  const G=new THREE.Group();
+  const P=[],U=[],IX=[];
+  const V3=(a)=>new THREE.Vector3(a[0],a[1],a[2]);
+  function face(pts,uvs,up){                // planar polygon, fan-triangulated
+    const q=[],r=[];
+    pts.forEach((p,i)=>{const l=q.length-1;                    // drop repeats
+      if(l<0||Math.abs(q[l][0]-p[0])>1e-4||Math.abs(q[l][1]-p[1])>1e-4
+        ||Math.abs(q[l][2]-p[2])>1e-4){q.push(p);r.push(uvs[i]);}});
+    if(q.length<3)return;
+    const n=new THREE.Vector3().subVectors(V3(q[1]),V3(q[0]))
+      .cross(new THREE.Vector3().subVectors(V3(q[2]),V3(q[0])));
+    if(n.dot(up)<0){q.reverse();r.reverse();}
+    const b=P.length/3;
+    q.forEach((p,i)=>{P.push(p[0],p[1],p[2]);U.push(r[i][0],r[i][1]);});
+    for(let i=1;i<q.length-1;i++)IX.push(b,b+i,b+i+1);}
+  const uo=y=>(y/rise)*hw*SL;               // slope distance from the eaves
+  [1,-1].forEach(s=>{                       // the two long slopes
+    const pt=[[s*hw,0,-hl],[s*hw,0,hl],[s*xg,hg,hl],[0,rise,rl],
+              [0,rise,-rl],[s*xg,hg,-hl]];
+    face(pt,pt.map(p=>[uo(p[1]),p[2]]),new THREE.Vector3(s,1,0));});
+  if(hgf<0.995)[1,-1].forEach(e=>{          // the hipped ends
+    const pt=[[-xg,hg,e*hl],[xg,hg,e*hl],[0,rise,e*rl]];
+    face(pt,pt.map(p=>[uo(p[1]),p[0]]),new THREE.Vector3(0,1,e));});
+  if(hgf>0.005)[1,-1].forEach(e=>{          // the gablet: the roof's own end
+    const pt=(xg<0.004)?[[-hw,0,e*hl],[hw,0,e*hl],[0,rise,e*hl]]
+      :[[-hw,0,e*hl],[hw,0,e*hl],[xg,hg,e*hl],[-xg,hg,e*hl]];
+    face(pt,pt.map(p=>[p[1]*SL,p[0]]),new THREE.Vector3(0,0,e));});
+  const gm=new THREE.BufferGeometry();
+  gm.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+  gm.setAttribute("uv",new THREE.Float32BufferAttribute(U,2));
+  gm.setIndex(IX);gm.computeVertexNormals();
+  const sh=new THREE.Mesh(gm,roofMat(col,o.slate));
+  sh.castShadow=true;sh.receiveShadow=true;G.add(sh);
+  const rmat=mat(o.slate?0x6f7688:0x99543a);
+  const sc=o.sc===undefined?1:o.sc;         // trim scale: a dormer is not a house
+  // ridge tiles — a run of half-rounds, not one long box
+  {const n=Math.max(1,Math.round(2*rl/(0.52*sc))),sg=2*rl/n;
+   for(let i=0;i<n;i++){
+     const rt=new THREE.Mesh(new THREE.CylinderGeometry(0.155*sc,0.155*sc,sg-0.05*sc,7),rmat);
+     rt.rotation.x=Math.PI/2;rt.position.set(0,rise+0.04,-rl+(i+0.5)*sg);
+     rt.castShadow=true;G.add(rt);}}
+  // hip rolls — the four ribs that make a hip read as a hip
+  if(hgf<0.995)[1,-1].forEach(s=>[1,-1].forEach(e=>{
+    const a=new THREE.Vector3(0,rise,e*rl),b2=new THREE.Vector3(s*xg,hg,e*hl);
+    const d=new THREE.Vector3().subVectors(b2,a),L=d.length();
+    if(L<0.06)return;
+    const rr=new THREE.Mesh(new THREE.CylinderGeometry(0.125*sc,0.125*sc,L,6),rmat);
+    rr.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());
+    rr.position.copy(a).add(b2).multiplyScalar(0.5);rr.position.y+=0.05;
+    rr.castShadow=true;G.add(rr);}));
+  const fc=o.trim===undefined?0xf6f0e4:o.trim;
+  [1,-1].forEach(s=>{const f=box(0.095*sc,0.21*sc,2*hl+0.02,fc);   // eaves fascia
+    f.position.set(s*hw,-0.09*sc,0);G.add(f);});
+  if(hgf<0.995)[1,-1].forEach(e=>{const f=box(2*hw,0.21*sc,0.095*sc,fc);
+    f.position.set(0,-0.09*sc,e*hl);G.add(f);});
+  if(hgf>0.005)[1,-1].forEach(e=>[1,-1].forEach(s=>{        // bargeboards
+    const L=Math.hypot(hw-xg,hg);if(L<0.08)return;
+    const bb=box(L,0.17*sc,0.08*sc,fc);
+    bb.rotation.z=Math.atan2(hg,s*(xg-hw));
+    bb.position.set(s*(hw+xg)/2,hg/2,e*(hl+0.05*sc));G.add(bb);}));
+  return G;}
+function gableRoof(w,len,c){return roofMesh(w,len,c,{pitch:0.74});}
+// ---- SPRINT 026 — a chimney kit, because one stack repeated is a comb ---
+function chimneyKit(g,x,z,y0,len,seed){
+  const R=n=>(seed>>(n*3))&7;
+  const W2=0.66+(R(1)%3)*0.20,D2=0.64+(R(2)%3)*0.18;
+  const bc=[0xa8564a,0xc07052,0x9a5c4c,0xd9cbb2,0xb4906c,0xcabfa6][R(3)%6];
+  const st=box(W2,len,D2,bc);st.position.set(x,y0+len/2,z);
+  st.castShadow=true;st.receiveShadow=true;g.add(st);
+  const ob=box(W2+0.13,0.12,D2+0.13,bc);ob.position.set(x,y0+len-0.30,z);
+  ob.castShadow=true;g.add(ob);                              // oversailing course
+  const cp=box(W2+0.19,0.13,D2+0.19,0xb0a48e);
+  cp.position.set(x,y0+len+0.065,z);cp.castShadow=true;g.add(cp);
+  const NP=1+(R(4)%3)+((R(5)===0)?1:0),PT=R(6)%3;
+  const PC=[0xc8805a,0xb8663f,0xd6976a,0xbe7048][R(0)%4];   // terracotta only
+  for(let i=0;i<NP;i++){
+    const u=NP===1?0:(i/(NP-1)-0.5)*(W2-0.26);
+    const ph=PT===0?0.36:(PT===1?0.50:0.28);
+    const pot=new THREE.Mesh(new THREE.CylinderGeometry(
+      PT===1?0.105:0.125,0.148,ph,8),mat(PC));
+    pot.position.set(x+u,y0+len+0.13+ph/2,z);
+    pot.rotation.z=(((seed>>(i*2))%5)-2)*0.020;              // a lean
+    pot.castShadow=true;g.add(pot);
+    if(PT===2)for(let k=0;k<4;k++){const cb=box(0.062,0.11,0.062,PC);
+      cb.position.set(x+u+Math.cos(k*1.5708)*0.100,y0+len+0.13+ph+0.05,
+        z+Math.sin(k*1.5708)*0.100);g.add(cb);}}}
 // ---- sky dome: a real horizon, tinted by the hour
 const skyCv=document.createElement("canvas");skyCv.width=1;skyCv.height=256;
 const skyTex=new THREE.CanvasTexture(skyCv);skyTex.encoding=THREE.sRGBEncoding;
@@ -779,12 +914,26 @@ function makeLabel(txt){const cv=document.createElement("canvas");
   return new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.85),
     new THREE.MeshBasicMaterial({map:t}));}
 const GARDEN=[0xda3a2c,0xf2782c,0xf8bc3a,0xe88a7c,0xc3cdd6,0xf8f4eb];
+// SPRINT 026 — the roofscape needs an ORDER, not a hash. A hash lets two
+// neighbours land on the same ridge height and the same tile; the eye reads
+// that as one roof. Position in the row is what guarantees a step.
+const ORD={};
+{const rows={};
+ D.level.plots.forEach(p=>{const k=Math.round(p.y/9);(rows[k]=rows[k]||[]).push(p);});
+ Object.keys(rows).forEach(k=>{rows[k].sort((a,b)=>a.x-b.x)
+   .forEach((p,i)=>{ORD[p.id]=i;});});}
+const RSTEP=[0,0.62,0.20,1.02,0.36,0.82,0.10];   // no two neighbours alike
+const RFAM =[0,1,0,2,1,2,0,2,1];                 // terracotta · deep · slate
 D.level.plots.forEach(p=>{
   const seed=hash(p.id),shop=p.kit!=="home";
   const kit=shop?9:(seed%3);                 // 0 cottage · 1 dormer · 2 wide
+  const ix=ORD[p.id]||0;
   // SPRINT 020 — the silhouette steps: seeded height, pitch, orientation
-  const htVar=shop?(p.kit==="pub"?0.9:0):[0,0.35,0.8,0.15,1.15][seed%5];
+  // SPRINT 026 — stepped by position in the row, so the step is guaranteed
+  const htVar=shop?(p.kit==="pub"?0.9:0):RSTEP[ix%7]+(seed%3)*0.055;
   const pf=0.82+(seed%4)*0.14;               // roof pitch factor
+  const pit=0.64+((ix*3+seed)%6)*0.058;      // SPRINT 026 — 33° to 43°
+  const hipf=(seed%17===3)?0.0:((seed%7===2)?0.48:1);
   const fg=!shop&&seed%7===3;                // gable-to-street variant
   const w=shop?7.6:(kit===2?6.4:5.6),dep=shop?5.4:4.6,ht=(shop?3.4:2.9)+htVar;
   const bcol=shop?PAL.RND2:bodyCol(seed);
@@ -798,29 +947,69 @@ D.level.plots.forEach(p=>{
   if(brick&&seed%100<40){[-1,1].forEach(sx=>{for(let q=0;q<3;q++){
     const qb=box(0.5,0.34,0.5,PAL.RND2);
     qb.position.set(sx*(w/2-0.02),0.55+q*0.95,dep/2-0.22);g.add(qb);}});}
-  // roof: prism + ridge cap + verge boards + chimney with pots
-  const roofCol=(seed%10<5)?PAL.TILB:((seed%10<8)?0xbf6a4a:PAL.TILG);
-  const roof=fg?gableRoof(w,dep,roofCol):gableRoof(dep,w,roofCol);
+  // SPRINT 026 — the roof: a shape with a pitch, an end, a ridge and stacks
+  const fam=shop?((seed%10<3)?2:0):RFAM[ix%9];
+  const isSl=fam===2;
+  const roofCol=isSl?PAL.TILG
+    :(fam===1?0xbf6a4a:((seed%13===5)?0xd89a70:PAL.TILB));
+  const rSpan=fg?w:dep,rRun=fg?dep:w;
+  const rOvE=0.40,rise=(rSpan/2+rOvE)*pit;
+  const roof=roofMesh(rSpan,rRun,roofCol,
+    {pitch:pit,hip:hipf,ovE:rOvE,ovV:0.32,slate:isSl});
   if(!fg)roof.rotation.y=Math.PI/2;
-  roof.scale.y=pf;roof.position.y=ht+0.05;g.add(roof);
-  const ridge=fg?box(0.34,0.16,dep+0.8,roofCol===PAL.TILG?0x6f7688:0x99543a)
-              :box(w+0.8,0.16,0.34,roofCol===PAL.TILG?0x6f7688:0x99543a);
-  ridge.position.set(0,ht+(fg?w:dep)*0.36*pf+0.08,0);g.add(ridge);
-  if(!fg)[-1,1].forEach(sx=>{const vg=box(0.16,0.34,dep+0.7,PAL.RND);
-    vg.position.set(sx*(w/2+0.28),ht+0.28,0);g.add(vg);});
+  roof.position.y=ht+0.05;g.add(roof);
   if(htVar>=0.7&&!shop){                     // the upper windows of the tall houses
     windowUnit(g,0.8,0.7,-w*0.22,ht-0.72,dep/2+0.02);
     windowUnit(g,0.8,0.7,w*0.22,ht-0.72,dep/2+0.02);}
-  const ch=box(0.95,2.0,0.95,PAL.BRK2);ch.position.set(w*0.28,ht+1.3,0);g.add(ch);
-  const chc=box(1.15,0.18,1.15,0xb0a48e);chc.position.set(w*0.28,ht+2.36,0);g.add(chc);
-  [[-0.22,0],[0.22,0]].forEach(o=>{const pot=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12,0.15,0.42,8),mat(0xc8805a));
-    pot.position.set(w*0.28+o[0],ht+2.62,o[1]);g.add(pot);});
-  // dormer kit
-  if((kit===1||(kit===2&&seed%2===1))&&!fg){const dm=box(1.5,1.0,1.4,bcol);dm.position.set(-w*0.18,ht+0.6,dep*0.14);g.add(dm);
-    const dr=gableRoof(1.4,1.5,roofCol);dr.rotation.y=Math.PI/2;
-    dr.position.set(-w*0.18,ht+1.1,dep*0.14);dr.scale.set(1,0.8,1);g.add(dr);
-    windowUnit(g,0.7,0.6,-w*0.18,ht+0.55,dep*0.14+0.72);}
+  // the stacks. Where they stand, how tall, how many pots and of what kind
+  // are all seeded — a terrace whose chimneys match is a comb, not a town.
+  // SPRINT 026b — a stack finishes just clear of the roof it pierces. The
+  // first pass added the rise a second time and built a row of totem poles.
+  {const hwR=rSpan/2+rOvE, hlR=rRun/2+0.32;
+   const hgR=rise*hipf, xgR=hwR*(1-hipf), rlR=Math.max(0.004,hlR-xgR);
+   const srf=(cx,az)=>{                        // roof height above the eaves
+     let h1=rise*Math.max(0,1-Math.abs(cx)/hwR);
+     if(hipf<0.995&&Math.abs(az)>rlR)
+       h1=Math.min(h1,rise*Math.max(0,1-(Math.abs(az)-rlR)/Math.max(0.05,hlR-rlR)));
+     return h1;};
+   const far=(fg?dep:w)/2;                     // along the ridge
+   const CP=[[-0.34,0],[0.32,0],[-0.12,0],[0.30,0.16]][seed%4];
+   const mk=(u,off,sd)=>{
+     const cross=off*rSpan, az=u*far*2;
+     const stk=srf(cross,az)+0.05+0.44+((sd>>3)%4)*0.15;
+     const px=fg?cross:az, pz=fg?az:cross;
+     chimneyKit(g,px,pz,ht,stk,sd);};
+   mk(CP[0],CP[1],seed);
+   if(seed%5<2)mk(-CP[0]*0.92,CP[1]*0.5,seed+77);}  // two stacks on some houses
+  // dormer kit — SPRINT 026b: sized off the actual slope, near the eaves,
+  // so the cheeks clear the tiles. The first pass buried the box in the roof
+  // and left only its white trim showing, like a bone through the tiles.
+  if((kit===1||(kit===2&&seed%2===1))&&!fg){
+    const dt=seed%3,dx=[-w*0.24,w*0.19,-w*0.05][dt];
+    const dW=1.45,dD=0.95,hwD=rSpan/2+rOvE;
+    const sA=z2=>rise*Math.max(0,1-Math.abs(z2)/hwD);
+    const dzc=dep*0.42-dD/2;
+    let dTop=sA(dzc-dD/2)+0.12;
+    const dBase=Math.max(0.04,sA(dzc+dD/2)-0.30);
+    let dH=dTop-dBase;if(dH<0.72){dH=0.72;dTop=dBase+dH;}
+    const dm=box(dW,dH,dD,bcol);
+    dm.position.set(dx,ht+0.05+dBase+dH/2,dzc);
+    dm.castShadow=true;dm.receiveShadow=true;g.add(dm);
+    const dr=roofMesh(dW,dD,roofCol,{pitch:dt===1?0.44:0.56,
+      hip:dt===1?0.40:1,ovE:0.14,ovV:0.12,slate:isSl,sc:0.55});
+    dr.position.set(dx,ht+0.05+dTop,dzc);g.add(dr);
+    windowUnit(g,0.66,Math.min(0.70,dH-0.32),dx,
+      ht+0.05+dBase+dH*0.54,dzc+dD/2+0.03);}
+  // the cross-wing — one house in nine turns a gable to the street
+  const xwg=!shop&&!fg&&(seed%9===4);
+  if(xwg){const ww2=w*0.44,wdp=dep*0.62,wht=ht-0.18,wcx=w*0.24,wcz=dep*0.55;
+    const wbd=roundedBox(ww2,wht,wdp,0.26,bcol,brick?brickTex:plasterTex);
+    wbd.position.set(wcx,0,wcz);g.add(wbd);
+    const wrf=roofMesh(ww2,wdp,roofCol,
+      {pitch:pit+0.07,hip:1,ovE:0.32,ovV:0.28,slate:isSl});
+    wrf.position.set(wcx,wht+0.05,wcz);g.add(wrf);
+    windowUnit(g,0.82,0.95,wcx,1.45,wcz+wdp/2+0.02);
+    windowUnit(g,0.66,0.58,wcx,wht-0.52,wcz+wdp/2+0.02);}
   const acc=ACC[p.acc]||PAL.OLV;
   // door: surround + door + canopy + step
   const ds=box(1.45,2.25,0.14,PAL.RND);ds.position.set(-w*0.18,1.12,dep/2+0.08);g.add(ds);
@@ -849,7 +1038,8 @@ D.level.plots.forEach(p=>{
       const hs=box(0.7,0.9,0.08,PAL.GRN);hs.position.set(w/2+0.75,2.4,dep/2-0.4);g.add(hs);}
     winMats.push({m:windowUnit(g,1.0,0.9,-w*0.36,3.0,dep/2+0.02),shop:true,pid:p.kit});
   } else {
-    [[-w*0.28,1.55],[w*0.30,1.55]].forEach(o=>{
+    [[-w*0.28,1.55],[w*0.30,1.55]].forEach((o,oi)=>{
+      if(xwg&&oi===1)return;                 // that wall is the cross-wing now
       winMats.push({m:windowUnit(g,0.95,1.3,o[0],o[1],dep/2+0.02),shop:false});});
     // threshold: picket fence with a gate gap, or the garden wall
     if(seed%9<5){const gx=-w*0.18,fw=w+2.6;
@@ -1456,11 +1646,18 @@ const matchFlags=[];
    const sd6=hash("lk"+pr2[0]);
    const lk=box(lw+0.6,2.55,5.6,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
    lk.position.copy(V(lx,ly,1.275));lk.castShadow=true;scene.add(lk);
-   const lr=box(lw+1.0,0.34,6.1,(sd6%3)?PAL.TILB:0xbf6a4a);
-   lr.position.copy(V(lx,ly,2.72));scene.add(lr);
-   const lc=box(0.85,1.7,0.85,PAL.BRK2);lc.position.copy(V(lx,ly,3.4));scene.add(lc);
-   const lp2=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.14,0.36,8),mat(0xc8805a));
-   lp2.position.copy(V(lx,ly,4.4));scene.add(lp2);
+   // SPRINT 026 — the link sections were flat slabs at one height: eleven of
+   // them, and between them they drew the rigid horizontal line Roy named.
+   // They are roofs now, and deliberately subordinate — a link that rises to
+   // its neighbours' ridge is a house, not a link.
+   const lsl=sd6%4===0, lpit=0.60+(sd6%4)*0.05;
+   const lr=roofMesh(5.6,lw+0.6,lsl?PAL.TILG:((sd6%3)?PAL.TILB:0xbf6a4a),
+     {pitch:lpit,hip:(sd6%6===1)?0.45:1,ovE:0.34,ovV:0.26,slate:lsl});
+   lr.rotation.y=Math.PI/2;lr.position.copy(V(lx,ly,2.55));scene.add(lr);
+   {const lg=new THREE.Group();lg.position.copy(V(lx,ly,0));
+    const ltop=2.55+(5.6/2+0.34)*lpit;
+    chimneyKit(lg,(sd6%2?1:-1)*(lw*0.22),0,2.55,ltop-2.55+0.44+(sd6%3)*0.16,sd6);
+    scene.add(lg);}
    [[-2.05],[2.05]].forEach(o=>{const wf=box(0.9,0.9,0.1,PAL.RND);
      wf.position.copy(V(lx,ly+o[0],1.45));scene.add(wf);
      const wg=box(0.7,0.7,0.12,PAL.GLS);wg.position.copy(V(lx,ly+o[0],1.45));scene.add(wg);});});});
