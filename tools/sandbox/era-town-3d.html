@@ -356,6 +356,7 @@ const mat=c=>new THREE.MeshLambertMaterial({color:c});
 function mkTex(draw,px){const cv=document.createElement("canvas");
   cv.width=cv.height=px||256;const c2=cv.getContext("2d");draw(c2,cv.width);
   const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;
+  t.anisotropy=8;                       // SPRINT 028 - keep the courses at 30 m
   t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;}
 let _ts=5;const _tr=()=>{_ts=(_ts*1103515245+12345)>>>0;return ((_ts>>>8)%8388608)/8388608;};
 const brickTex=mkTex((c,W)=>{c.fillStyle="#d6d6d6";c.fillRect(0,0,W,W);
@@ -388,45 +389,66 @@ const tileTex=mkTex((c,W)=>{c.fillStyle="#d0d0d0";c.fillRect(0,0,W,W);
 tileTex.repeat.set(1/1.4,1/1.4);
 // SPRINT 026 — two tile textures, because a village has two roofs.
 // Neutral greys, tinted by the material colour (the Sprint 024 convention).
-const panTex=mkTex((c,W)=>{                    // pantile: bold, rolled, staggered
-  c.fillStyle="#c9c9c9";c.fillRect(0,0,W,W);
-  const NC=4,ch=W/NC,NT=5,tw=W/NT,CL=[];
-  for(let r=0;r<NC;r++){CL.push([]);
-    for(let t=0;t<NT;t++)CL[r].push(192+Math.floor(_tr()*50));}
+const panTex=mkTex((c,W)=>{                 // pantile: bold, rolled, staggered
+  c.fillStyle="#c4c4c4";c.fillRect(0,0,W,W);
+  const NC=5,ch=W/NC,NT=6,tw=W/NT;          // r runs UP the slope: a course
+  // A roof is not one batch of tiles. It is the original roof plus every
+  // repair since. Two or three blocks sit a shade off the rest and that is
+  // the difference between a tiled surface and a tiled roof.
+  const PATCH=[];
+  for(let k=0;k<3;k++)PATCH.push([Math.floor(_tr()*NC),Math.floor(_tr()*NT),
+    1+Math.floor(_tr()*2),1+Math.floor(_tr()*3),Math.floor(_tr()*46)-23]);
+  const shift=(r,t)=>{let v2=0;PATCH.forEach(q=>{
+    if(r>=q[0]&&r<q[0]+q[2]&&((t-q[1]+NT*4)%NT)<q[3])v2=q[4];});return v2;};
   for(let r=0;r<NC;r++){
     const off=(r%2)?tw*0.5:0;
     for(let t=-1;t<=NT;t++){
-      const x=t*tw+off,v=CL[r][((t%NT)+NT)%NT];
-      c.fillStyle="rgb("+v+","+(v-3)+","+(v-9)+")";
-      c.fillRect(x+1.1,r*ch+2.4,tw-2.4,ch-3.0);
-      const gr=c.createLinearGradient(x,0,x+tw,0);   // the roll of the pantile
-      gr.addColorStop(0.00,"rgba(255,255,255,0.20)");
-      gr.addColorStop(0.34,"rgba(255,255,255,0.02)");
-      gr.addColorStop(0.60,"rgba(84,78,72,0.20)");
-      gr.addColorStop(0.86,"rgba(84,78,72,0.06)");
-      gr.addColorStop(1.00,"rgba(255,255,255,0.14)");
-      c.fillStyle=gr;c.fillRect(x+1.1,r*ch+2.4,tw-2.4,ch-3.0);}
-    c.fillStyle="rgba(80,73,66,0.34)";c.fillRect(0,r*ch,W,3.0);   // the lap shadow
-    c.fillStyle="rgba(255,255,255,0.10)";c.fillRect(0,r*ch+3.0,W,1.4);}
-  for(let k=0;k<9;k++){c.fillStyle="rgba(126,120,110,0.10)";      // weathering
-    c.beginPath();c.arc(_tr()*W,_tr()*W,10+_tr()*40,0,7);c.fill();}},256);
-panTex.repeat.set(1/1.20,1/1.20);
-const slaTex=mkTex((c,W)=>{                    // slate: thin, flat, cool, staggered
-  c.fillStyle="#c2c2c4";c.fillRect(0,0,W,W);
-  const NC=7,ch=W/NC,NT=6,tw=W/NT,CL=[];
-  for(let r=0;r<NC;r++){CL.push([]);
-    for(let t=0;t<NT;t++)CL[r].push(186+Math.floor(_tr()*56));}
+      const y=t*tw+off,tt=((t%NT)+NT)%NT;
+      let v=196+Math.floor(_tr()*42)+shift(r,tt);
+      v=Math.max(122,Math.min(246,v));
+      c.fillStyle="rgb("+v+","+(v-4)+","+(v-11)+")";
+      c.fillRect(r*ch+4.4,y+1.8,ch-5.4,tw-3.2);
+      const gr=c.createLinearGradient(0,y,0,y+tw);   // the roll of the pantile
+      gr.addColorStop(0.00,"rgba(255,255,255,0.24)");
+      gr.addColorStop(0.30,"rgba(255,255,255,0.03)");
+      gr.addColorStop(0.60,"rgba(60,54,48,0.30)");
+      gr.addColorStop(0.88,"rgba(60,54,48,0.08)");
+      gr.addColorStop(1.00,"rgba(255,255,255,0.18)");
+      c.fillStyle=gr;c.fillRect(r*ch+4.4,y+1.8,ch-5.4,tw-3.2);}
+    c.fillStyle="rgba(48,40,34,0.64)";c.fillRect(r*ch,0,4.6,W);   // the lap line
+    c.fillStyle="rgba(255,255,255,0.16)";c.fillRect(r*ch+4.6,0,2.2,W);}
+  for(let k=0;k<10;k++){c.fillStyle="rgba(122,116,104,0.11)";     // weathering
+    c.beginPath();c.arc(_tr()*W,_tr()*W,14+_tr()*62,0,7);c.fill();}
+  for(let k=0;k<8;k++){c.fillStyle="rgba(106,126,84,0.22)";       // moss
+    c.beginPath();c.arc(_tr()*W,_tr()*W,5+_tr()*16,0,7);c.fill();}},512);
+panTex.repeat.set(1/1.30,1/1.30);
+const slaTex=mkTex((c,W)=>{                 // slate: thin, flat, cool, staggered
+  c.fillStyle="#bcbcc0";c.fillRect(0,0,W,W);
+  const NC=8,ch=W/NC,NT=7,tw=W/NT;
+  const PATCH=[];
+  for(let k=0;k<3;k++)PATCH.push([Math.floor(_tr()*NC),Math.floor(_tr()*NT),
+    1+Math.floor(_tr()*2),1+Math.floor(_tr()*3),Math.floor(_tr()*40)-20]);
+  const shift=(r,t)=>{let v2=0;PATCH.forEach(q=>{
+    if(r>=q[0]&&r<q[0]+q[2]&&((t-q[1]+NT*4)%NT)<q[3])v2=q[4];});return v2;};
   for(let r=0;r<NC;r++){
-    const off=(r%2)?tw*0.5:tw*0.12;
+    const off=(r%2)?tw*0.5:tw*0.13;
     for(let t=-1;t<=NT;t++){
-      const x=t*tw+off,v=CL[r][((t%NT)+NT)%NT];
-      c.fillStyle="rgb("+(v-4)+","+(v-1)+","+(v+4)+")";
-      c.fillRect(x+1.0,r*ch+1.6,tw-2.0,ch-2.2);
-      c.fillStyle="rgba(255,255,255,0.10)";c.fillRect(x+1.0,r*ch+1.6,tw-2.0,1.6);}
-    c.fillStyle="rgba(70,72,80,0.40)";c.fillRect(0,r*ch,W,2.2);}
-  for(let k=0;k<11;k++){c.fillStyle="rgba(140,146,156,0.12)";
-    c.beginPath();c.arc(_tr()*W,_tr()*W,8+_tr()*34,0,7);c.fill();}},256);
-slaTex.repeat.set(1/0.92,1/0.92);
+      const y=t*tw+off,tt=((t%NT)+NT)%NT;
+      let v=188+Math.floor(_tr()*52)+shift(r,tt);
+      v=Math.max(118,Math.min(248,v));
+      c.fillStyle="rgb("+(v-5)+","+(v-1)+","+(v+6)+")";
+      c.fillRect(r*ch+3.4,y+1.4,ch-4.2,tw-2.6);
+      c.fillStyle="rgba(255,255,255,0.13)";
+      c.fillRect(r*ch+3.4,y+1.4,ch-4.2,1.8);
+      c.fillStyle="rgba(58,60,70,0.28)";
+      c.fillRect(r*ch+3.4,y+tw-2.8,ch-4.2,1.6);}
+    c.fillStyle="rgba(50,54,64,0.60)";c.fillRect(r*ch,0,3.4,W);   // the lap line
+    c.fillStyle="rgba(255,255,255,0.12)";c.fillRect(r*ch+3.4,0,1.5,W);}
+  for(let k=0;k<12;k++){c.fillStyle="rgba(140,148,160,0.13)";
+    c.beginPath();c.arc(_tr()*W,_tr()*W,9+_tr()*40,0,7);c.fill();}
+  for(let k=0;k<6;k++){c.fillStyle="rgba(112,128,96,0.18)";       // moss
+    c.beginPath();c.arc(_tr()*W,_tr()*W,4+_tr()*13,0,7);c.fill();}},512);
+slaTex.repeat.set(1/1.05,1/1.05);
 const _rmc={};
 function roofMat(col,slate){const k=col+"|"+(slate?1:0);
   return _rmc[k]||(_rmc[k]=new THREE.MeshLambertMaterial(
@@ -441,6 +463,73 @@ const plankTex=mkTex((c,W)=>{c.fillStyle="#d4d4d4";c.fillRect(0,0,W,W);
       const x3=p2*pw+4+_tr()*(pw-8);c.moveTo(x3,0);
       c.quadraticCurveTo(x3+(_tr()-0.5)*8,W/2,x3,W);c.stroke();}}},256);
 function matT(c,tx){return new THREE.MeshLambertMaterial({color:c,map:tx});}
+// ---- SPRINT 028 STAGE E - THE GROUND ------------------------------------
+// Every camera at eye level spends a third of its frame on the ground, and
+// the ground was two flat colours. A street is granite setts with a gutter
+// running through it and a flagged footway beside it. None of this is
+// detail for its own sake: it is what stops the lower third of a frame
+// reading as an empty field.
+const settTex=mkTex((c,W)=>{               // 2.20 m of granite setts
+  c.fillStyle="#9a968f";c.fillRect(0,0,W,W);          // the joint, not the sett
+  const N=9,sw=W/N;
+  for(let r=0;r<N;r++){const off=(r%2)?sw*0.5:0;
+    for(let t=-1;t<=N;t++){
+      const v=214+Math.floor(_tr()*20);               // setts agree with each other
+      c.fillStyle="rgb("+v+","+(v-2)+","+(v-6)+")";
+      c.fillRect(t*sw+off+2.0,r*sw+2.0,sw-4.0,sw-4.0);
+      c.fillStyle="rgba(255,255,255,0.12)";
+      c.fillRect(t*sw+off+2.0,r*sw+2.0,sw-4.0,1.3);}}
+  for(let k=0;k<9;k++){c.fillStyle="rgba(112,108,102,0.10)";   // wear, wheel ruts
+    c.beginPath();c.arc(_tr()*W,_tr()*W,16+_tr()*54,0,7);c.fill();}},256);
+const flagTex=mkTex((c,W)=>{               // 1.10 m of York-stone flags
+  c.fillStyle="#a8a296";c.fillRect(0,0,W,W);          // the joint
+  const N=2,fw=W/N;
+  for(let r=0;r<N;r++)for(let t=0;t<N;t++){
+    const v=222+Math.floor(_tr()*26);
+    c.fillStyle="rgb("+v+","+(v-2)+","+(v-8)+")";
+    c.fillRect(t*fw+3.4,r*fw+3.4,fw-6.8,fw-6.8);
+    c.fillStyle="rgba(255,255,255,0.14)";
+    c.fillRect(t*fw+3.4,r*fw+3.4,fw-6.8,2.0);
+    c.fillStyle="rgba(150,144,132,0.13)";
+    c.fillRect(t*fw+3.4,r*fw+fw-8.4,fw-6.8,3.0);}
+  for(let k=0;k<14;k++){c.fillStyle="rgba(146,140,128,0.08)";
+    c.beginPath();c.arc(_tr()*W,_tr()*W,6+_tr()*30,0,7);c.fill();}},256);
+// coursed rubble: the material every low wall in this town is actually made
+// of. Sprint 027 painted them one flat cream and they read as folded card.
+const stoneTex=mkTex((c,W)=>{              // 2.00 m of coursed rubble
+  c.fillStyle="#8e8878";c.fillRect(0,0,W,W);          // mortar
+  const NC=6,ch=W/NC;
+  for(let r=0;r<NC;r++){
+    let x=-_tr()*40;
+    while(x<W){
+      const bw=W*(0.10+_tr()*0.13);
+      const v=210+Math.floor(_tr()*30);
+      c.fillStyle="rgb("+v+","+(v-4)+","+(v-13)+")";
+      c.fillRect(x+2.2,r*ch+2.2,bw-4.4,ch-4.4);
+      c.fillStyle="rgba(255,255,255,0.13)";
+      c.fillRect(x+2.2,r*ch+2.2,bw-4.4,1.6);
+      c.fillStyle="rgba(96,88,74,0.16)";
+      c.fillRect(x+2.2,r*ch+ch-4.6,bw-4.4,2.0);
+      x+=bw;}}
+  for(let k=0;k<10;k++){c.fillStyle="rgba(120,132,96,0.13)";    // lichen
+    c.beginPath();c.arc(_tr()*W,_tr()*W,4+_tr()*20,0,7);c.fill();}
+  for(let k=0;k<7;k++){c.fillStyle="rgba(126,120,106,0.10)";
+    c.beginPath();c.arc(_tr()*W,_tr()*W,12+_tr()*40,0,7);c.fill();}},256);
+// each surface gets its own repeat, so a 48 m street and a 4 m path share one
+// canvas without either of them looking like wallpaper. The repeats are
+// snapped and cached: a hundred yard walls must not become a hundred uploads.
+const _gtc={};
+function gtex(t,rx,rz){
+  rx=Math.max(0.5,Math.round(rx*2)/2);rz=Math.max(0.5,Math.round(rz*2)/2);
+  const k=t.uuid+"|"+rx+"|"+rz;
+  if(_gtc[k])return _gtc[k];
+  const t2=t.clone();t2.needsUpdate=true;t2.repeat.set(rx,rz);
+  return (_gtc[k]=t2);}
+function paved(m,c,t,w,d,unit){m.material=matT(c,gtex(t,w/unit,d/unit));return m;}
+// a wall gets its stone from its own face size, so a two-metre pier and a
+// twelve-metre boundary are the same masonry at the same scale
+function stoneW(m,w,h,c){m.material=matT(c===undefined?0xd8d2c2:c,
+  gtex(stoneTex,w/2.0,h/2.0));return m;}
 function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   const s=new THREE.Shape();const hw=w/2,hd=d/2;
   s.moveTo(-hw+r,-hd);s.lineTo(hw-r,-hd);s.quadraticCurveTo(hw,-hd,hw,-hd+r);
@@ -518,13 +607,19 @@ function roofMesh(span,run,col,o){
   // SPRINT 027 - a warm board, not a white stripe. Twenty-three of these
   // joined end to end were half of the rigid horizontal line.
   const fc=o.trim===undefined?0xe9dcc6:o.trim;
-  [1,-1].forEach(s=>{const f=box(0.095*sc,0.21*sc,2*hl+0.02,fc);   // eaves fascia
-    f.position.set(s*hw,-0.09*sc,0);G.add(f);});
-  if(hgf<0.995)[1,-1].forEach(e=>{const f=box(2*hw,0.21*sc,0.095*sc,fc);
-    f.position.set(0,-0.09*sc,e*hl);G.add(f);});
+  // SPRINT 028 - the tile course at the eaves is doubled, so the roof edge is
+  // a thick lip with a shadow under it, not the knife edge of a plane.
+  [1,-1].forEach(s=>{const te=box(0.30*sc,0.10*sc,2*hl+0.05,col);
+    te.position.set(s*(hw-0.09*sc),0.052*sc,0);te.castShadow=true;G.add(te);});
+  if(hgf<0.995)[1,-1].forEach(e=>{const te=box(2*hw-0.6*sc,0.10*sc,0.30*sc,col);
+    te.position.set(0,0.052*sc,e*(hl-0.09*sc));te.castShadow=true;G.add(te);});
+  [1,-1].forEach(s=>{const f=box(0.125*sc,0.27*sc,2*hl+0.02,fc);   // eaves fascia
+    f.position.set(s*hw,-0.12*sc,0);f.castShadow=true;G.add(f);});
+  if(hgf<0.995)[1,-1].forEach(e=>{const f=box(2*hw,0.27*sc,0.125*sc,fc);
+    f.position.set(0,-0.12*sc,e*hl);f.castShadow=true;G.add(f);});
   if(hgf>0.005)[1,-1].forEach(e=>[1,-1].forEach(s=>{        // bargeboards
     const L=Math.hypot(hw-xg,hg);if(L<0.08)return;
-    const bb=box(L,0.17*sc,0.08*sc,fc);
+    const bb=box(L,0.22*sc,0.10*sc,fc);
     bb.rotation.z=Math.atan2(hg,s*(xg-hw));
     bb.position.set(s*(hw+xg)/2,hg/2,e*(hl+0.05*sc));G.add(bb);}));
   return G;}
@@ -690,11 +785,27 @@ D.level.roads.forEach(r=>{
   const w=r[2]-r[0],d=r[3]-r[1],cx2=(r[0]+r[2])/2,cy2=(r[1]+r[3])/2;
   const market=(r[1]===15.0&&r[3]===21.5);
   if(market){  // the urban street: kerbed, paved, full width
-    const k=box(w+0.7,0.09,d+0.7,PAL.CONC);k.position.copy(V(cx2,cy2,0.045));scene.add(k);
-    const a=box(w,0.11,d,PAL.ASPH);a.position.copy(V(cx2,cy2,0.06));scene.add(a);
+    const k=box(w+0.7,0.09,d+0.7,PAL.CONC);
+    paved(k,0xe6e0d4,flagTex,w+0.7,d+0.7,1.10);
+    k.position.copy(V(cx2,cy2,0.045));scene.add(k);
+    const a=box(w,0.11,d,PAL.ASPH);
+    paved(a,0x827e78,settTex,w,d,2.20);
+    a.position.copy(V(cx2,cy2,0.06));scene.add(a);
+    // the kerb: a line of stones with a shadow under it, and the gutter
+    // channel that always collects the darkest value on the street
+    [r[1]+0.16,r[3]-0.16].forEach(ky=>{
+      for(let kx=r[0];kx<r[2]-0.3;kx+=1.80){
+        const ln=Math.min(1.76,r[2]-kx-0.04);
+        const ks=box(ln,0.26,0.30,0xcfc9bc);
+        ks.castShadow=false;ks.receiveShadow=true;
+        ks.position.copy(V(kx+ln/2,ky,0.07));scene.add(ks);}
+      const gu=box(w,0.02,0.50,0x5f5b56);
+      gu.castShadow=false;
+      gu.position.copy(V(cx2,ky+(ky<cy2?0.40:-0.40),0.121));scene.add(gu);});
   }else{       // the lanes: narrower, warmer, grass-verged — roads stop dominating
     const horiz=w>d;
     const a=box(horiz?w:w-1.8,0.11,horiz?d-1.8:d,0x6e695f);
+    paved(a,0x7d7972,settTex,horiz?w:w-1.8,horiz?d-1.8:d,2.60);
     a.position.copy(V(cx2,cy2,0.06));scene.add(a);
     if(horiz)[[cy2-d/2+0.45],[cy2+d/2-0.45]].forEach(o=>{
       const v2=box(w,0.07,0.9,0x8fa273);v2.position.copy(V(cx2,o[0],0.035));scene.add(v2);});
@@ -704,6 +815,8 @@ D.level.roads.forEach(r=>{
 D.level.paths.forEach(p=>{
   if(p.r){const r=p.r,w=Math.max(r[2]-r[0],1.2),d=Math.max(r[3]-r[1],1.2);
     const m=box(w,0.08,d,p.k==="worn"?PAL.SOIL:(p.k==="brick"?0xc4ae92:0xcdc6b4));
+    if(p.k==="brick")paved(m,0xd9c3a4,settTex,w,d,1.55);
+    else if(p.k!=="worn")paved(m,0xdfd8ca,flagTex,w,d,1.10);
     m.position.copy(V((r[0]+r[2])/2,(r[1]+r[3])/2,0.05));scene.add(m);}
   else{const pts=p.pts;
     for(let i=1;i<pts.length;i++){const ax=pts[i-1][0],ay=pts[i-1][1],
@@ -900,22 +1013,186 @@ function bridgeH(x,y){const B2=window.BR;if(!B2)return 0;
   return 0;}
 // ---- houses & shops — the Museum language, three kits, one module
 const winMats=[];const plotRot={};
-function windowUnit(g,w,h,x,y,zf){          // thick white surround + sill (SL-2)
-  const fr=box(w+0.24,h+0.24,0.12,PAL.RND);fr.position.set(x,y,zf);g.add(fr);
+// ---- SPRINT 028 - THE FACADE KIT: depth, not decoration ------------------
+// Sprint 027's window was a white plate with a blue plate laid ON TOP of it.
+// Nothing stood in front of the glass, so nothing shadowed it, so at twenty
+// metres it read as a sticker. A window is a hole with a lid and a shelf:
+// the lintel oversails, the jambs pinch, the sill is the deepest thing on
+// the wall. None of that is decoration. All of it is shadow.
+function winRec(g,w,h,x,y,zf,o){
+  o=o||{};
+  const c=(o.col===undefined)?PAL.RND:o.col;
+  const pr=(o.pr===undefined)?0.20:o.pr;     // how far the surround stands proud
+  const t=(o.t===undefined)?0.15:o.t;        // the width of the frame member
   const gl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
-    new THREE.MeshLambertMaterial({color:PAL.GLS}));
-  gl.position.set(x,y,zf+0.08);g.add(gl);
-  const sill=box(w+0.36,0.12,0.22,PAL.RND);sill.position.set(x,y-h/2-0.16,zf+0.06);g.add(sill);
+    new THREE.MeshLambertMaterial({color:o.gls||PAL.GLS}));
+  gl.position.set(x,y,zf+0.012);g.add(gl);
+  const bh=box(w,0.05,0.06,c);bh.position.set(x,y+(o.up||0),zf+0.05);g.add(bh);
+  const bv=box(0.05,h,0.06,c);bv.position.set(x,y,zf+0.05);g.add(bv);
+  const hd=box(w+2*t+0.12,t+0.06,pr+0.07,c);
+  hd.position.set(x,y+h/2+(t+0.06)/2,zf+(pr+0.07)/2);hd.castShadow=true;g.add(hd);
+  [-1,1].forEach(s=>{const jb=box(t,h,pr*0.70,c);
+    jb.position.set(x+s*(w/2+t/2),y,zf+pr*0.35);jb.castShadow=true;g.add(jb);});
+  const sl=box(w+2*t+0.22,0.15,pr+0.22,c);
+  sl.position.set(x,y-h/2-0.075,zf+(pr+0.22)/2-0.03);sl.castShadow=true;g.add(sl);
   return gl.material;}
-// SPRINT 027b - the same window unit, hung on any of the four elevations.
+function windowUnit(g,w,h,x,y,zf){return winRec(g,w,h,x,y,zf);}
+// the same window hung on any of the four elevations.
 // dir 0 = front (+z) . 1 = back (-z) . 2 = right flank (+x) . 3 = left (-x)
-// u is the sideways position along that wall, off is the wall's own offset.
-function winFace(g,w,h,u,y,off,dir){
+function winF(g,w,h,u,y,off,dir,o){
   const q=new THREE.Group();
-  const m=windowUnit(q,w,h,0,y,0);
+  const m=winRec(q,w,h,0,y,0,o);
   q.rotation.y=[0,Math.PI,Math.PI/2,-Math.PI/2][dir];
   q.position.set(dir===2?off:(dir===3?-off:u),0,dir===0?off:(dir===1?-off:u));
   g.add(q);return m;}
+// a string course: the line that tells the eye where one floor ends and the
+// next begins. Without it a tall building is a tall wall.
+function band(g,w,dep,y,c,pr){
+  const p=(pr===undefined)?0.12:pr;
+  const f=box(w+2*p,0.17,dep+2*p,c);f.position.set(0,y,0);
+  f.castShadow=true;f.receiveShadow=true;g.add(f);return f;}
+// a plinth with a weathered cap: the building stands ON something
+function plinth(g,w,dep,h,c){
+  const b=box(w+0.36,h,dep+0.36,c);b.position.y=h/2;
+  b.castShadow=true;b.receiveShadow=true;g.add(b);
+  const cap=box(w+0.48,0.10,dep+0.48,0xb4a894);cap.position.y=h+0.03;
+  cap.castShadow=true;g.add(cap);}
+// a porch: a real projecting room with two posts and a pitched lid
+function porch(g,x,zf,acc,rc,h){
+  const ph=(h===undefined)?2.30:h, pw=1.80, pd=1.15;
+  [-1,1].forEach(s=>{const po=box(0.17,ph,0.17,PAL.RND);
+    po.position.set(x+s*(pw/2-0.10),ph/2,zf+pd-0.09);po.castShadow=true;g.add(po);
+    const sw=box(0.15,ph*0.92,pd,PAL.RND);
+    sw.position.set(x+s*(pw/2-0.10),ph*0.46,zf+pd/2);sw.castShadow=true;g.add(sw);});
+  const rf=roofMesh(pd+0.40,pw+0.44,rc,{pitch:0.68,hip:1,ovE:0.13,ovV:0.11,sc:0.5});
+  rf.rotation.y=Math.PI/2;rf.position.set(x,ph,zf+pd/2);g.add(rf);}
+// a shallow bay - the shop window's domestic cousin
+function bayWin(g,w,h,x,y,zf,c,rc){
+  const bd=0.46, bh=y+h/2+0.34;
+  const bb=box(w+0.66,bh,bd,c);bb.position.set(x,bh/2,zf+bd/2);
+  bb.castShadow=true;bb.receiveShadow=true;g.add(bb);
+  const cp=box(w+0.92,0.15,bd+0.26,rc);cp.position.set(x,bh+0.075,zf+bd/2+0.02);
+  cp.castShadow=true;g.add(cp);
+  return winRec(g,w,h,x,y,zf+bd,{pr:0.15});}
+// the drainpipe. Evidence of rain, and a vertical line down a flat wall.
+function pipe(g,x,z,h){
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(0.058,0.058,h,6),mat(0x8e8375));
+  p.position.set(x,h/2,z);p.castShadow=true;g.add(p);
+  const hp=box(0.21,0.27,0.17,0x8e8375);hp.position.set(x,h-0.18,z);hp.castShadow=true;g.add(hp);}
+// a lean-to, a coal store, a scullery - the small masses that close the gaps
+function outbuild(g,x,z,w,d,h,c,rc,slate){
+  const b=box(w,h,d,c);b.position.set(x,h/2,z);
+  b.castShadow=true;b.receiveShadow=true;g.add(b);
+  const r=roofMesh(d+0.22,w+0.22,rc,{pitch:0.44,hip:1,ovE:0.17,ovV:0.15,
+    slate:slate,sc:0.55});
+  r.rotation.y=Math.PI/2;r.position.set(x,h+0.03,z);g.add(r);}
+// a plank door with a real frame and a real threshold
+function doorway(g,x,zf,acc,o){
+  o=o||{};
+  const dw=(o.w===undefined)?1.02:o.w, dh=(o.h===undefined)?2.02:o.h;
+  const su=box(dw+0.46,dh+0.30,0.20,o.sur||PAL.RND);
+  su.position.set(x,(dh+0.30)/2,zf+0.10);su.castShadow=true;g.add(su);
+  const dr=box(dw,dh,0.14,acc);dr.position.set(x,dh/2,zf+0.16);g.add(dr);
+  for(let i=0;i<3;i++){const pn=box(dw-0.30,0.05,0.04,acc);
+    pn.position.set(x,0.42+i*0.58,zf+0.24);g.add(pn);}
+  const kb=new THREE.Mesh(new THREE.SphereGeometry(0.052,6,5),mat(0xf8bc3a));
+  kb.position.set(x+dw*0.33,dh*0.50,zf+0.24);g.add(kb);
+  const st=box(dw+0.60,0.13,0.56,PAL.CONC);st.position.set(x,0.065,zf+0.40);
+  st.receiveShadow=true;g.add(st);
+  if(o.hood){const hd=box(dw+0.70,0.14,0.78,o.hood);hd.rotation.x=0.34;
+    hd.position.set(x,dh+0.42,zf+0.40);hd.castShadow=true;g.add(hd);
+    [-1,1].forEach(s=>{const br=box(0.10,0.44,0.44,PAL.RND);
+      br.rotation.x=-0.5;br.position.set(x+s*(dw/2+0.18),dh+0.16,zf+0.26);g.add(br);});}}
+// SPRINT 028 - a shopfront is a RECESS. Two pilasters and a fascia come
+// forward to the building line and the glass stays back between them. That
+// step is the entire difference between a shop and a house with a big window.
+function shopFront(g,w,dep,acc,name,sd){
+  const zf=dep/2, gh=3.10;
+  const st=box(w-0.94,0.74,0.17,0x7a6a54);      // the stallriser
+  st.position.set(0,0.52,zf+0.085);st.castShadow=true;g.add(st);
+  const gl=new THREE.Mesh(new THREE.PlaneGeometry(w-1.04,1.66),
+    new THREE.MeshLambertMaterial({color:PAL.GLS}));
+  gl.position.set(0,1.76,zf+0.03);g.add(gl);
+  const tr=box(w-0.94,0.14,0.16,PAL.RND2);tr.position.set(0,2.64,zf+0.10);
+  tr.castShadow=true;g.add(tr);
+  for(let i=1;i<4;i++){const ml=box(0.11,1.66,0.14,PAL.RND2);
+    ml.position.set(-(w-1.04)/2+i*(w-1.04)/4,1.76,zf+0.08);g.add(ml);}
+  const dx=(sd%2)?(w*0.33):(-w*0.33);
+  const dr=box(1.02,2.34,0.13,acc);dr.position.set(dx,1.17,zf+0.03);g.add(dr);
+  const dl=box(1.40,0.20,0.34,PAL.RND2);dl.position.set(dx,2.44,zf+0.17);
+  dl.castShadow=true;g.add(dl);
+  [-1,1].forEach(s=>{const pi=box(0.36,gh,0.42,PAL.RND2);
+    pi.position.set(s*(w/2-0.18),gh/2,zf+0.21);
+    pi.castShadow=true;pi.receiveShadow=true;g.add(pi);
+    const cp=box(0.48,0.16,0.52,PAL.RND);cp.position.set(s*(w/2-0.18),gh+0.08,zf+0.24);
+    cp.castShadow=true;g.add(cp);});
+  const fa=box(w,0.64,0.47,PAL.RND2);fa.position.set(0,gh+0.40,zf+0.235);
+  fa.castShadow=true;g.add(fa);
+  const cor=box(w+0.26,0.15,0.62,PAL.RND);cor.position.set(0,gh+0.79,zf+0.31);
+  cor.castShadow=true;g.add(cor);
+  const sg=makeLabel(name.toUpperCase());sg.position.set(0,gh+0.40,zf+0.48);g.add(sg);
+  {const br=box(0.92,0.10,0.10,0x5a544a);br.position.set(w/2-0.56,gh+1.20,zf+0.32);
+   br.castShadow=true;g.add(br);
+   const hs=box(0.07,0.82,0.70,acc);hs.position.set(w/2-0.14,gh+0.74,zf+0.32);
+   hs.castShadow=true;g.add(hs);}
+  return gl.material;}
+// plinth, body, roof - the three moves every family shares, and the only
+// three. Everything above this line is what makes them different buildings.
+function shell(g,o){
+  g.add(aoBlob(o.w+2.4,o.dep+2.4));
+  plinth(g,o.w,o.dep,(o.pl===undefined)?0.26:o.pl,o.plc||0x8d7f6d);
+  const body=roundedBox(o.w,o.ht,o.dep,(o.r===undefined)?0.22:o.r,o.col,o.tex);
+  g.add(body);
+  const rSpan=o.fg?o.w:o.dep, rRun=o.fg?o.dep:o.w;
+  const rise=(rSpan/2+o.ovE)*o.pitch;
+  const rf=roofMesh(rSpan,rRun,o.rc,{pitch:o.pitch,hip:o.hip,ovE:o.ovE,
+    ovV:o.ovV,slate:o.slate});
+  if(!o.fg)rf.rotation.y=Math.PI/2;
+  rf.position.y=o.ht+0.05;g.add(rf);
+  return {rise:rise,rSpan:rSpan,rRun:rRun};}
+// height of the roof surface above the eaves, at a point on the plan
+function roofY(o,R,cross,along){
+  const hw=R.rSpan/2+o.ovE, hl=R.rRun/2+o.ovV;
+  const xg=hw*(1-o.hip), rl=Math.max(0.004,hl-xg);
+  let h1=R.rise*Math.max(0,1-Math.abs(cross)/hw);
+  if(o.hip<0.995&&Math.abs(along)>rl)
+    h1=Math.min(h1,R.rise*Math.max(0,1-(Math.abs(along)-rl)/Math.max(0.05,hl-rl)));
+  return h1;}
+// a stack. u runs along the ridge, c across it, both as fractions of half.
+function stackOn(g,o,R,u,c,sd,extra){
+  const cross=c*(R.rSpan/2), along=u*(R.rRun/2);
+  const ry=roofY(o,R,cross,along);
+  const len=ry+0.05+0.50+((sd>>3)%4)*0.16+(extra||0);
+  const px=o.fg?cross:along, pz=o.fg?along:cross;
+  chimneyKit(g,px,pz,o.ht,len,sd);
+  // A stack that has been lit for a century stains the tiles it stands in.
+  const sk=box(1.44,0.05,1.40,0x6b5f54);
+  sk.position.set(px,o.ht+ry+0.015,pz);sk.receiveShadow=true;g.add(sk);
+  const so=box(1.10,0.14,1.06,0x4e453e);
+  so.position.set(px,o.ht+ry+0.07,pz);so.castShadow=true;so.receiveShadow=true;
+  g.add(so);}
+// SPRINT 028 - a dormer with cheeks you can see and a frame you can read.
+function dormerOn(g,o,R,dx,sd,big){
+  const hwD=R.rSpan/2+o.ovE;
+  const sA=z2=>R.rise*Math.max(0,1-Math.abs(z2)/hwD);
+  const dW=big?2.05:1.48, dD=big?1.25:0.98;
+  const dzc=o.dep*0.40-dD/2;
+  let dTop=sA(dzc-dD/2)+0.15;
+  const dBase=Math.max(0.04,sA(dzc+dD/2)-0.26);
+  let dH=dTop-dBase;if(dH<0.82){dH=0.82;dTop=dBase+dH;}
+  const y0=o.ht+0.05+dBase;
+  const dm=box(dW-0.22,dH,dD,o.col);dm.position.set(dx,y0+dH/2,dzc);
+  dm.castShadow=true;dm.receiveShadow=true;g.add(dm);
+  [-1,1].forEach(s=>{const ck=box(0.15,dH,dD+0.06,o.col);
+    ck.position.set(dx+s*(dW/2-0.06),y0+dH/2,dzc);
+    ck.castShadow=true;ck.receiveShadow=true;g.add(ck);
+    const fl=box(0.12,0.08,dD+0.16,0x8e8a80);
+    fl.position.set(dx+s*(dW/2+0.01),y0+0.04,dzc);g.add(fl);});
+  const dr=roofMesh(dW+0.34,dD+0.26,o.rc,{pitch:0.64,hip:(sd%3===1)?0.4:1,
+    ovE:0.17,ovV:0.15,slate:o.slate,sc:0.62});
+  dr.position.set(dx,o.ht+0.05+dTop,dzc);g.add(dr);
+  winRec(g,dW-0.66,Math.min(0.84,dH-0.30),dx,y0+dH*0.52,dzc+dD/2+0.02,
+    {pr:0.14,t:0.12});}
 function bodyCol(seed){const u=(seed%100)/100;
   if(u<0.20)return PAL.BRK;if(u<0.28)return PAL.BRK2;if(u<0.34)return PAL.BRK3;
   if(u<0.90)return [0xf0e6c8,0xf2d9a6,0xecc39a,0xe8c4b4,0xf0dcb2,0xc9cfae,0xcfc0c6,0xe0d6c2][seed%8];
@@ -939,235 +1216,470 @@ const ORD={};
  D.level.plots.forEach(p=>{const k=Math.round(p.y/9);(rows[k]=rows[k]||[]).push(p);});
  Object.keys(rows).forEach(k=>{rows[k].sort((a,b)=>a.x-b.x)
    .forEach((p,i)=>{ORD[p.id]=i;});});}
-const RFAM =[0,1,0,2,1,2,0,2,1];                 // terracotta · deep · slate
-// ---- SPRINT 027 — the town gets storeys ---------------------------------
-// Sprint 026 stepped the ridges by a metre and the horizon stayed rigid,
-// because the line the eye reads was never the ridge. It is the EAVES.
-// Twenty-three buildings all 2.9-4.0 m to the gutter, standing on flat
-// ground, their fascia boards joining into one white stripe from one side
-// of the frame to the other. No roof can fix that. Only storeys can.
-const SCL=[0,2,1,3,0,2,4,1,3,0,2,1];   // storey class by position in the row
-const SC=[                             // eaves . pitch . overhang
- {e:2.60,p:1.06,o:0.58},   // 0 - single-storey cottage: low eaves, huge roof
- {e:3.35,p:0.92,o:0.50},   // 1 - one-and-a-half: it lives inside its roof
- {e:4.75,p:0.78,o:0.40},   // 2 - two storey
- {e:5.60,p:0.72,o:0.34},   // 3 - two-and-a-half
- {e:6.60,p:0.66,o:0.30}];  // 4 - three-storey townhouse, rare, an accent
-const SCS=[2,3,2,4,3,2,3];             // the high street stands taller
-const EAVE={};                         // every plot's gutter, for the links
-const FGB=[0,0,1,0,0,1,0,1,0];         // gable to the street - one in three
-D.level.plots.forEach(p=>{
-  const seed=hash(p.id),shop=p.kit!=="home";
-  const kit=shop?9:(seed%3);                 // 0 cottage . 1 dormer . 2 wide
-  const ix=ORD[p.id]||0;
-  const cls=shop?SCS[ix%7]:SCL[ix%12];       // adjacent entries always differ
-  const S=SC[cls];
-  const pit=S.p+((((ix*3+seed)%5)-2)*0.030); // no two neighbours at one pitch
-  const hipf=cls<=1?((seed%3===0)?0.0:((seed%3===1)?0.45:1))
-                   :((seed%11===4)?0.5:1);   // cottages hip, townhouses gable
-  const fg=!shop&&(FGB[ix%9]===1||seed%23===5);
-  const w=shop?7.6:(cls>=3?6.6:(cls===0?5.2:(kit===2?6.2:5.6)));
-  const dep=(shop?5.4:4.55)+((((ix*5+seed)%4)-1.5)*0.34); // the building line breaks
-  const ht=S.e+((shop&&p.kit==="pub")?0.5:0)+(seed%3)*0.07;
-  EAVE[p.id]=ht;
-  const bcol=shop?PAL.RND2:bodyCol(seed);
-  const brick=(bcol===PAL.BRK||bcol===PAL.BRK2||bcol===PAL.BRK3);
-  const g=new THREE.Group();
-  // plinth — the building meets its ground (SL-5)
-  const pl0=box(w+0.3,0.22,dep+0.3,0x8d7f6d);pl0.position.y=0.11;g.add(pl0);
+// ---- SPRINT 028 - SIX BUILDING FAMILIES ---------------------------------
+// Sprint 027 gave the town storeys and the skyline did move - but it moved
+// at random. One house generator, one width band, one window unit, and a
+// storey class picked off the plot's INDEX IN ITS ROW. A three-storey block
+// beside a cottage is not a town; it is a cottage that has been stretched.
+// So the generator goes. Six families, each with its own proportions, its
+// own facade structure, its own roof logic and its own job in the street,
+// and the town composed by role: cottages at the edges, ordinary houses on
+// the through streets, terraces and shops on the high street, and exactly
+// two deliberate anchors - the inn at the square and the post office clock.
+const EAVE={},WID={};
+const ROLE={
+  P11:"cot", P12:"cot", P08:"cot", P10:"cot",
+  G1:"cot",  G2:"cot",  G3:"cot",  G4:"cot",
+  P09:"vil", P01:"vil", P03:"vil",
+  P14:"terr",P13:"terr",N3:"terr",
+  P02:"shop",P05:"shop",P04:"shop",N1:"shop",N2:"shop",P07:"shop",
+  P06:"civic", W1:"corner", P15:"inn"};
+const TILES=[PAL.TILB,0xbf6a4a,0xd08a62,0xc07050,0xb2603f,0xcb7b57];
+const SLATES=[0x868ea0,0x79818f,0x8f97a6,0x6e7686];
+function rcOf(sd,sl){return sl?SLATES[(sd>>2)%4]:TILES[sd%6];}
+function bodyOf(sd){const c=bodyCol(sd);
+  return {c:c,tex:(c===PAL.BRK||c===PAL.BRK2||c===PAL.BRK3)?brickTex:plasterTex};}
+// A cottage and a village house have a threshold. A terrace, a shop and the
+// inn do not - they meet the pavement, and that is what makes a street edge.
+function frontGarden(g,w,dep,sd){
+  const zf=dep/2+2.4;
+  if(sd%9<5){const gx=-w*0.16,fw=w+2.4;
+    [[-fw/2,gx-0.8],[gx+0.8,fw/2]].forEach(sg=>{
+      const ln=sg[1]-sg[0];if(ln<0.5)return;
+      [0.24,0.50].forEach(hh=>{const rl=box(ln,0.07,0.06,0xf2eee2);
+        rl.position.set((sg[0]+sg[1])/2,hh,zf);g.add(rl);});
+      for(let u=sg[0]+0.15;u<sg[1];u+=1.05){const ps=box(0.10,0.62,0.08,0xf2eee2);
+        ps.position.set(u,0.31,zf);ps.castShadow=true;g.add(ps);}});
+  }else{const gw=box(w+2.4,0.58,0.32,0xb0a48e);stoneW(gw,w+2.4,0.58,0xb0a48e);
+    gw.position.set(0,0.29,zf);
+    gw.castShadow=true;gw.receiveShadow=true;g.add(gw);}
+  for(let f=0;f<6;f++){const fx=-w/2+0.6+f*(w-1)/5;
+    const fl=box(0.22,0.30,0.22,GARDEN[(sd+f)%6]);
+    fl.position.set(fx,0.32,dep/2+2.0);g.add(fl);
+    const st=box(0.10,0.24,0.10,0x55703f);st.position.set(fx,0.12,dep/2+2.0);g.add(st);}
+  if(sd%5<3){const b=new THREE.Mesh(new THREE.SphereGeometry(0.30,8,6),
+      mat([0xda3a2c,0xf2782c,0xe88a7c][sd%3]));
+    b.position.set(w*0.32,0.32,dep/2+1.5);b.castShadow=true;g.add(b);
+    const b2=new THREE.Mesh(new THREE.SphereGeometry(0.36,8,6),mat(0x55703f));
+    b2.position.set(w*0.32-0.44,0.34,dep/2+1.45);b2.castShadow=true;g.add(b2);}}
+// SPRINT 028 STAGE D - THE BACK LANDS.
+// Roy: "reduce meaningless lawn between buildings". The lawn between these
+// houses was never a garden - it was the absence of one. An English house
+// does not sit ON grass. It sits in a plot, and the plot has a wall round it,
+// a hard yard behind the back door, a coal store, a washing line and a heap
+// of wood. That is what closes the gaps, and none of it widens the town.
+
+// an attached back-addition: the scullery wing that makes a plan an L
+function rearWing(g,o,sd){
+  const ww=Math.max(2.40,Math.min(o.w*0.46,4.20)),wd=2.70;
+  const wh=Math.max(2.10,Math.min(o.ht-0.85,3.40));
+  const wx=-o.w*0.20, wz=-(o.dep/2+wd/2-0.12);
+  const b=roundedBox(ww,wh,wd,0.08,o.col,o.tex);
+  b.position.set(wx,0,wz);g.add(b);
+  const r=roofMesh(ww+0.12,wd+0.10,o.rc,
+    {pitch:0.62,hip:0,ovE:0.28,ovV:0.22,slate:o.slate,sc:0.82});
+  r.position.set(wx,wh,wz);g.add(r);
+  const BK=o.dep/2+wd-0.12;
+  winF(g,0.66,0.80,wx,1.34,BK,1,{pr:0.16,t:0.12});
+  winF(g,0.58,0.72,wz+0.30,1.36,Math.abs(wx)+ww/2,(wx<0?3:2),{pr:0.16,t:0.12});
+  pipe(g,wx+ww/2-0.14,-(BK-0.10),wh-0.06);}
+
+// the yard: walls, a hard surface, and the ordinary objects of a working back
+function rearYard(g,o,sd){
+  const YD=o.dep/2+4.10, hw=o.w/2+1.05;
+  const wh=1.62+((sd>>2)%3)*0.14;
+  const WC=[0xb0a48e,0xc0a88c,0xa89a84][sd%3], CP=0xd8cdb8;
+  const yz=-(o.dep/2+2.05), yl=YD-o.dep/2-0.20;
+  // the hard yard: flagstones, not lawn
+  const sl=box(o.w+1.70,0.07,yl-0.30,0xbdb6a8);
+  sl.position.set(0,0.035,yz);sl.receiveShadow=true;g.add(sl);
+  // the rear boundary
+  const rw=box(o.w+2.10,wh,0.30,WC);stoneW(rw,o.w+2.10,wh,WC);
+  rw.position.set(0,wh/2,-YD);rw.castShadow=true;rw.receiveShadow=true;g.add(rw);
+  const rc2=box(o.w+2.26,0.11,0.42,CP);
+  rc2.position.set(0,wh+0.055,-YD);rc2.castShadow=true;g.add(rc2);
+  [-1,0,1].forEach(t=>{const px=t*(o.w/2+0.90);
+    const pr2=box(0.42,wh+0.14,0.42,WC);stoneW(pr2,0.42,wh+0.14,WC);
+    pr2.position.set(px,(wh+0.14)/2,-YD);pr2.castShadow=true;g.add(pr2);
+    const pc=box(0.54,0.12,0.54,CP);
+    pc.position.set(px,wh+0.20,-YD);pc.castShadow=true;g.add(pc);});
+  // the flanking walls that make it a yard and not a field
+  [-1,1].forEach(f=>{const sw=box(0.28,wh-0.10,yl,WC);
+    stoneW(sw,yl,wh-0.10,WC);
+    sw.position.set(f*hw,(wh-0.10)/2,yz);
+    sw.castShadow=true;sw.receiveShadow=true;g.add(sw);
+    const sc2=box(0.40,0.10,yl,CP);
+    sc2.position.set(f*hw,wh-0.05,yz);sc2.castShadow=true;g.add(sc2);});
+  // the coal store in the corner
+  if(sd%2===0){const cs=box(1.70,1.32,1.10,WC);stoneW(cs,1.70,1.32,WC);
+    cs.position.set(hw-1.00,0.66,-(YD-0.75));
+    cs.castShadow=true;cs.receiveShadow=true;g.add(cs);
+    const cr=box(1.90,0.09,1.30,0x8e8a80);cr.rotation.x=-0.13;
+    cr.position.set(hw-1.00,1.38,-(YD-0.75));cr.castShadow=true;g.add(cr);}
+  // the washing line: three sheets, and the whole yard is inhabited
+  {const LZ=-(o.dep/2+2.30),LY=1.86;
+   [-1,1].forEach(f=>{const po=box(0.09,LY,0.09,0x8a7d68);
+     po.position.set(f*(hw-0.55),LY/2,LZ);po.castShadow=true;g.add(po);
+     const ar=box(0.62,0.08,0.08,0x8a7d68);
+     ar.position.set(f*(hw-0.55)-f*0.31,LY-0.06,LZ);ar.castShadow=true;g.add(ar);});
+   const ln=box(2*(hw-0.55),0.035,0.035,0xe8e2d4);
+   ln.position.set(0,LY-0.06,LZ);g.add(ln);
+   const SH=[0xf0ece0,0x9fc2d6,0xe2c0b4,0xd8dcc4];
+   for(let k=0;k<3;k++){const shw=0.62+((sd>>k)%3)*0.10;
+     const sh2=box(shw,0.86,0.035,SH[(sd+k)%4]);
+     sh2.position.set((k-1)*(hw*0.62),LY-0.52,LZ);
+     sh2.castShadow=true;g.add(sh2);}}
+  // the log stack and the shrubs
+  {const lg2=box(1.30,0.86,0.72,0x8a6f4e);
+   lg2.position.set(-(hw-0.85),0.43,-(YD-0.55));
+   lg2.castShadow=true;lg2.receiveShadow=true;g.add(lg2);}
+  const SB=[0x4f6b3c,0x5c7a44,0x44603a];
+  for(let k=0;k<3;k++){
+    const b3=new THREE.Mesh(new THREE.SphereGeometry(0.34+((sd+k)%3)*0.09,7,5),
+      mat(SB[(sd+k)%3]));
+    b3.position.set(-hw+0.55+k*0.86,0.36,-(YD-0.42));
+    b3.castShadow=true;g.add(b3);}}
+// The back is a working elevation - a door, a pipe, odd windows and
+// something attached. Not a grid of specks on a blank field: Roy is right
+// that blank wall is believable when the mass around it is composed.
+function rearWorks(g,o,sd,tiers){
+  const RO=o.dep/2+0.02;
+  const su=box(1.34,2.14,0.20,0xd8cdb8);      // the back door sits IN something
+  su.position.set(o.w*0.26,1.07,-(RO+0.02));
+  su.castShadow=true;su.receiveShadow=true;g.add(su);
+  const bd=box(0.90,1.82,0.15,0x6f5f4e);
+  bd.position.set(o.w*0.26,0.91,-(RO+0.12));bd.castShadow=true;g.add(bd);
+  winF(g,0.62,0.74,-o.w*0.08,1.44,RO,1,{pr:0.16,t:0.12});
+  (tiers||[]).forEach((wy,k)=>
+    winF(g,0.72,0.86,(k%2?-1:1)*o.w*0.24,wy-0.08,RO,1,{pr:0.16,t:0.12}));
+  pipe(g,o.w*0.40,-(RO+0.07),Math.max(0.7,o.ht-0.08));
+  {const bt=new THREE.Mesh(new THREE.CylinderGeometry(0.30,0.27,0.86,10),
+     mat(0x4b5b48));                          // the butt under the downpipe
+   bt.position.set(o.w*0.40,0.43,-(RO+0.36));
+   bt.castShadow=true;bt.receiveShadow=true;g.add(bt);
+   const bl=box(0.66,0.07,0.66,0x3d4a3c);
+   bl.position.set(o.w*0.40,0.885,-(RO+0.36));g.add(bl);}
+  // a third of the houses grew a wing instead of a shed. Both close the gap;
+  // the wing also breaks the rear wall, which is the flattest plane we own.
+  if(sd%3===2)rearWing(g,o,sd);
+  else outbuild(g,-o.w*0.20,-(o.dep/2+1.10),2.5,2.10,
+    Math.max(1.9,Math.min(2.35,o.ht-0.45)),o.col,o.rc,o.slate);
+  rearYard(g,o,sd);}
+// A flank is broken by its chimney breast. That one vertical mass is worth
+// more than a dozen windows, because it is the thing that casts the shadow.
+function flankWorks(g,o,R,sd,sides,tiers){
+  sides.forEach(f=>{
+    const bre=box(0.28,o.ht-0.04,1.45,o.col);
+    bre.position.set(f*(o.w/2+0.12),(o.ht-0.04)/2,o.dep*0.04);
+    bre.castShadow=true;bre.receiveShadow=true;g.add(bre);
+    const SO=o.w/2+0.02,dir=f>0?2:3;
+    (tiers||[]).forEach((wy,k)=>{[-1,1].forEach(t=>{
+      if(o.ht<5.4&&t>0)return;
+      winF(g,0.58,0.76,t*o.dep*0.26,wy-0.06,SO,dir,{pr:0.16,t:0.12});});});
+    if(o.hip>0.6){const ap=o.ht+0.05+R.rise*(0.34+((sd>>4)%3)*0.05);
+      winF(g,0.54,0.62,0,ap,o.w/2+o.ovV+0.02,dir,{pr:0.14,t:0.11});}});}
+
+// ---- 1. LOW COTTAGE -----------------------------------------------------
+// One storey. The roof is the building: pitch above 1.0, eaves under 2.6 m,
+// deep reveals, a door under the gutter, and it grows sideways - never up.
+function famCottage(g,p,sd,acc){
+  const B=bodyOf(sd);
+  const w=5.15+((sd>>2)%4)*0.28, dep=4.50+((sd>>5)%3)*0.20;
+  const isSl=(sd%100)<16;
+  const o={w:w,dep:dep,ht:2.40+((sd>>7)%4)*0.10,
+    pitch:1.05+((sd>>3)%5)*0.04, hip:[0,0.45,1,0.45][sd%4],
+    ovE:0.62,ovV:0.50,col:B.c,tex:B.tex,rc:rcOf(sd,isSl),slate:isSl,
+    fg:false,pl:0.22,r:0.30};
+  const R=shell(g,o);const zf=dep/2;
+  doorway(g,-w*0.14,zf,acc,{w:0.92,h:1.82,hood:o.rc});
+  winMats.push({m:winRec(g,0.90,0.96,w*0.27,1.22,zf+0.02,{pr:0.30,t:0.18}),shop:false});
+  winRec(g,0.72,0.82,-w*0.44,1.20,zf+0.02,{pr:0.30,t:0.18});
+  if(sd%3!==1)dormerOn(g,o,R,(sd%2?1:-1)*w*0.20,sd,false);
+  stackOn(g,o,R,(sd%2?0.62:-0.66),0,sd,0.26);
+  const sf=(sd%2)?1:-1;                      // the attached shed
+  outbuild(g,sf*(w/2+1.20),dep*0.04,2.30,dep*0.80,
+    Math.min(2.05,o.ht-0.28),B.c,o.rc,isSl);
+  flankWorks(g,o,R,sd,[-sf],[]);
+  rearWorks(g,o,sd,[]);
+  frontGarden(g,w,dep,sd);
+  return o;}
+
+// ---- 2. TWO-STOREY VILLAGE HOUSE ----------------------------------------
+// Balanced wall to roof. Three bays. A string course so the eye can find
+// the floor line, and a real projecting porch instead of a flat canopy.
+function famVillage(g,p,sd,acc){
+  const B=bodyOf(sd);
+  const w=6.30+((sd>>2)%3)*0.26, dep=5.00+((sd>>5)%3)*0.20;
+  const isSl=(sd%100)<38;
+  const o={w:w,dep:dep,ht:5.05+((sd>>7)%3)*0.12,
+    pitch:0.80+((sd>>3)%4)*0.03,hip:(sd%5===2)?0.45:1,
+    ovE:0.40,ovV:0.34,col:B.c,tex:B.tex,rc:rcOf(sd,isSl),slate:isSl,
+    fg:false,pl:0.30,r:0.22};
+  const R=shell(g,o);const zf=dep/2;
+  band(g,w,dep,2.80,PAL.RND2,0.11);
+  const bx=[-w*0.31,0,w*0.31];
+  doorway(g,0,zf,acc,{w:1.00,h:2.06});
+  porch(g,0,zf,acc,o.rc,2.44);
+  if(sd%2)winMats.push({m:bayWin(g,1.14,1.30,bx[0],1.44,zf,B.c,o.rc),shop:false});
+  else winMats.push({m:winRec(g,1.08,1.34,bx[0],1.46,zf+0.02,{pr:0.24}),shop:false});
+  winMats.push({m:winRec(g,1.02,1.30,bx[2],1.46,zf+0.02,{pr:0.24}),shop:false});
+  bx.forEach(x=>winMats.push(
+    {m:winRec(g,0.94,1.16,x,3.84,zf+0.02,{pr:0.22}),shop:false}));
+  stackOn(g,o,R,-0.74,0,sd,0.30);
+  if(sd%3!==2)stackOn(g,o,R,0.76,0,sd+31,0.30);
+  flankWorks(g,o,R,sd,[(sd%2)?1:-1],[3.84]);
+  rearWorks(g,o,sd,[3.84]);
+  frontGarden(g,w,dep,sd);
+  return o;}
+
+// ---- 3. TERRACED WORKER HOUSING -----------------------------------------
+// N attached units under ONE roof and ONE eaves. The rhythm repeats, the
+// colour and the front plane step, the party walls carry the chimneys, and
+// there is no front garden at all - the front door is on the pavement.
+function famTerrace(g,p,sd,acc,n){
+  const uw=3.30,w=uw*n,dep=4.90;
+  const isSl=(sd%100)<45;                    // slate is the terrace family
+  const base=bodyOf(sd);
+  const o={w:w,dep:dep,ht:4.86,pitch:0.74,hip:1,ovE:0.34,ovV:0.26,
+    col:base.c,tex:base.tex,rc:rcOf(sd,isSl),slate:isSl,fg:false,pl:0.26,r:0.10};
   g.add(aoBlob(w+2.4,dep+2.4));
-  const body=roundedBox(w,ht,dep,0.28,bcol,brick?brickTex:plasterTex);g.add(body);
-  // quoins: few and fat (SL-3) on brick bodies
-  if(brick&&seed%100<40){[-1,1].forEach(sx=>{for(let q=0;q<3;q++){
-    const qb=box(0.5,0.34,0.5,PAL.RND2);
-    qb.position.set(sx*(w/2-0.02),0.55+q*0.95,dep/2-0.22);g.add(qb);}});}
-  // SPRINT 026 — the roof: a shape with a pitch, an end, a ridge and stacks
-  const fam=shop?((seed%10<3)?2:0):RFAM[ix%9];
-  const isSl=fam===2;
-  const roofCol=isSl?PAL.TILG
-    :(fam===1?0xbf6a4a:((seed%13===5)?0xd89a70:PAL.TILB));
-  const rSpan=fg?w:dep,rRun=fg?dep:w;
-  const rOvE=S.o,rise=(rSpan/2+rOvE)*pit;
-  const roof=roofMesh(rSpan,rRun,roofCol,
-    {pitch:pit,hip:hipf,ovE:rOvE,ovV:S.o*0.8,slate:isSl});
-  if(!fg)roof.rotation.y=Math.PI/2;
-  roof.position.y=ht+0.05;g.add(roof);
-  // SPRINT 027 - the storeys have to SHOW. Windows diminish as they rise,
-  // which is the thing that tells the eye a townhouse from a tall cottage.
-  const nSt=[];                             // the storey levels this house has
-  for(let k=1;k<=3;k++){
-    const wy=1.55+k*1.85;if(wy+0.55>ht-0.35)break;nSt.push(wy);}
-  nSt.forEach((wy,ki)=>{const k=ki+1;
-    const ww3=0.92-k*0.09,wh3=1.15-k*0.16;
-    [-w*0.28,w*0.30].forEach((ox,oi)=>{
-      if(oi===1&&k===1&&!shop&&seed%6===0)return;   // a blocked-up window
-      winMats.push({m:windowUnit(g,ww3,wh3,ox,wy,dep/2+0.02),shop:false});});});
-  // the stacks. Where they stand, how tall, how many pots and of what kind
-  // are all seeded — a terrace whose chimneys match is a comb, not a town.
-  // SPRINT 026b — a stack finishes just clear of the roof it pierces. The
-  // first pass added the rise a second time and built a row of totem poles.
-  {const hwR=rSpan/2+rOvE, hlR=rRun/2+0.32;
-   const hgR=rise*hipf, xgR=hwR*(1-hipf), rlR=Math.max(0.004,hlR-xgR);
-   const srf=(cx,az)=>{                        // roof height above the eaves
-     let h1=rise*Math.max(0,1-Math.abs(cx)/hwR);
-     if(hipf<0.995&&Math.abs(az)>rlR)
-       h1=Math.min(h1,rise*Math.max(0,1-(Math.abs(az)-rlR)/Math.max(0.05,hlR-rlR)));
-     return h1;};
-   const far=(fg?dep:w)/2;                     // along the ridge
-   const CP=[[-0.34,0],[0.32,0],[-0.12,0],[0.30,0.16]][seed%4];
-   const mk=(u,off,sd)=>{
-     const cross=off*rSpan, az=u*far*2;
-     const stk=srf(cross,az)+0.05+0.44+((sd>>3)%4)*0.15
-       +((cls>=3)?0.38:0)+((cls<=1)?0.20:0);   // SPRINT 027 - scaled to the house
-     const px=fg?cross:az, pz=fg?az:cross;
-     chimneyKit(g,px,pz,ht,stk,sd);};
-   mk(CP[0],CP[1],seed);
-   if(seed%5<2)mk(-CP[0]*0.92,CP[1]*0.5,seed+77);}  // two stacks on some houses
-  // dormer kit — SPRINT 026b: sized off the actual slope, near the eaves,
-  // so the cheeks clear the tiles. The first pass buried the box in the roof
-  // and left only its white trim showing, like a bone through the tiles.
-  if((cls===1||(cls===0&&seed%2===0)||kit===1||(kit===2&&seed%2===1))&&!fg){
-    const dt=seed%3,dx=[-w*0.24,w*0.19,-w*0.05][dt];
-    const dW=1.45,dD=0.95,hwD=rSpan/2+rOvE;
-    const sA=z2=>rise*Math.max(0,1-Math.abs(z2)/hwD);
-    const dzc=dep*0.42-dD/2;
-    let dTop=sA(dzc-dD/2)+0.12;
-    const dBase=Math.max(0.04,sA(dzc+dD/2)-0.30);
-    let dH=dTop-dBase;if(dH<0.72){dH=0.72;dTop=dBase+dH;}
-    const dm=box(dW,dH,dD,bcol);
-    dm.position.set(dx,ht+0.05+dBase+dH/2,dzc);
-    dm.castShadow=true;dm.receiveShadow=true;g.add(dm);
-    const dr=roofMesh(dW,dD,roofCol,{pitch:dt===1?0.44:0.56,
-      hip:dt===1?0.40:1,ovE:0.14,ovV:0.12,slate:isSl,sc:0.55});
-    dr.position.set(dx,ht+0.05+dTop,dzc);g.add(dr);
-    windowUnit(g,0.66,Math.min(0.70,dH-0.32),dx,
-      ht+0.05+dBase+dH*0.54,dzc+dD/2+0.03);}
-  // the cross-wing — one house in nine turns a gable to the street
-  const xwg=!shop&&!fg&&(seed%9===4);
-  if(xwg){const ww2=w*0.44,wdp=dep*0.62,wht=ht-0.18,wcx=w*0.24,wcz=dep*0.55;
-    const wbd=roundedBox(ww2,wht,wdp,0.26,bcol,brick?brickTex:plasterTex);
-    wbd.position.set(wcx,0,wcz);g.add(wbd);
-    const wrf=roofMesh(ww2,wdp,roofCol,
-      {pitch:pit+0.07,hip:1,ovE:0.32,ovV:0.28,slate:isSl});
-    wrf.position.set(wcx,wht+0.05,wcz);g.add(wrf);
-    windowUnit(g,0.82,0.95,wcx,1.45,wcz+wdp/2+0.02);
-    windowUnit(g,0.66,0.58,wcx,wht-0.52,wcz+wdp/2+0.02);}
+  plinth(g,w,dep,0.26,0x8d7f6d);
+  const U=[];
+  for(let i=0;i<n;i++){
+    const usd=hash(p.id+"u"+i),ub=bodyOf(usd);
+    const x=-w/2+uw*(i+0.5),pf=((usd>>4)%3===0)?0.11:0;
+    const bd=roundedBox(uw+0.02,o.ht,dep+pf,0.06,ub.c,ub.tex);
+    bd.position.set(x,0,pf/2);g.add(bd);
+    U.push({x:x,sd:usd,c:ub.c,pf:pf});}
+  const rf=roofMesh(dep,w,o.rc,{pitch:o.pitch,hip:1,ovE:o.ovE,ovV:o.ovV,slate:isSl});
+  rf.rotation.y=Math.PI/2;rf.position.y=o.ht+0.05;g.add(rf);
+  const R={rise:(dep/2+o.ovE)*o.pitch,rSpan:dep,rRun:w};
+  const DACC=[PAL.GRN,PAL.NVY,PAL.RED,PAL.MUS,PAL.OLV,0x6a3b2e];
+  U.forEach((u,i)=>{
+    const zf=dep/2+u.pf, sgn=(i%2)?1:-1;
+    doorway(g,u.x+sgn*uw*0.27,zf,DACC[u.sd%6],{w:0.90,h:2.00});
+    winMats.push({m:winRec(g,1.02,1.24,u.x-sgn*uw*0.26,1.42,zf+0.02,
+      {pr:0.22}),shop:false});
+    [-1,1].forEach(t=>winMats.push({m:winRec(g,0.84,1.08,u.x+t*uw*0.24,3.58,
+      zf+0.02,{pr:0.20}),shop:false}));
+    winF(g,0.70,0.86,u.x,1.46,dep/2+0.02,1,{pr:0.16,t:0.12});
+    winF(g,0.62,0.78,u.x,3.60,dep/2+0.02,1,{pr:0.16,t:0.12});
+    if(i%2===0)outbuild(g,u.x,-(dep/2+1.30),uw-0.40,2.60,2.35,u.c,o.rc,isSl);});
+  for(let i=0;i<=n;i++){                     // the party walls, stepped proud
+    const px=-w/2+uw*i;
+    const pw2=box(0.24,o.ht+0.18,dep+0.40,0xd8cdb8);
+    pw2.position.set(px,(o.ht+0.18)/2,0);
+    pw2.castShadow=true;pw2.receiveShadow=true;g.add(pw2);
+    stackOn(g,o,R,px/(w/2),0,hash(p.id+"c"+i),0.30);}
+  const pav=box(w+0.7,0.11,2.10,PAL.CONC);
+  pav.position.set(0,0.055,dep/2+1.10);pav.receiveShadow=true;g.add(pav);
+  pipe(g,-w/2+0.30,-(dep/2+0.07),o.ht-0.10);
+  pipe(g, w/2-0.30,-(dep/2+0.07),o.ht-0.10);
+  flankWorks(g,o,R,sd,[1,-1],[]);
+  return o;}
+
+// ---- 4. HIGH-STREET SHOP-HOUSE ------------------------------------------
+// A real shopfront RECESS at the ground floor, a band course, and living
+// floors above it. Two of them stand taller, mid-street, on purpose.
+function famShop(g,p,sd,acc){
+  const B=bodyOf(sd+11);
+  const tall=(p.id==="P05"||p.id==="N2");    // authored, not indexed
+  const w=7.80+((sd>>2)%3)*0.30, dep=5.60;
+  const isSl=(sd%100)<42;
+  const o={w:w,dep:dep,ht:tall?8.05:(6.35+((sd>>6)%3)*0.12),
+    pitch:0.70,hip:(sd%4===1)?0.45:1,ovE:0.36,ovV:0.30,
+    col:B.c,tex:B.tex,rc:rcOf(sd,isSl),slate:isSl,fg:false,pl:0.28,r:0.14};
+  const R=shell(g,o);
+  const nm=(p.kit&&p.kit!=="home")?p.kit:"stores";
+  winMats.push({m:shopFront(g,w,dep,acc,nm,sd),shop:true,pid:nm});
+  band(g,w,dep,4.02,PAL.RND2,0.13);
+  const bx=[-w*0.31,0,w*0.31];
+  const tiers=tall?[5.18,7.00]:[5.18];
+  tiers.forEach((wy,k)=>bx.forEach(x=>winMats.push(
+    {m:winRec(g,0.98-k*0.08,1.30-k*0.16,x,wy,dep/2+0.02,{pr:0.24}),shop:false})));
+  if(tall)band(g,w,dep,6.06,PAL.RND2,0.10);
+  if(!tall&&sd%2===0)dormerOn(g,o,R,((sd>>3)%2?1:-1)*w*0.22,sd,true);
+  stackOn(g,o,R,-0.74,0,sd,0.44);
+  stackOn(g,o,R, 0.76,0,sd+7,0.44);
+  flankWorks(g,o,R,sd,[(sd%2)?1:-1],tiers);
+  rearWorks(g,o,sd,tiers);
+  return o;}
+
+// ---- 5. CORNER ANCHOR ---------------------------------------------------
+// Designed for the junction. Wider, taller, and it TURNS the corner: a
+// canted bay on the diagonal carries the entrance the whole way up and is
+// capped with its own roof. Nothing else in the town does this.
+function famCorner(g,p,sd,acc){
+  const w=8.40,dep=6.90,gsH=3.20;
+  const o={w:w,dep:dep,ht:6.90,pitch:0.60,hip:0.35,ovE:0.42,ovV:0.36,
+    col:PAL.BRK,tex:brickTex,rc:SLATES[1],slate:true,fg:false,
+    pl:0.40,plc:0x9a8d78,r:0.16};
+  const R=shell(g,o);const zf=dep/2;
+  // the ground floor is a different storey: darker, taller, and banded off
+  const gs=roundedBox(w+0.16,gsH,dep+0.16,0.14,0x6a5b4a,brickTex);g.add(gs);
+  band(g,w+0.16,dep+0.16,gsH,PAL.RND2,0.16);
+  // ---- the corner is TURNED, not towered ---------------------------------
+  // The first pass stood a 2.3 m dark-red box on this corner and let it rise
+  // above the eaves with its own pointed cap. From the square it read as a
+  // narrow stretched tower - precisely the fault it was built to cure. A
+  // corner building turns the corner: same brick, same storeys, the same
+  // string course and the same cornice carried round, and a cap that sits
+  // BELOW the main ridge so the bay stays part of the building.
+  const cs=3.40,cx=w/2-1.62,cz=dep/2-1.62,ch=cs/2;
+  {const gb=box(cs,gsH,cs,0x6a5b4a);gb.rotation.y=Math.PI/4;
+   gb.position.set(cx,gsH/2,cz);gb.castShadow=true;gb.receiveShadow=true;g.add(gb);
+   const bb=box(cs+0.32,0.17,cs+0.32,PAL.RND2);bb.rotation.y=Math.PI/4;
+   bb.position.set(cx,gsH+0.02,cz);bb.castShadow=true;g.add(bb);
+   const ub=roundedBox(cs,o.ht-gsH,cs,0.12,PAL.BRK,brickTex);
+   ub.rotation.y=Math.PI/4;ub.position.set(cx,gsH,cz);g.add(ub);
+   const cc=box(cs+0.60,0.19,cs+0.60,PAL.RND);cc.rotation.y=Math.PI/4;
+   cc.position.set(cx,o.ht-0.07,cz);cc.castShadow=true;g.add(cc);
+   const cr=roofMesh(cs+0.36,cs+0.36,o.rc,
+     {pitch:0.54,hip:1,ovE:0.20,ovV:0.20,slate:true,sc:0.66});
+   cr.rotation.y=Math.PI/4;cr.position.set(cx,o.ht+0.06,cz);g.add(cr);
+   const q=new THREE.Group();q.rotation.y=Math.PI/4;q.position.set(cx,0,cz);
+   doorway(q,0,ch,acc,{w:1.26,h:2.48,hood:PAL.RND});
+   [-1,1].forEach(t=>{const br=box(0.09,0.09,0.40,0x4a4038);
+     br.position.set(t*1.06,2.88,ch+0.20);br.castShadow=true;q.add(br);
+     const lm=new THREE.Mesh(new THREE.SphereGeometry(0.17,8,6),mat(PAL.GLSI));
+     lm.position.set(t*1.06,2.82,ch+0.40);q.add(lm);});
+   winMats.push({m:winRec(q,1.02,1.32,0,4.42,ch,{pr:0.26}),shop:false});
+   winMats.push({m:winRec(q,0.92,1.00,0,6.02,ch,{pr:0.22}),shop:false});
+   g.add(q);}
+  [-w*0.34,-w*0.10].forEach(x=>winMats.push(
+    {m:winRec(g,1.24,1.86,x,1.72,zf+0.10,{pr:0.28,t:0.19}),shop:false}));
+  [[4.42,1.06,1.36],[6.02,0.92,0.98]].forEach(tr=>
+    [-w*0.36,-w*0.16,w*0.04].forEach(x=>winMats.push(
+      {m:winRec(g,tr[1],tr[2],x,tr[0],zf+0.02,{pr:0.24}),shop:false})));
+  const cn=box(w+0.74,0.19,dep+0.74,PAL.RND);
+  cn.position.set(0,o.ht-0.07,0);cn.castShadow=true;g.add(cn);
+  stackOn(g,o,R,-0.80,0,sd,0.72);
+  stackOn(g,o,R, 0.30,0,sd+13,0.60);
+  flankWorks(g,o,R,sd,[-1],[4.42,6.02]);
+  rearWorks(g,o,sd,[4.42,6.02]);
+  return o;}
+
+// ---- 6. THE INN - the specific required correction -----------------------
+// This replaces the tall pale block beside the market square. It is wider
+// than anything near it, its ground floor is a different building from the
+// two above it, the entrance is deliberate, the roof is proportioned to the
+// mass, and every side it shows the town has been designed.
+function famInn(g,p,sd,acc){
+  const w=10.60,dep=6.60;
+  const o={w:w,dep:dep,ht:6.40,pitch:0.62,hip:0.45,ovE:0.42,ovV:0.36,
+    col:0xefe6d2,tex:plasterTex,rc:0xbf6a4a,slate:false,fg:false,
+    pl:0.36,plc:0x9a8d78,r:0.14};
+  const R=shell(g,o);const zf=dep/2;
+  const GRD=0x2f4a3c;                        // the painted ground storey
+  const gs=roundedBox(w+0.18,3.20,dep+0.18,0.12,GRD,plasterTex);g.add(gs);
+  band(g,w+0.18,dep+0.18,3.26,PAL.RND2,0.16);
+  [-w*0.36,w*0.36].forEach(x=>winMats.push(
+    {m:winRec(g,1.32,1.70,x,1.74,zf+0.11,{pr:0.28,t:0.19,col:PAL.RND}),shop:false}));
+  winMats.push({m:bayWin(g,1.18,1.52,-w*0.14,1.66,zf+0.09,GRD,o.rc),shop:false});
+  doorway(g,w*0.14,zf+0.09,0x5a3a26,{w:1.24,h:2.42,sur:PAL.RND,hood:o.rc});
+  [-1,1].forEach(t=>{const lm=new THREE.Mesh(new THREE.SphereGeometry(0.17,8,6),
+      mat(PAL.GLSI));lm.position.set(w*0.14+t*1.10,2.86,zf+0.42);g.add(lm);
+    const br=box(0.08,0.08,0.36,0x4a4038);
+    br.position.set(w*0.14+t*1.10,2.86,zf+0.24);g.add(br);});
+  const bx=[-w*0.37,-w*0.185,0,w*0.185,w*0.37];
+  bx.forEach(x=>winMats.push(
+    {m:winRec(g,1.00,1.32,x,4.14,zf+0.02,{pr:0.24}),shop:false}));
+  bx.forEach(x=>winMats.push(
+    {m:winRec(g,0.90,1.04,x,5.70,zf+0.02,{pr:0.22}),shop:false}));
+  {const po=box(0.16,4.20,0.16,0x4a4038);
+   po.position.set(w/2+1.05,2.10,zf-0.30);po.castShadow=true;g.add(po);
+   const ar=box(1.36,0.15,0.15,0x4a4038);
+   ar.position.set(w/2+0.42,4.05,zf-0.30);ar.castShadow=true;g.add(ar);
+   const sb=box(1.24,0.92,0.10,GRD);
+   sb.position.set(w/2+0.42,3.36,zf-0.30);sb.castShadow=true;g.add(sb);
+   const sg=makeLabel("THE HART");sg.position.set(w/2+0.42,3.36,zf-0.22);g.add(sg);}
+  // The painted ground storey goes right round the inn, and on the flanks it
+  // was one flat 6.6 x 3.2 m panel - the largest unbroken surface in the
+  // square. Blank wall is believable when its mass and shadow are composed.
+  // So: pilasters at every corner, a band under the string course, a coach
+  // entry to the yard on the street side, a yard door on the other.
+  {const SO=w/2+0.10;
+   [1,-1].forEach(f=>{
+     [-1,1].forEach(t=>{const q2=box(0.34,3.34,0.46,GRD);
+       q2.position.set(f*(SO+0.10),1.67,t*(dep/2-0.32));
+       q2.castShadow=true;q2.receiveShadow=true;g.add(q2);});
+     const bd2=box(0.17,0.16,dep+0.26,PAL.RND2);
+     bd2.position.set(f*(SO+0.10),2.34,0);bd2.castShadow=true;g.add(bd2);});
+   winF(g,2.40,2.58,-dep*0.03,1.53,SO+0.02,2,
+     {pr:0.32,t:0.24,gls:0x1b2620,col:PAL.RND});
+   [-1,1].forEach(t=>{const gt=box(0.11,2.26,1.10,0x3d3128);
+     gt.position.set(SO+0.24,1.13,-dep*0.03+t*0.58);gt.castShadow=true;g.add(gt);});
+   {const su2=box(0.21,2.34,1.36,PAL.RND2);
+    su2.position.set(-(SO+0.11),1.17,dep*0.16);su2.castShadow=true;g.add(su2);
+    const dr2=box(0.14,2.02,0.94,0x5a3a26);
+    dr2.position.set(-(SO+0.19),1.01,dep*0.16);dr2.castShadow=true;g.add(dr2);}
+   winF(g,0.84,1.06,-dep*0.24,1.74,SO,3,{pr:0.20,t:0.15});}
+  dormerOn(g,o,R,-w*0.24,sd,true);
+  dormerOn(g,o,R, w*0.24,sd+5,true);
+  stackOn(g,o,R,-0.80,0,sd,0.66);
+  stackOn(g,o,R, 0.82,0,sd+9,0.66);
+  flankWorks(g,o,R,sd,[1,-1],[4.14,5.70]);
+  rearWorks(g,o,sd,[4.14,5.70]);
+  outbuild(g,-w*0.28,-(dep/2+1.60),4.20,3.00,2.70,o.col,o.rc,false);
+  return o;}
+
+// ---- 7. CIVIC LANDMARK - used once ---------------------------------------
+// Symmetry is the civic signal: a deep plinth, tall public windows, a
+// pedimented door on the centre line, a cornice, and the clock above.
+function famCivic(g,p,sd,acc){
+  const w=8.40,dep=6.00;
+  const o={w:w,dep:dep,ht:5.90,pitch:0.62,hip:1,ovE:0.32,ovV:0.28,
+    col:PAL.RND2,tex:plasterTex,rc:PAL.TILG,slate:true,fg:false,
+    pl:0.48,plc:0x9a8d78,r:0.08};
+  const R=shell(g,o);const zf=dep/2;
+  band(g,w,dep,3.46,PAL.RND,0.16);
+  [-w*0.33,w*0.33].forEach(x=>winMats.push(
+    {m:winRec(g,1.24,2.00,x,1.90,zf+0.02,{pr:0.28,t:0.20}),shop:false}));
+  doorway(g,0,zf+0.02,acc,{w:1.24,h:2.46,sur:PAL.RND});
+  [-1,1].forEach(t=>{const pi=box(0.34,3.00,0.30,PAL.RND);
+    pi.position.set(t*1.15,1.50,zf+0.16);pi.castShadow=true;g.add(pi);});
+  {const pdm=roofMesh(2.90,0.56,PAL.RND,
+     {pitch:0.52,hip:0,ovE:0.18,ovV:0.10,sc:0.5});
+   pdm.position.set(0,3.10,zf+0.30);g.add(pdm);}
+  [-w*0.33,0,w*0.33].forEach(x=>winMats.push(
+    {m:winRec(g,1.02,1.30,x,4.42,zf+0.02,{pr:0.24}),shop:false}));
+  [-1,1].forEach(t=>{for(let q=0;q<6;q++){
+    const qb=box(0.52,0.36,0.52,PAL.RND);
+    qb.position.set(t*(w/2-0.02),0.62+q*0.92,zf-0.24);
+    qb.castShadow=true;g.add(qb);}});
+  const cn=box(w+0.76,0.18,dep+0.76,PAL.RND);
+  cn.position.set(0,o.ht-0.02,0);cn.castShadow=true;g.add(cn);
+  stackOn(g,o,R,-0.80,0,sd,0.40);
+  stackOn(g,o,R, 0.82,0,sd+3,0.40);
+  flankWorks(g,o,R,sd,[1,-1],[4.42]);
+  rearWorks(g,o,sd,[4.42]);
+  return o;}
+
+// ---- the town, composed by role -----------------------------------------
+D.level.plots.forEach(p=>{
+  const seed=hash(p.id);
   const acc=ACC[p.acc]||PAL.OLV;
-  // door: surround + door + canopy + step
-  const ds=box(1.45,2.25,0.14,PAL.RND);ds.position.set(-w*0.18,1.12,dep/2+0.08);g.add(ds);
-  const door=box(1.05,1.95,0.16,acc);door.position.set(-w*0.18,0.97,dep/2+0.12);g.add(door);
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,5),mat(0xf8bc3a));
-  knob.position.set(-w*0.18+0.35,0.95,dep/2+0.22);g.add(knob);
-  if(!shop){const can=box(1.6,0.12,0.7,roofCol);can.rotation.x=0.35;
-    can.position.set(-w*0.18,2.25,dep/2+0.35);g.add(can);
-    const step=box(1.3,0.12,0.5,PAL.CONC);step.position.set(-w*0.18,0.06,dep/2+0.4);g.add(step);}
-  // ---- SPRINT 027b - a house has four elevations ------------------------
-  // Stage one gave the town storeys and gave the storeys to the front wall
-  // only. On a 2.9 m cottage a blank back is a wall; on a 6.6 m townhouse it
-  // is a cliff, and a raycast on the square frame found exactly that - one
-  // 6.6 m square of unbroken render, the largest surface in the shot, doing
-  // nothing. Height has to be earned on every side the town can see.
-  {const RO=dep/2+0.02, SO=w/2+0.02;
-   const GO=(fg?dep/2:w/2)+S.o*0.8+0.02;   // the gable face sits outboard
-   const gHW=(fg?w/2:dep/2)+S.o;           // half-width of the gable triangle
-   // the back: a door, a scullery window, and the storeys above them
-   const bd=box(0.92,1.80,0.14,0x6f5f4e);
-   bd.position.set(w*0.24,0.90,-(RO+0.05));g.add(bd);
-   winFace(g,0.60,0.76,-w*0.06,1.42,RO,1);
-   if(!shop)winFace(g,0.84,1.05,-w*0.30,1.50,RO,1);
-   // a back elevation is never symmetric. That is what makes it read as a back.
-   nSt.forEach((wy,ki)=>{const k=ki+1,bw=0.80-k*0.07,bh=0.98-k*0.13;
-     winFace(g,bw,bh,(k%2?-1:1)*w*0.22,wy-0.10,RO,1);
-     if((seed>>k)%3===0)winFace(g,bw*0.72,bh*0.72,(k%2?1:-1)*w*0.27,wy-0.10,RO,1);});
-   // the downpipe - a vertical line down a flat wall, and evidence of rain
-   {const dh=Math.max(0.6,ht-0.10);
-    const dp=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,dh,6),mat(0x8e8375));
-    dp.position.set(w*0.40,dh/2,-(RO+0.05));dp.castShadow=true;g.add(dp);
-    const hop=box(0.20,0.26,0.16,0x8e8375);
-    hop.position.set(w*0.40,dh-0.18,-(RO+0.05));g.add(hop);}
-   const bs=(seed%2)?1:-1;                 // which flank carries the breast
-   // A tall house is seen from everywhere, so both its flanks are public.
-   // A cottage is short enough that one treated flank is enough.
-   const FL=(cls>=3)?[1,-1]:[bs];
-   if(!fg){
-     // An English gable end is broken by its chimney breast, not by windows.
-     // The breast is what casts the vertical shadow that kills a blank plane.
-     FL.forEach(f=>{const bre=box(0.26,ht-0.04,1.35,bcol);
-       bre.position.set(f*(SO+0.11),(ht-0.04)/2,dep*0.05);g.add(bre);
-       if(hipf>0.6){                       // the apex window, up in the triangle
-         const ap=ht+0.05+rise*(0.32+((seed>>4)%3)*0.05);
-         winFace(g,0.54,0.62,0,ap,GO,f>0?2:3);}
-       if(cls>=2){
-         // a tall flank carries a full tier of windows, one either side of the
-         // breast, on every storey - three tiers and two shadow lines is what
-         // turns a 6.6 m plane back into a building.
-         const dr=f>0?2:3;
-         nSt.forEach((wy,ki)=>{
-           if(cls<3&&ki%2)return;
-           [-1,1].forEach(t=>{
-             if(cls<3&&t>0)return;
-             winFace(g,0.58,0.76,t*dep*0.26,wy-0.06,SO,dr);});});
-         if(cls>=3)[-1,1].forEach(t=>
-           winFace(g,0.64,0.92,t*dep*0.26,1.50,SO,dr));}});}
-   else if(hipf>0.6){
-     // gable to the street: that triangle is the front, so glaze it properly
-     const ap=ht+0.05+rise*(0.30+(seed%3)*0.05);
-     winMats.push({m:winFace(g,0.66,0.72,0,ap,GO,0),shop:false});
-     winFace(g,0.50,0.56,0,ap,GO,1);}}
-  // windows
-  if(shop){
-    const gl=windowUnit(g,w*0.66,1.15,0.6,1.35,dep/2+0.06);
-    winMats.push({m:gl,shop:true,pid:p.kit});
-    // fascia + pilasters + valanced awning + sign
-    const fas=box(w*0.9,0.6,0.2,PAL.RND);fas.position.set(0,2.62,dep/2+0.1);g.add(fas);
-    [-1,1].forEach(sx=>{const pi=box(0.3,2.5,0.22,PAL.RND2);
-      pi.position.set(sx*w*0.44,1.35,dep/2+0.08);g.add(pi);});
-    const aw=box(w*0.8,0.14,1.0,acc);aw.rotation.x=0.5;
-    aw.position.set(0.5,2.2,dep/2+0.5);g.add(aw);
-    for(let v2=0;v2<6;v2++){const va=box(w*0.8/6-0.06,0.22,0.1,(v2%2)?PAL.RND:acc);
-      va.position.set(0.5-w*0.4+w*0.8*(v2+0.5)/6,1.98,dep/2+0.93);g.add(va);}
-    const sign=makeLabel(p.kit.toUpperCase());
-    sign.position.set(0,2.62,dep/2+0.22);g.add(sign);
-    if(p.kit==="pub"){const br=box(0.9,0.08,0.08,0x5a544a);
-      br.position.set(w/2+0.4,2.9,dep/2-0.4);g.add(br);
-      const hs=box(0.7,0.9,0.08,PAL.GRN);hs.position.set(w/2+0.75,2.4,dep/2-0.4);g.add(hs);}
-    // (the old single upper window is now part of the storey rows)
-  } else {
-    [[-w*0.28,1.55],[w*0.30,1.55]].forEach((o,oi)=>{
-      if(xwg&&oi===1)return;                 // that wall is the cross-wing now
-      winMats.push({m:windowUnit(g,0.95,1.3,o[0],o[1],dep/2+0.02),shop:false});});
-    // threshold: picket fence with a gate gap, or the garden wall
-    if(seed%9<5){const gx=-w*0.18,fw=w+2.6;
-      [[-fw/2,gx-0.7],[gx+0.7,fw/2]].forEach(sg=>{
-        const ln=sg[1]-sg[0];if(ln<0.5)return;
-        [[0.22],[0.46]].forEach(hh=>{const rl=box(ln,0.07,0.06,0xf2eee2);
-          rl.position.set((sg[0]+sg[1])/2,hh[0],dep/2+2.5);g.add(rl);});
-        for(let u=sg[0]+0.15;u<sg[1];u+=1.05){
-          const ps=box(0.1,0.6,0.08,0xf2eee2);
-          ps.position.set(u,0.3,dep/2+2.5);g.add(ps);}});
-    }else{
-      const gw=box(w+2.6,0.55,0.3,0xb0a48e);gw.position.set(0,0.28,dep/2+2.5);g.add(gw);}
-    if(seed%5<3){const bush=new THREE.Mesh(new THREE.SphereGeometry(0.26,8,6),
-      mat([0xda3a2c,0xf2782c,0xe88a7c][seed%3]));
-      bush.position.set(w*0.34,0.3,dep/2+1.6);g.add(bush);
-      const bg7=new THREE.Mesh(new THREE.SphereGeometry(0.34,8,6),mat(0x55703f));
-      bg7.position.set(w*0.34-0.4,0.32,dep/2+1.55);g.add(bg7);}
-    for(let f2=0;f2<6;f2++){
-      const fl=box(0.22,0.3,0.22,GARDEN[(seed+f2)%6]);
-      fl.position.set(-w/2+0.6+f2*(w-1)/5,0.32,dep/2+2.1);g.add(fl);
-      const st2=box(0.1,0.24,0.1,0x55703f);
-      st2.position.set(-w/2+0.6+f2*(w-1)/5,0.12,dep/2+2.1);g.add(st2);}
-  }
-  if(p.kit==="bakery"){                      // the corner hero
-    const wing=roundedBox(3.4,ht*0.92,dep*1.25,0.28,bcol,brick?brickTex:plasterTex);
-    wing.position.set(-w/2+1.2,0,0);g.add(wing);
-    const wroof=gableRoof(dep*1.25,3.4,roofCol);
-    wroof.position.set(-w/2+1.2,ht*0.92+0.05,0);g.add(wroof);}
+  const role=ROLE[p.id]||((p.kit&&p.kit!=="home")?"shop":"cot");
+  const g=new THREE.Group();
+  let o;
+  if(role==="vil")        o=famVillage(g,p,seed,acc);
+  else if(role==="terr")  o=famTerrace(g,p,seed,acc,(p.id==="N3")?2:3);
+  else if(role==="shop")  o=famShop(g,p,seed,acc);
+  else if(role==="corner")o=famCorner(g,p,seed,acc);
+  else if(role==="inn")   o=famInn(g,p,seed,acc);
+  else if(role==="civic") o=famCivic(g,p,seed,acc);
+  else                    o=famCottage(g,p,seed,acc);
+  EAVE[p.id]=o.ht;WID[p.id]=o.w;
+  if(p.kit==="bakery"){                      // the bakehouse: an oven smokes
+    outbuild(g,-(o.w/2+1.40),-o.dep*0.10,2.60,o.dep*0.80,2.60,
+      PAL.BRK2,o.rc,false);
+    chimneyKit(g,-(o.w/2+1.40),-o.dep*0.10,2.60,2.10,seed+3);}
   if(p.id==="P06"){                          // the clock over the post office
-    const tw=roundedBox(1.5,2.4,1.5,0.18,PAL.RND2);
-    tw.position.set(w/2-1.6,ht+1.15,0);g.add(tw);
-    const cap2=new THREE.Mesh(new THREE.ConeGeometry(1.15,1.0,4),mat(PAL.SLA||0x8a92a2));
-    cap2.rotation.y=Math.PI/4;cap2.position.set(w/2-1.6,ht+2.85,0);g.add(cap2);
+    const tw=roundedBox(1.60,2.60,1.60,0.16,PAL.RND2);
+    tw.position.set(0,o.ht+0.10,0);g.add(tw);
+    const cap2=new THREE.Mesh(new THREE.ConeGeometry(1.24,1.10,4),mat(0x8a92a2));
+    cap2.rotation.y=Math.PI/4;cap2.position.set(0,o.ht+3.25,0);
+    cap2.castShadow=true;g.add(cap2);
     const ccv=document.createElement("canvas");ccv.width=ccv.height=64;
     const cc=ccv.getContext("2d");cc.fillStyle="#f6f2e4";cc.beginPath();
     cc.arc(32,32,28,0,7);cc.fill();cc.strokeStyle="#3a3a40";cc.lineWidth=4;
@@ -1175,10 +1687,10 @@ D.level.plots.forEach(p=>{
     cc.beginPath();cc.moveTo(32,32);cc.lineTo(32,12);cc.moveTo(32,32);
     cc.lineTo(46,36);cc.stroke();
     const ctex=new THREE.CanvasTexture(ccv);ctex.encoding=THREE.sRGBEncoding;
-    [[Math.PI/2,0.78],[-Math.PI/2,-0.78]].forEach(o2=>{
-      const cf=new THREE.Mesh(new THREE.CircleGeometry(0.52,20),
+    [[0,0,0.84],[Math.PI/2,0.84,0],[-Math.PI/2,-0.84,0]].forEach(o2=>{
+      const cf=new THREE.Mesh(new THREE.CircleGeometry(0.54,20),
         new THREE.MeshLambertMaterial({map:ctex}));
-      cf.rotation.y=o2[0];cf.position.set(w/2-1.6+o2[1],ht+1.45,0);g.add(cf);});}
+      cf.rotation.y=o2[0];cf.position.set(o2[1],o.ht+1.45,o2[2]);g.add(cf);});}
   g.position.copy(V(p.x,p.y,gH(p.x,p.y)));
   let best=null;
   D.level.roads.forEach(r=>{const cy=(r[1]+r[3])/2,cxr=(r[0]+r[2])/2;
@@ -1191,7 +1703,7 @@ D.level.plots.forEach(p=>{
     else g.rotation.y=(best.cxr<p.x)?-Math.PI/2:Math.PI/2;}
   plotRot[p.id]=g.rotation.y;
   scene.add(g);
-  if(!shop&&seed%4===0)tree(p.x+w*0.9,p.y+2.2,0.8);   // the garden tree
+  if(role==="cot"&&seed%3===0)tree(p.x+o.w*0.9,p.y+2.4,0.85);
 });
 // ---- oak + trees + hedges + benches
 // SPRINT 023 — painterly trees: lime-to-forest gradient, shadow underside
@@ -1444,19 +1956,34 @@ const lamps=[];
 // SPRINT 018 — enclosed blocks: the twitten, the square's edges, courtyards
 { // the twitten — a walled passage between N1 and N2, Market St to the gardens
  [[81.9],[84.1]].forEach(o=>{const tw2=box(0.35,2.2,6.4,0xe0d6c2);
+   stoneW(tw2,6.4,2.2,0xe0d6c2);
    tw2.position.copy(V(o[0],25.2,1.1));scene.add(tw2);
    const twc=box(0.5,0.14,6.6,0xb0a48e);twc.position.copy(V(o[0],25.2,2.27));scene.add(twc);});
  const twp=box(1.6,0.06,6.4,0xc4ae92);twp.position.copy(V(83,25.2,0.05));scene.add(twp);
  // the square's west edge: W1's gable + a garden wall down to the street
- const sw6=box(0.4,1.05,3.2,0xb0a48e);sw6.position.copy(V(104.6,20.2,0.52));scene.add(sw6);
+ const sw6=box(0.4,1.05,3.2,0xb0a48e);stoneW(sw6,3.2,1.05,0xb0a48e);
+ sw6.position.copy(V(104.6,20.2,0.52));scene.add(sw6);
  const sw6c=box(0.56,0.14,3.4,0xc4bcac);sw6c.position.copy(V(104.6,20.2,1.12));scene.add(sw6c);
  // the square's south edge: low wall with a gap at the bus stop
  [[109.5,113.8],[117.2,124.5]].forEach(sg7=>{
    const ln7=sg7[1]-sg7[0];
-   const sw7=box(ln7,0.8,0.4,0xb0a48e);
+   const sw7=box(ln7,0.8,0.4,0xb0a48e);stoneW(sw7,ln7,0.8,0xb0a48e);
    sw7.position.copy(V((sg7[0]+sg7[1])/2,13.8,0.4));scene.add(sw7);
    const sw7c=box(ln7+0.2,0.14,0.55,0xc4bcac);
-   sw7c.position.copy(V((sg7[0]+sg7[1])/2,13.8,0.87));scene.add(sw7c);});
+   sw7c.position.copy(V((sg7[0]+sg7[1])/2,13.8,0.87));scene.add(sw7c);
+   // SPRINT 028 - railings turn a blank plane into a screen you see through,
+   // and a run of shrubs on the square side gives it a base.
+   for(let rx7=sg7[0]+0.35;rx7<sg7[1]-0.2;rx7+=0.42){
+     const rl7=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.86,6),
+       mat(0x35403a));
+     rl7.position.copy(V(rx7,13.8,1.37));rl7.castShadow=true;scene.add(rl7);}
+   [0.98,1.76].forEach(h7=>{const rr7=box(ln7,0.055,0.055,0x35403a);
+     rr7.position.copy(V((sg7[0]+sg7[1])/2,13.8,h7));scene.add(rr7);});
+   for(let sx7=sg7[0]+0.9;sx7<sg7[1]-0.5;sx7+=2.1){
+     const sb7=new THREE.Mesh(
+       new THREE.SphereGeometry(0.46+((sx7*7|0)%3)*0.09,8,6),
+       mat([0x55703f,0x4f6b3c,0x5c7a44][(sx7*3|0)%3]));
+     sb7.position.copy(V(sx7,14.5,0.44));sb7.castShadow=true;scene.add(sb7);}});
  // the pub's beer garden — a walled courtyard east of the pub
  {const bx0=118.6,bx1=124.6,by0=23.6,by1=29.8;
   const cb2=box(bx1-bx0,0.05,by1-by0,0xc4ae92);
@@ -1664,12 +2191,45 @@ const matchFlags=[];
    segs.forEach(s3=>{if(g2[1]<=s3[0]||g2[0]>=s3[1])ns.push(s3);
      else{if(g2[0]>s3[0])ns.push([s3[0],g2[0]]);if(g2[1]<s3[1])ns.push([g2[1],s3[1]]);}});
    segs=ns;});return segs;};
+ // SPRINT 028 STAGE G. Stage F gave the hedge a crown and I then looked at
+ // the profile frame and found I had built the fault I was hired to remove:
+ // long ribbons of even height, crossing the whole frame, with an evenly
+ // spaced row of identical bumps along the top. A hedge is not one object.
+ // It is a run of panels, each laid in a different decade by a different
+ // hand, and the top line is where that history shows.
+ const H9=(a,b)=>{const v=Math.sin(a*12.9898+b*78.233)*43758.5453;
+   return v-Math.floor(v);};
  const hedgeRun=(x0,y0,x1,y1,hh,gaps)=>{const L=Math.hypot(x1-x0,y1-y0),
    dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
-   cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<0.6)return;
-     const hb=new THREE.Mesh(new THREE.BoxGeometry(ln,hh,0.85),mat(0x55703f));
-     hb.position.copy(V(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2),gH(x0+dx*(s3[0]+ln/2),y0+dy*(s3[0]+ln/2))+hh/2));
-     hb.rotation.y=ang;hb.castShadow=true;scene.add(hb);});};
+   cutGaps(L,gaps).forEach(s3=>{
+     let u0=s3[0];
+     while(u0<s3[1]-0.4){
+       const sd9=H9(x0+dx*u0,y0+dy*u0);
+       const pl=Math.min(2.2+sd9*2.1,s3[1]-u0);          // panels 2.2-4.3 m
+       if(pl<0.5)break;
+       const mid=u0+pl/2, hx=x0+dx*mid, hy=y0+dy*mid;
+       const s2=H9(hx*1.7,hy*2.3);
+       const ph=hh*(0.83+s2*0.36);                       // this panel's height
+       const jog=(s2-0.5)*0.36;                          // and it wanders off line
+       const hb=new THREE.Mesh(
+         new THREE.BoxGeometry(pl+0.10,ph*0.86,0.76+s2*0.28),
+         mat([0x4a6338,0x445c34,0x50693b][(sd9*3|0)%3]));
+       hb.position.copy(V(hx+dy*jog,hy-dx*jog,gH(hx,hy)+ph*0.43));
+       hb.rotation.y=ang;hb.castShadow=true;hb.receiveShadow=true;scene.add(hb);
+       let u5=u0+0.30;
+       while(u5<u0+pl-0.15){
+         const cx5=x0+dx*u5, cy5=y0+dy*u5, s5=H9(cx5*3.1,cy5*4.7);
+         u5+=0.50+s5*0.68;                               // uneven spacing
+         if(s5<0.17)continue;                            // and sometimes nothing
+         const rad=0.32+s5*0.42+(s5>0.87?0.24:0);        // the odd big one
+         const off=jog+(s5-0.5)*0.22;
+         const cr5=new THREE.Mesh(new THREE.SphereGeometry(rad,7,5),
+           mat([0x55703f,0x4a6338,0x67804a,0x5c7a44,0x60794a][(s5*5|0)%5]));
+         cr5.scale.set(1.0,0.70+s5*0.26,0.92);
+         cr5.position.copy(V(cx5+dy*off,cy5-dx*off,
+           gH(cx5,cy5)+ph*0.86-0.07+s5*0.15));
+         cr5.castShadow=true;scene.add(cr5);}
+       u0+=pl;}});};
  const fenceRun=(x0,y0,x1,y1,gaps)=>{const L=Math.hypot(x1-x0,y1-y0),
    dx=(x1-x0)/L,dy=(y1-y0)/L,ang=Math.atan2(dy,dx);
    cutGaps(L,gaps).forEach(s3=>{const ln=s3[1]-s3[0];if(ln<1)return;
@@ -1682,6 +2242,66 @@ const matchFlags=[];
  fenceRun(-16,-18.6,96,-18.6,[[54,58],[68,72]]);      // field edge, two gates
  hedgeRun(2,57.6,78,57.6,1.0,[[26,30]]);              // allotments, one entrance
  hedgeRun(26,48.7,66,48.7,0.9,[[10,14],[20,24],[30,34]]);       // North Lane, three gates
+ // ---- SPRINT 028 STAGE E - THE MIDDLE GROUND ---------------------------
+ // Roy: "build layered foreground, middle-ground and background relationships".
+ // Behind the new yard walls there were eighteen metres of mown nothing and
+ // then a fence. A ground-level camera had no reason to stop anywhere. Two
+ // hedged bands and a scattered tree line give it three depths instead of one,
+ // and not one metre of town footprint is added to do it.
+ // STAGE G: these were two straight lines at constant y - two dead-parallel
+ // green stripes across the profile frame. Fields are not stripes. They are
+ // parcels of unequal size whose boundaries meet at odd angles and stop.
+ hedgeRun(24,1.6,52,2.9,1.15,[[16,20]]);
+ hedgeRun(52,2.9,79,1.9,1.02,[[9,12]]);
+ hedgeRun(79,1.9,116,3.4,1.22,[[21,25]]);
+ hedgeRun(52.6,2.9,54.4,-6.4,0.95,[[4.2,6.0]]);            // a cross boundary
+ hedgeRun(-2,-8.4,34,-10.1,1.00,[[14,18]]);
+ hedgeRun(34,-10.1,71,-8.2,1.16,[[26,30]]);
+ hedgeRun(71,-8.2,104,-9.8,0.90,[]);
+ hedgeRun(88.4,-8.7,90.2,-2.4,1.00,[]);                    // and another
+ // trees arrive in family groups, round a gate or in the corner of a parcel.
+ // Never at even intervals along a line - that was the caterpillar again.
+ [[16.4,-3.2,1.28],[18.9,-5.4,0.72],[14.2,-6.3,0.88],
+  [50.4,-4.1,1.38],[53.6,-6.0,0.80],[55.2,1.4,0.64],
+  [86.5,-5.2,1.14],[89.4,-3.3,0.73],[83.8,-7.1,0.96],
+  [110.8,-4.6,1.06],[113.8,-7.3,0.67],
+  [37.0,-9.9,0.92],[70.2,-8.6,1.12],[72.1,-6.0,0.61]]
+   .forEach(t9=>tree(t9[0],t9[1],t9[2]));
+ // the western green becomes a paddock with an orchard corner, not a lawn
+ hedgeRun(4,29.6,22,29.6,1.05,[[7,10]]);
+ hedgeRun(4,29.6,4,40.2,1.05,[]);
+ hedgeRun(4,40.2,22,40.2,0.95,[[11,14]]);
+ [[7.9,32.3,0.70],[13.8,33.2,0.58],[19.4,32.1,0.74],
+  [8.7,37.5,0.62],[14.6,38.1,0.75],[19.8,37.0,0.56]]
+   .forEach(t9=>tree(t9[0],t9[1],t9[2]));
+ // ---- the high street furnished: the kerb is a place, not an edge --------
+ [[70.5,22.1],[86.5,22.1],[102.5,22.1],[78.5,14.2],[94.5,14.2]].forEach(lp=>{
+   const po=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.115,3.40,8),
+     mat(0x35403a));
+   po.position.copy(V(lp[0],lp[1],1.70));po.castShadow=true;scene.add(po);
+   const ar2=box(0.09,0.09,0.62,0x35403a);
+   ar2.position.copy(V(lp[0],lp[1]-0.28,3.36));scene.add(ar2);
+   const ln2=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.52,0.44),
+     new THREE.MeshLambertMaterial({color:PAL.GLSI}));
+   ln2.position.copy(V(lp[0],lp[1]-0.56,3.16));scene.add(ln2);
+   const cp2=new THREE.Mesh(new THREE.ConeGeometry(0.30,0.20,4),mat(0x35403a));
+   cp2.position.copy(V(lp[0],lp[1]-0.56,3.50));scene.add(cp2);});
+ [[74.0,22.4],[90.0,22.4],[106.0,22.4],[82.0,14.0]].forEach(pl=>{
+   const pt=box(1.05,0.62,1.05,0xb4a68e);
+   pt.position.copy(V(pl[0],pl[1],0.40));pt.castShadow=true;
+   pt.receiveShadow=true;scene.add(pt);
+   const rim=box(1.19,0.10,1.19,0xd8cdb8);
+   rim.position.copy(V(pl[0],pl[1],0.74));rim.castShadow=true;scene.add(rim);
+   [[-0.24,-0.20,0.34],[0.22,0.18,0.40],[0.02,-0.26,0.30]].forEach(bb=>{
+     const b4=new THREE.Mesh(new THREE.SphereGeometry(bb[2],8,6),mat(0x55703f));
+     b4.position.copy(V(pl[0]+bb[0],pl[1]+bb[1],0.86));
+     b4.castShadow=true;scene.add(b4);});});
+ for(let kx2=66;kx2<=110;kx2+=5.4){                  // bollards, north footway
+   const bo=new THREE.Mesh(new THREE.CylinderGeometry(0.125,0.155,0.84,8),
+     mat(0x3f4a44));
+   bo.position.copy(V(kx2,22.0,0.51));bo.castShadow=true;scene.add(bo);
+   const bc=new THREE.Mesh(new THREE.SphereGeometry(0.135,8,6),mat(0x3f4a44));
+   bc.position.copy(V(kx2,22.0,0.95));scene.add(bc);}
  [[119.5,14.5],[123.5,12.2],[128.5,13.6],[131.5,18.5],[135.5,21.5]].forEach(sp=>{
    const sh2=new THREE.Mesh(new THREE.SphereGeometry(0.75,8,6),mat(0x6d8852));
    sh2.position.copy(V(sp[0],sp[1],0.5));sh2.castShadow=true;scene.add(sh2);});
@@ -1692,8 +2312,7 @@ const matchFlags=[];
  for(let gx=0;gx<4;gx++)for(let gy=0;gy<2;gy++)
    tree(8+gx*5.2,81.8+gy*3.4,0.62);                   // the orchard past the allotments
  // garden integration — dividing hedges and back sheds
- [["P08","P09"],["P09","P10"],["P11","P12"],["P02","P05"],["P05","P04"],
-  ["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]].forEach(pr=>{
+ [["P08","P09"],["P09","P10"],["P11","P12"]].forEach(pr=>{
    const a2=D.level.plots.find(p=>p.id===pr[0]),b2=D.level.plots.find(p=>p.id===pr[1]);
    if(!a2||!b2||Math.abs(b2.x-a2.x)>18)return;
    const hb=box(0.8,0.55,5.6,0x55703f);
@@ -1732,30 +2351,34 @@ const matchFlags=[];
    pn.rotation.z=-Math.PI/2;pn.position.set(0.28,fy2+0.38,0);fg.add(pn);
    fg.position.copy(V(fx,fy,gH(fx,fy)));scene.add(fg);matchFlags.push(fg);});
 // the rows join — link sections make terraces of the street and North Lane
- [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]],
-  [["P03","N1"],["N2","N3"],["W1","P07"]],
+ [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"]],
+  [["P03","N1"],["N1","N2"],["N2","N3"],["W1","P07"]],
   [["P08","P09"],["P09","P10"]]].forEach(row=>{row.forEach(pr2=>{
    const a5=D.level.plots.find(q=>q.id===pr2[0]),b5=D.level.plots.find(q=>q.id===pr2[1]);
-   if(!a5||!b5)return;const gap=Math.abs(b5.x-a5.x);if(gap>16)return;
-   const lw=gap-6.6;if(lw<1.2)return;
-   const lx=(a5.x+b5.x)/2,ly=(a5.y+b5.y)/2;
+   if(!a5||!b5)return;
+   // SPRINT 028 - a link fills the ACTUAL gap between two buildings. The old
+   // rule guessed it from centre spacing minus a constant width, which is
+   // meaningless now that a terrace is 9.9 m wide and a cottage is 5.2 m.
+   const ea=a5.x+(WID[a5.id]||6)/2, eb=b5.x-(WID[b5.id]||6)/2;
+   const lw=eb-ea;if(lw<1.0||lw>9.5)return;
+   const lx=(ea+eb)/2,ly=(a5.y+b5.y)/2;
    const sd6=hash("lk"+pr2[0]);
    // SPRINT 027 - a link takes its height from the shorter of the two houses
    // it joins, so it stays subordinate now that the houses no longer match.
    const lh=Math.max(2.15,Math.min(4.30,
      Math.min(EAVE[a5.id]||2.9,EAVE[b5.id]||2.9)-0.55));
-   const lk=box(lw+0.6,lh,5.6,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
+   const lk=box(lw+0.7,lh,5.2,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
    lk.position.copy(V(lx,ly,lh/2));lk.castShadow=true;scene.add(lk);
    // SPRINT 026 — the link sections were flat slabs at one height: eleven of
    // them, and between them they drew the rigid horizontal line Roy named.
    // They are roofs now, and deliberately subordinate — a link that rises to
    // its neighbours' ridge is a house, not a link.
    const lsl=sd6%4===0, lpit=0.60+(sd6%4)*0.05;
-   const lr=roofMesh(5.6,lw+0.6,lsl?PAL.TILG:((sd6%3)?PAL.TILB:0xbf6a4a),
+   const lr=roofMesh(5.2,lw+0.7,lsl?PAL.TILG:((sd6%3)?PAL.TILB:0xbf6a4a),
      {pitch:lpit,hip:(sd6%6===1)?0.45:1,ovE:0.34,ovV:0.26,slate:lsl});
    lr.rotation.y=Math.PI/2;lr.position.copy(V(lx,ly,lh));scene.add(lr);
    {const lg=new THREE.Group();lg.position.copy(V(lx,ly,0));
-    const ltop=lh+(5.6/2+0.34)*lpit;
+    const ltop=lh+(5.2/2+0.34)*lpit;
     chimneyKit(lg,(sd6%2?1:-1)*(lw*0.22),0,lh,ltop-lh+0.44+(sd6%3)*0.16,sd6);
     scene.add(lg);}
    [[-2.05],[2.05]].forEach(o=>{const wy2=Math.min(1.45,lh-0.62);
