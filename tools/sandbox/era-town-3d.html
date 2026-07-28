@@ -352,6 +352,50 @@ function aoBlob(w9,d9){const m9=new THREE.Mesh(new THREE.PlaneGeometry(w9,d9),
   new THREE.MeshLambertMaterial({map:aoTex,transparent:true,depthWrite:false}));
   m9.rotation.x=-Math.PI/2;m9.position.y=0.018;return m9;}
 const mat=c=>new THREE.MeshLambertMaterial({color:c});
+// SPRINT 024 — tactile facades: neutral canvases modulated by kit colour
+function mkTex(draw,px){const cv=document.createElement("canvas");
+  cv.width=cv.height=px||256;const c2=cv.getContext("2d");draw(c2,cv.width);
+  const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;}
+let _ts=5;const _tr=()=>{_ts=(_ts*1103515245+12345)>>>0;return ((_ts>>>8)%8388608)/8388608;};
+const brickTex=mkTex((c,W)=>{c.fillStyle="#d6d6d6";c.fillRect(0,0,W,W);
+  const rh=W/8;                                  // 8 courses = 1.6 m
+  for(let r=0;r<8;r++){for(let b=0;b<7;b++){
+    const off=(r%2)?rh*1.1:0;
+    const v=200+Math.floor(_tr()*36);
+    c.fillStyle="rgb("+v+","+(v-6)+","+(v-10)+")";
+    c.fillRect(((b*W/6.5+off)%W),r*rh+1.5,W/6.5-2.5,rh-3);}
+  c.fillStyle="rgba(244,240,232,0.85)";c.fillRect(0,r*rh-1.5,W,3);}},256);
+brickTex.repeat.set(1/1.6,1/1.6);
+const plasterTex=mkTex((c,W)=>{c.fillStyle="#e9e9e9";c.fillRect(0,0,W,W);
+  for(let k=0;k<70;k++){const v=225+Math.floor(_tr()*22);
+    c.fillStyle="rgba("+v+","+v+","+(v-4)+",0.5)";
+    c.beginPath();c.arc(_tr()*W,_tr()*W,8+_tr()*36,0,7);c.fill();}
+  for(let k=0;k<10;k++){c.strokeStyle="rgba(206,202,194,0.35)";c.lineWidth=1.6;
+    c.beginPath();const y0=_tr()*W;c.moveTo(0,y0);
+    c.quadraticCurveTo(W/2,y0+(_tr()-0.5)*40,W,y0);c.stroke();}},256);
+plasterTex.repeat.set(1/2.4,1/2.4);
+const tileTex=mkTex((c,W)=>{c.fillStyle="#d0d0d0";c.fillRect(0,0,W,W);
+  const ch=W/4;                                  // 4 courses = 1.4 m (along slope = x)
+  for(let r=0;r<4;r++){for(let t2=0;t2<6;t2++){
+    const off=(r%2)?W/12:0;
+    const v=190+Math.floor(_tr()*44);
+    c.fillStyle="rgb("+v+","+(v-4)+","+(v-8)+")";
+    c.fillRect(r*ch+2,((t2*W/6+off)%W),ch-3.5,W/6-2.5);}
+  c.fillStyle="rgba(150,146,140,0.8)";c.fillRect(r*ch-1,0,2.5,W);}
+  for(let k=0;k<7;k++){c.fillStyle="rgba(120,116,110,0.13)";
+    c.fillRect(0,_tr()*W,W,3+_tr()*8);}},256);
+tileTex.repeat.set(1/1.4,1/1.4);
+const plankTex=mkTex((c,W)=>{c.fillStyle="#d4d4d4";c.fillRect(0,0,W,W);
+  const pw=W/7;
+  for(let p2=0;p2<7;p2++){const v=190+Math.floor(_tr()*40);
+    c.fillStyle="rgb("+v+","+(v-5)+","+(v-12)+")";
+    c.fillRect(p2*pw+1.5,0,pw-3,W);
+    c.strokeStyle="rgba(120,110,96,0.4)";c.lineWidth=1.2;
+    for(let g3=0;g3<3;g3++){c.beginPath();
+      const x3=p2*pw+4+_tr()*(pw-8);c.moveTo(x3,0);
+      c.quadraticCurveTo(x3+(_tr()-0.5)*8,W/2,x3,W);c.stroke();}}},256);
+function matT(c,tx){return new THREE.MeshLambertMaterial({color:c,map:tx});}
 function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   const s=new THREE.Shape();const hw=w/2,hd=d/2;
   s.moveTo(-hw+r,-hd);s.lineTo(hw-r,-hd);s.quadraticCurveTo(hw,-hd,hw,-hd+r);
@@ -361,7 +405,8 @@ function roundedBox(w,h,d,r,c){ // ExtrudeGeometry: cut edges (SL-1)
   const g=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:true,
     bevelThickness:0.09,bevelSize:0.09,bevelSegments:2});
   g.rotateX(-Math.PI/2);g.translate(0,0,0);
-  const m=new THREE.Mesh(g,mat(c));m.castShadow=true;m.receiveShadow=true;return m;}
+  const m=new THREE.Mesh(g,arguments[5]?matT(c,arguments[5]):mat(c));
+  m.castShadow=true;m.receiveShadow=true;return m;}
 function box(w,h,d,c){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));
   m.castShadow=true;m.receiveShadow=true;return m;}
 function gableRoof(w,len,c){ // triangular prism, overhanging
@@ -370,7 +415,7 @@ function gableRoof(w,len,c){ // triangular prism, overhanging
   const g=new THREE.ExtrudeGeometry(s,{depth:len+0.7,bevelEnabled:true,
     bevelThickness:0.06,bevelSize:0.06,bevelSegments:1});
   g.translate(0,0,-(len+0.7)/2);
-  const m=new THREE.Mesh(g,mat(c));m.castShadow=true;return m;}
+  const m=new THREE.Mesh(g,matT(c,tileTex));m.castShadow=true;return m;}
 // ---- sky dome: a real horizon, tinted by the hour
 const skyCv=document.createElement("canvas");skyCv.width=1;skyCv.height=256;
 const skyTex=new THREE.CanvasTexture(skyCv);skyTex.encoding=THREE.sRGBEncoding;
@@ -483,7 +528,7 @@ patch(146,43.5,163,50.2,0xb3a68c,0.035);     // turnstile forecourt, gravel
 // allotment rows + sheds
 for(let yy=60;yy<79;yy+=3.2)patch(4,yy,76,yy+1.1,PAL.SOIL,0.69);
 [[8,62],[24,66],[46,63],[64,70]].forEach(s2=>{
-  const sh=box(2.4,1.4,1.8,0x84583a);sh.position.copy(V(s2[0],s2[1],1.35));scene.add(sh);
+  const sh=box(2.4,1.4,1.8,0x84583a);sh.material=matT(0xb08a62,plankTex);sh.position.copy(V(s2[0],s2[1],1.35));scene.add(sh);
   const rf=box(2.7,0.22,2.1,0x949aa0);rf.position.copy(V(s2[0],s2[1],2.15));scene.add(rf);});
 // SPRINT 021 — gentle pathing wear where the town actually treads
 {const wcv=document.createElement("canvas");wcv.width=wcv.height=256;
@@ -629,7 +674,7 @@ D.level.plots.forEach(p=>{
   // plinth — the building meets its ground (SL-5)
   const pl0=box(w+0.3,0.22,dep+0.3,0x8d7f6d);pl0.position.y=0.11;g.add(pl0);
   g.add(aoBlob(w+2.4,dep+2.4));
-  const body=roundedBox(w,ht,dep,0.28,bcol);g.add(body);
+  const body=roundedBox(w,ht,dep,0.28,bcol,brick?brickTex:plasterTex);g.add(body);
   // quoins: few and fat (SL-3) on brick bodies
   if(brick&&seed%100<40){[-1,1].forEach(sx=>{for(let q=0;q<3;q++){
     const qb=box(0.5,0.34,0.5,PAL.RND2);
@@ -710,7 +755,7 @@ D.level.plots.forEach(p=>{
       st2.position.set(-w/2+0.6+f2*(w-1)/5,0.12,dep/2+2.1);g.add(st2);}
   }
   if(p.kit==="bakery"){                      // the corner hero
-    const wing=roundedBox(3.4,ht*0.92,dep*1.25,0.28,bcol);
+    const wing=roundedBox(3.4,ht*0.92,dep*1.25,0.28,bcol,brick?brickTex:plasterTex);
     wing.position.set(-w/2+1.2,0,0);g.add(wing);
     const wroof=gableRoof(dep*1.25,3.4,roofCol);
     wroof.position.set(-w/2+1.2,ht*0.92+0.05,0);g.add(wroof);}
@@ -949,7 +994,7 @@ const lamps=[];
   [[-1.8],[1.8]].forEach(o=>{const fw=box(0.15,1.0,1.0,PAL.RND);
     fw.position.copy(V(fx3+2.62,fy3+o[0],1.6));scene.add(fw);
     const fg2=box(0.17,0.8,0.8,PAL.GLS);fg2.position.copy(V(fx3+2.6,fy3+o[0],1.6));scene.add(fg2);});
-  const bn9=box(9.0,3.0,5.4,0x6a5443);bn9.position.copy(V(fx3+0.5,fy3-9.6,1.5));scene.add(bn9);
+  const bn9=box(9.0,3.0,5.4,0x6a5443);bn9.material=matT(0x96805e,plankTex);bn9.position.copy(V(fx3+0.5,fy3-9.6,1.5));scene.add(bn9);
   const br9=gableRoof(5.4,9.6,0xbf6a4a);br9.rotation.y=Math.PI/2;
   br9.position.copy(V(fx3+0.5,fy3-9.6,3.05));scene.add(br9);
   const bd9=box(2.6,2.4,0.2,0x4a3c30);bd9.position.copy(V(fx3+0.5,fy3-6.85,1.2));scene.add(bd9);
@@ -959,14 +1004,14 @@ const lamps=[];
   const tr9=box(1.6,0.5,0.7,0x8a7a62);tr9.position.copy(V(-23,12.4,0.35));scene.add(tr9);
   tree(-32.5,24.5,1.15);tree(-24,26.5,0.9);}
  // the field barn — School Lane's southern vista ends here
- {const pb=box(4.2,2.4,3.0,0x6a5443);pb.position.copy(V(-11,-24,1.2));scene.add(pb);
+ {const pb=box(4.2,2.4,3.0,0x6a5443);pb.material=matT(0x96805e,plankTex);pb.position.copy(V(-11,-24,1.2));scene.add(pb);
   const pr9=gableRoof(3.0,4.6,0x949aa0);pr9.rotation.y=Math.PI/2;
   pr9.position.copy(V(-11,-24,2.45));scene.add(pr9);
   const pd9=box(1.3,1.7,0.16,PAL.GRN);pd9.position.copy(V(-11,-22.4,0.85));scene.add(pd9);
   const pb9=box(1.9,0.35,0.55,0x7c6a4e);pb9.position.copy(V(-8.4,-22.6,0.42));scene.add(pb9);}
  // the allotment stable — North Lane's eastern vista ends here (on the terrace)
  {const sz9=gH(69.5,44.6);
-  const st9=box(3.6,2.3,4.4,0x84583a);st9.position.copy(V(69.5,44.6,sz9+1.15));scene.add(st9);
+  const st9=box(3.6,2.3,4.4,0x84583a);st9.material=matT(0xb08a62,plankTex);st9.position.copy(V(69.5,44.6,sz9+1.15));scene.add(st9);
   const sr9=gableRoof(4.4,4.0,0xbf6a4a);
   sr9.position.copy(V(69.5,44.6,sz9+2.35));scene.add(sr9);
   const sd9=box(1.5,1.9,0.18,0x4a3c30);sd9.position.copy(V(67.6,44.6,sz9+0.95));
@@ -1256,7 +1301,7 @@ const matchFlags=[];
    const [bx3,by3]=backOf(plotRot[p.id]||0);
    const sx=p.x+bx3*4.2-by3*2.6,sy=p.y+by3*4.2+bx3*2.6;
    const sz=gH(sx,sy);
-   const sh3=box(1.9,1.3,1.5,0x84583a);sh3.position.copy(V(sx,sy,sz+0.65));scene.add(sh3);
+   const sh3=box(1.9,1.3,1.5,0x84583a);sh3.material=matT(0xb08a62,plankTex);sh3.position.copy(V(sx,sy,sz+0.65));scene.add(sh3);
    const rf3=box(2.15,0.18,1.75,0x949aa0);rf3.position.copy(V(sx,sy,sz+1.42));scene.add(rf3);});
  // the green as a room — daisies, and a bin by the watching bench
  [[42,29],[55,27],[48,37.5]].forEach((cl,ci)=>{
