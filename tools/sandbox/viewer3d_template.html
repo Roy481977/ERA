@@ -509,7 +509,9 @@ function roofMesh(span,run,col,o){
     rr.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());
     rr.position.copy(a).add(b2).multiplyScalar(0.5);rr.position.y+=0.05;
     rr.castShadow=true;G.add(rr);}));
-  const fc=o.trim===undefined?0xf6f0e4:o.trim;
+  // SPRINT 027 - a warm board, not a white stripe. Twenty-three of these
+  // joined end to end were half of the rigid horizontal line.
+  const fc=o.trim===undefined?0xe9dcc6:o.trim;
   [1,-1].forEach(s=>{const f=box(0.095*sc,0.21*sc,2*hl+0.02,fc);   // eaves fascia
     f.position.set(s*hw,-0.09*sc,0);G.add(f);});
   if(hgf<0.995)[1,-1].forEach(e=>{const f=box(2*hw,0.21*sc,0.095*sc,fc);
@@ -899,6 +901,15 @@ function windowUnit(g,w,h,x,y,zf){          // thick white surround + sill (SL-2
   gl.position.set(x,y,zf+0.08);g.add(gl);
   const sill=box(w+0.36,0.12,0.22,PAL.RND);sill.position.set(x,y-h/2-0.16,zf+0.06);g.add(sill);
   return gl.material;}
+// SPRINT 027b - the same window unit, hung on any of the four elevations.
+// dir 0 = front (+z) . 1 = back (-z) . 2 = right flank (+x) . 3 = left (-x)
+// u is the sideways position along that wall, off is the wall's own offset.
+function winFace(g,w,h,u,y,off,dir){
+  const q=new THREE.Group();
+  const m=windowUnit(q,w,h,0,y,0);
+  q.rotation.y=[0,Math.PI,Math.PI/2,-Math.PI/2][dir];
+  q.position.set(dir===2?off:(dir===3?-off:u),0,dir===0?off:(dir===1?-off:u));
+  g.add(q);return m;}
 function bodyCol(seed){const u=(seed%100)/100;
   if(u<0.20)return PAL.BRK;if(u<0.28)return PAL.BRK2;if(u<0.34)return PAL.BRK3;
   if(u<0.90)return [0xf0e6c8,0xf2d9a6,0xecc39a,0xe8c4b4,0xf0dcb2,0xc9cfae,0xcfc0c6,0xe0d6c2][seed%8];
@@ -922,20 +933,37 @@ const ORD={};
  D.level.plots.forEach(p=>{const k=Math.round(p.y/9);(rows[k]=rows[k]||[]).push(p);});
  Object.keys(rows).forEach(k=>{rows[k].sort((a,b)=>a.x-b.x)
    .forEach((p,i)=>{ORD[p.id]=i;});});}
-const RSTEP=[0,0.62,0.20,1.02,0.36,0.82,0.10];   // no two neighbours alike
 const RFAM =[0,1,0,2,1,2,0,2,1];                 // terracotta · deep · slate
+// ---- SPRINT 027 — the town gets storeys ---------------------------------
+// Sprint 026 stepped the ridges by a metre and the horizon stayed rigid,
+// because the line the eye reads was never the ridge. It is the EAVES.
+// Twenty-three buildings all 2.9-4.0 m to the gutter, standing on flat
+// ground, their fascia boards joining into one white stripe from one side
+// of the frame to the other. No roof can fix that. Only storeys can.
+const SCL=[0,2,1,3,0,2,4,1,3,0,2,1];   // storey class by position in the row
+const SC=[                             // eaves . pitch . overhang
+ {e:2.60,p:1.06,o:0.58},   // 0 - single-storey cottage: low eaves, huge roof
+ {e:3.35,p:0.92,o:0.50},   // 1 - one-and-a-half: it lives inside its roof
+ {e:4.75,p:0.78,o:0.40},   // 2 - two storey
+ {e:5.60,p:0.72,o:0.34},   // 3 - two-and-a-half
+ {e:6.60,p:0.66,o:0.30}];  // 4 - three-storey townhouse, rare, an accent
+const SCS=[2,3,2,4,3,2,3];             // the high street stands taller
+const EAVE={};                         // every plot's gutter, for the links
+const FGB=[0,0,1,0,0,1,0,1,0];         // gable to the street - one in three
 D.level.plots.forEach(p=>{
   const seed=hash(p.id),shop=p.kit!=="home";
-  const kit=shop?9:(seed%3);                 // 0 cottage · 1 dormer · 2 wide
+  const kit=shop?9:(seed%3);                 // 0 cottage . 1 dormer . 2 wide
   const ix=ORD[p.id]||0;
-  // SPRINT 020 — the silhouette steps: seeded height, pitch, orientation
-  // SPRINT 026 — stepped by position in the row, so the step is guaranteed
-  const htVar=shop?(p.kit==="pub"?0.9:0):RSTEP[ix%7]+(seed%3)*0.055;
-  const pf=0.82+(seed%4)*0.14;               // roof pitch factor
-  const pit=0.64+((ix*3+seed)%6)*0.058;      // SPRINT 026 — 33° to 43°
-  const hipf=(seed%17===3)?0.0:((seed%7===2)?0.48:1);
-  const fg=!shop&&seed%7===3;                // gable-to-street variant
-  const w=shop?7.6:(kit===2?6.4:5.6),dep=shop?5.4:4.6,ht=(shop?3.4:2.9)+htVar;
+  const cls=shop?SCS[ix%7]:SCL[ix%12];       // adjacent entries always differ
+  const S=SC[cls];
+  const pit=S.p+((((ix*3+seed)%5)-2)*0.030); // no two neighbours at one pitch
+  const hipf=cls<=1?((seed%3===0)?0.0:((seed%3===1)?0.45:1))
+                   :((seed%11===4)?0.5:1);   // cottages hip, townhouses gable
+  const fg=!shop&&(FGB[ix%9]===1||seed%23===5);
+  const w=shop?7.6:(cls>=3?6.6:(cls===0?5.2:(kit===2?6.2:5.6)));
+  const dep=(shop?5.4:4.55)+((((ix*5+seed)%4)-1.5)*0.34); // the building line breaks
+  const ht=S.e+((shop&&p.kit==="pub")?0.5:0)+(seed%3)*0.07;
+  EAVE[p.id]=ht;
   const bcol=shop?PAL.RND2:bodyCol(seed);
   const brick=(bcol===PAL.BRK||bcol===PAL.BRK2||bcol===PAL.BRK3);
   const g=new THREE.Group();
@@ -953,14 +981,21 @@ D.level.plots.forEach(p=>{
   const roofCol=isSl?PAL.TILG
     :(fam===1?0xbf6a4a:((seed%13===5)?0xd89a70:PAL.TILB));
   const rSpan=fg?w:dep,rRun=fg?dep:w;
-  const rOvE=0.40,rise=(rSpan/2+rOvE)*pit;
+  const rOvE=S.o,rise=(rSpan/2+rOvE)*pit;
   const roof=roofMesh(rSpan,rRun,roofCol,
-    {pitch:pit,hip:hipf,ovE:rOvE,ovV:0.32,slate:isSl});
+    {pitch:pit,hip:hipf,ovE:rOvE,ovV:S.o*0.8,slate:isSl});
   if(!fg)roof.rotation.y=Math.PI/2;
   roof.position.y=ht+0.05;g.add(roof);
-  if(htVar>=0.7&&!shop){                     // the upper windows of the tall houses
-    windowUnit(g,0.8,0.7,-w*0.22,ht-0.72,dep/2+0.02);
-    windowUnit(g,0.8,0.7,w*0.22,ht-0.72,dep/2+0.02);}
+  // SPRINT 027 - the storeys have to SHOW. Windows diminish as they rise,
+  // which is the thing that tells the eye a townhouse from a tall cottage.
+  const nSt=[];                             // the storey levels this house has
+  for(let k=1;k<=3;k++){
+    const wy=1.55+k*1.85;if(wy+0.55>ht-0.35)break;nSt.push(wy);}
+  nSt.forEach((wy,ki)=>{const k=ki+1;
+    const ww3=0.92-k*0.09,wh3=1.15-k*0.16;
+    [-w*0.28,w*0.30].forEach((ox,oi)=>{
+      if(oi===1&&k===1&&!shop&&seed%6===0)return;   // a blocked-up window
+      winMats.push({m:windowUnit(g,ww3,wh3,ox,wy,dep/2+0.02),shop:false});});});
   // the stacks. Where they stand, how tall, how many pots and of what kind
   // are all seeded — a terrace whose chimneys match is a comb, not a town.
   // SPRINT 026b — a stack finishes just clear of the roof it pierces. The
@@ -976,7 +1011,8 @@ D.level.plots.forEach(p=>{
    const CP=[[-0.34,0],[0.32,0],[-0.12,0],[0.30,0.16]][seed%4];
    const mk=(u,off,sd)=>{
      const cross=off*rSpan, az=u*far*2;
-     const stk=srf(cross,az)+0.05+0.44+((sd>>3)%4)*0.15;
+     const stk=srf(cross,az)+0.05+0.44+((sd>>3)%4)*0.15
+       +((cls>=3)?0.38:0)+((cls<=1)?0.20:0);   // SPRINT 027 - scaled to the house
      const px=fg?cross:az, pz=fg?az:cross;
      chimneyKit(g,px,pz,ht,stk,sd);};
    mk(CP[0],CP[1],seed);
@@ -984,7 +1020,7 @@ D.level.plots.forEach(p=>{
   // dormer kit — SPRINT 026b: sized off the actual slope, near the eaves,
   // so the cheeks clear the tiles. The first pass buried the box in the roof
   // and left only its white trim showing, like a bone through the tiles.
-  if((kit===1||(kit===2&&seed%2===1))&&!fg){
+  if((cls===1||(cls===0&&seed%2===0)||kit===1||(kit===2&&seed%2===1))&&!fg){
     const dt=seed%3,dx=[-w*0.24,w*0.19,-w*0.05][dt];
     const dW=1.45,dD=0.95,hwD=rSpan/2+rOvE;
     const sA=z2=>rise*Math.max(0,1-Math.abs(z2)/hwD);
@@ -1019,6 +1055,59 @@ D.level.plots.forEach(p=>{
   if(!shop){const can=box(1.6,0.12,0.7,roofCol);can.rotation.x=0.35;
     can.position.set(-w*0.18,2.25,dep/2+0.35);g.add(can);
     const step=box(1.3,0.12,0.5,PAL.CONC);step.position.set(-w*0.18,0.06,dep/2+0.4);g.add(step);}
+  // ---- SPRINT 027b - a house has four elevations ------------------------
+  // Stage one gave the town storeys and gave the storeys to the front wall
+  // only. On a 2.9 m cottage a blank back is a wall; on a 6.6 m townhouse it
+  // is a cliff, and a raycast on the square frame found exactly that - one
+  // 6.6 m square of unbroken render, the largest surface in the shot, doing
+  // nothing. Height has to be earned on every side the town can see.
+  {const RO=dep/2+0.02, SO=w/2+0.02;
+   const GO=(fg?dep/2:w/2)+S.o*0.8+0.02;   // the gable face sits outboard
+   const gHW=(fg?w/2:dep/2)+S.o;           // half-width of the gable triangle
+   // the back: a door, a scullery window, and the storeys above them
+   const bd=box(0.92,1.80,0.14,0x6f5f4e);
+   bd.position.set(w*0.24,0.90,-(RO+0.05));g.add(bd);
+   winFace(g,0.60,0.76,-w*0.06,1.42,RO,1);
+   if(!shop)winFace(g,0.84,1.05,-w*0.30,1.50,RO,1);
+   // a back elevation is never symmetric. That is what makes it read as a back.
+   nSt.forEach((wy,ki)=>{const k=ki+1,bw=0.80-k*0.07,bh=0.98-k*0.13;
+     winFace(g,bw,bh,(k%2?-1:1)*w*0.22,wy-0.10,RO,1);
+     if((seed>>k)%3===0)winFace(g,bw*0.72,bh*0.72,(k%2?1:-1)*w*0.27,wy-0.10,RO,1);});
+   // the downpipe - a vertical line down a flat wall, and evidence of rain
+   {const dh=Math.max(0.6,ht-0.10);
+    const dp=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,dh,6),mat(0x8e8375));
+    dp.position.set(w*0.40,dh/2,-(RO+0.05));dp.castShadow=true;g.add(dp);
+    const hop=box(0.20,0.26,0.16,0x8e8375);
+    hop.position.set(w*0.40,dh-0.18,-(RO+0.05));g.add(hop);}
+   const bs=(seed%2)?1:-1;                 // which flank carries the breast
+   // A tall house is seen from everywhere, so both its flanks are public.
+   // A cottage is short enough that one treated flank is enough.
+   const FL=(cls>=3)?[1,-1]:[bs];
+   if(!fg){
+     // An English gable end is broken by its chimney breast, not by windows.
+     // The breast is what casts the vertical shadow that kills a blank plane.
+     FL.forEach(f=>{const bre=box(0.26,ht-0.04,1.35,bcol);
+       bre.position.set(f*(SO+0.11),(ht-0.04)/2,dep*0.05);g.add(bre);
+       if(hipf>0.6){                       // the apex window, up in the triangle
+         const ap=ht+0.05+rise*(0.32+((seed>>4)%3)*0.05);
+         winFace(g,0.54,0.62,0,ap,GO,f>0?2:3);}
+       if(cls>=2){
+         // a tall flank carries a full tier of windows, one either side of the
+         // breast, on every storey - three tiers and two shadow lines is what
+         // turns a 6.6 m plane back into a building.
+         const dr=f>0?2:3;
+         nSt.forEach((wy,ki)=>{
+           if(cls<3&&ki%2)return;
+           [-1,1].forEach(t=>{
+             if(cls<3&&t>0)return;
+             winFace(g,0.58,0.76,t*dep*0.26,wy-0.06,SO,dr);});});
+         if(cls>=3)[-1,1].forEach(t=>
+           winFace(g,0.64,0.92,t*dep*0.26,1.50,SO,dr));}});}
+   else if(hipf>0.6){
+     // gable to the street: that triangle is the front, so glaze it properly
+     const ap=ht+0.05+rise*(0.30+(seed%3)*0.05);
+     winMats.push({m:winFace(g,0.66,0.72,0,ap,GO,0),shop:false});
+     winFace(g,0.50,0.56,0,ap,GO,1);}}
   // windows
   if(shop){
     const gl=windowUnit(g,w*0.66,1.15,0.6,1.35,dep/2+0.06);
@@ -1036,7 +1125,7 @@ D.level.plots.forEach(p=>{
     if(p.kit==="pub"){const br=box(0.9,0.08,0.08,0x5a544a);
       br.position.set(w/2+0.4,2.9,dep/2-0.4);g.add(br);
       const hs=box(0.7,0.9,0.08,PAL.GRN);hs.position.set(w/2+0.75,2.4,dep/2-0.4);g.add(hs);}
-    winMats.push({m:windowUnit(g,1.0,0.9,-w*0.36,3.0,dep/2+0.02),shop:true,pid:p.kit});
+    // (the old single upper window is now part of the storey rows)
   } else {
     [[-w*0.28,1.55],[w*0.30,1.55]].forEach((o,oi)=>{
       if(xwg&&oi===1)return;                 // that wall is the cross-wing now
@@ -1631,9 +1720,10 @@ const matchFlags=[];
    const [bx3,by3]=backOf(plotRot[p.id]||0);
    const fx=p.x-bx3*3.35+by3*1.6,fy=p.y-by3*3.35-bx3*1.6;
    const fg=new THREE.Group();   // wall-mounted at eave height, matchday only
-   const pole=box(0.08,1.15,0.08,0x6a6258);pole.position.set(0,2.5,0);fg.add(pole);
+   const fy2=Math.min(2.5,(EAVE[p.id]||2.9)-0.70);   // SPRINT 027 - under the eaves
+   const pole=box(0.08,1.15,0.08,0x6a6258);pole.position.set(0,fy2,0);fg.add(pole);
    const pn=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.48,3),mat(PAL.GRN));
-   pn.rotation.z=-Math.PI/2;pn.position.set(0.28,2.88,0);fg.add(pn);
+   pn.rotation.z=-Math.PI/2;pn.position.set(0.28,fy2+0.38,0);fg.add(pn);
    fg.position.copy(V(fx,fy,gH(fx,fy)));scene.add(fg);matchFlags.push(fg);});
 // the rows join — link sections make terraces of the street and North Lane
  [[["P02","P05"],["P05","P04"],["P04","P06"],["P06","P14"],["P14","P13"],["P13","P15"]],
@@ -1644,8 +1734,12 @@ const matchFlags=[];
    const lw=gap-6.6;if(lw<1.2)return;
    const lx=(a5.x+b5.x)/2,ly=(a5.y+b5.y)/2;
    const sd6=hash("lk"+pr2[0]);
-   const lk=box(lw+0.6,2.55,5.6,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
-   lk.position.copy(V(lx,ly,1.275));lk.castShadow=true;scene.add(lk);
+   // SPRINT 027 - a link takes its height from the shorter of the two houses
+   // it joins, so it stays subordinate now that the houses no longer match.
+   const lh=Math.max(2.15,Math.min(4.30,
+     Math.min(EAVE[a5.id]||2.9,EAVE[b5.id]||2.9)-0.55));
+   const lk=box(lw+0.6,lh,5.6,[0xf0e6c8,0xf2d9a6,0xece2d0,0xe8c4b4][sd6%4]);
+   lk.position.copy(V(lx,ly,lh/2));lk.castShadow=true;scene.add(lk);
    // SPRINT 026 — the link sections were flat slabs at one height: eleven of
    // them, and between them they drew the rigid horizontal line Roy named.
    // They are roofs now, and deliberately subordinate — a link that rises to
@@ -1653,14 +1747,16 @@ const matchFlags=[];
    const lsl=sd6%4===0, lpit=0.60+(sd6%4)*0.05;
    const lr=roofMesh(5.6,lw+0.6,lsl?PAL.TILG:((sd6%3)?PAL.TILB:0xbf6a4a),
      {pitch:lpit,hip:(sd6%6===1)?0.45:1,ovE:0.34,ovV:0.26,slate:lsl});
-   lr.rotation.y=Math.PI/2;lr.position.copy(V(lx,ly,2.55));scene.add(lr);
+   lr.rotation.y=Math.PI/2;lr.position.copy(V(lx,ly,lh));scene.add(lr);
    {const lg=new THREE.Group();lg.position.copy(V(lx,ly,0));
-    const ltop=2.55+(5.6/2+0.34)*lpit;
-    chimneyKit(lg,(sd6%2?1:-1)*(lw*0.22),0,2.55,ltop-2.55+0.44+(sd6%3)*0.16,sd6);
+    const ltop=lh+(5.6/2+0.34)*lpit;
+    chimneyKit(lg,(sd6%2?1:-1)*(lw*0.22),0,lh,ltop-lh+0.44+(sd6%3)*0.16,sd6);
     scene.add(lg);}
-   [[-2.05],[2.05]].forEach(o=>{const wf=box(0.9,0.9,0.1,PAL.RND);
-     wf.position.copy(V(lx,ly+o[0],1.45));scene.add(wf);
-     const wg=box(0.7,0.7,0.12,PAL.GLS);wg.position.copy(V(lx,ly+o[0],1.45));scene.add(wg);});});});
+   [[-2.05],[2.05]].forEach(o=>{const wy2=Math.min(1.45,lh-0.62);
+     const wf=box(0.9,0.9,0.1,PAL.RND);
+     wf.position.copy(V(lx,ly+o[0],wy2));scene.add(wf);
+     const wg=box(0.7,0.7,0.12,PAL.GLS);
+     wg.position.copy(V(lx,ly+o[0],wy2));scene.add(wg);});});});
  // Market Street gains its tree rhythm — front-garden trees along the south side
  [[6,13.0,0.85],[26,13.0,0.85],[108.2,29.5,0.8]]
    .forEach(t4=>tree(t4[0],t4[1],t4[2]));
